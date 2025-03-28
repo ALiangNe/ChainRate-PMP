@@ -74,7 +74,7 @@ export default function StudentIndexPage() {
         <section className={styles.functionSection}>
           <h2>功能区</h2>
           <div className={styles.functionGrid}>
-            <div className={styles.functionCard} onClick={() => router.push('/courses')}>
+            <div className={styles.functionCard} onClick={() => router.push('/studentViewCourses')}>
               <h3>查看课程</h3>
               <p>浏览所有可评价的课程</p>
             </div>
