@@ -158,7 +158,7 @@ export default function LoginPage() {
               redirectPath = '/studentIndex'; // 学生跳转到学生首页
             } else if (roleHash === TEACHER_ROLE.toString()) {
               readableRole = 'teacher';
-              // 未来可以添加教师首页路径
+              redirectPath = '/teacherIndex'; // 教师跳转到教师首页
             } else if (roleHash === ADMIN_ROLE.toString()) {
               readableRole = 'admin';
               // 未来可以添加管理员首页路径

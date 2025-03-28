@@ -1,0 +1,99 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #34a853; /* 使用不同的颜色区分教师端 */
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logoutButton {
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid white;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.logoutButton:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.userProfile {
+  margin-bottom: 2rem;
+}
+
+.profileCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.functionSection {
+  margin-bottom: 2rem;
+}
+
+.functionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.functionCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.functionCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.functionCard h3 {
+  color: #34a853; /* 使用与头部相同的颜色保持一致性 */
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.functionCard p {
+  color: #5f6368;
+  margin: 0;
+}
+
+.footer {
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.9rem;
+} 
