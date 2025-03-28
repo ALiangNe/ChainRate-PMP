@@ -8,7 +8,8 @@ pragma solidity ^0.8.20;
  * 主要功能：
  * 1. 用户管理：注册、登录、角色管理
  * 2. 课程管理：创建、更新课程信息
- * 3. 评价管理：提交、查看课程评价
+ * 3. 课程选修：学生加入课程
+ * 4. 评价管理：提交、查看课程评价
  * 
  * 角色说明：
  * - ADMIN_ROLE: 管理员，具有最高权限
@@ -45,6 +46,7 @@ contract ChainRate {
      * @param startTime 评价开始时间
      * @param endTime 评价结束时间
      * @param isActive 课程是否激活
+     * @param studentCount 选修学生数量
      */
     struct Course {
         uint256 id;
@@ -53,6 +55,7 @@ contract ChainRate {
         uint256 startTime;
         uint256 endTime;
         bool isActive;
+        uint256 studentCount;
     }
     
     /**
@@ -89,6 +92,13 @@ contract ChainRate {
     mapping(address => uint256[]) public studentEvaluations;  // 学生地址到其评价ID列表的映射
     mapping(uint256 => uint256[]) public courseEvaluations;  // 课程ID到其评价ID列表的映射
     
+    // 新增映射：记录学生是否已加入课程
+    mapping(uint256 => mapping(address => bool)) public hasJoinedCourse;  // 记录学生是否已加入课程
+    // 新增映射：记录学生加入的课程ID列表
+    mapping(address => uint256[]) public studentCourses;  // 学生地址到其加入的课程ID列表的映射
+    // 新增映射：记录课程中的学生地址列表
+    mapping(uint256 => address[]) public courseStudents;  // 课程ID到其学生地址列表的映射
+    
     uint256 public courseCount;  // 课程总数
     uint256 public evaluationCount;  // 评价总数
     
@@ -96,6 +106,8 @@ contract ChainRate {
     event UserRegistered(address indexed user, string name, bytes32 role);  // 用户注册事件
     event CourseCreated(uint256 indexed courseId, address indexed teacher, string name);  // 课程创建事件
     event CourseUpdated(uint256 indexed courseId, address indexed teacher);  // 课程更新事件
+    event CourseJoined(uint256 indexed courseId, address indexed student);  // 学生加入课程事件
+    event CourseLeft(uint256 indexed courseId, address indexed student);  // 学生退出课程事件
     event EvaluationSubmitted(uint256 indexed evaluationId, address indexed student, uint256 indexed courseId);  // 评价提交事件
     event EvaluationUpdated(uint256 indexed evaluationId, address indexed student);  // 评价更新事件
     
@@ -157,6 +169,14 @@ contract ChainRate {
             block.timestamp <= courses[courseId].endTime,
             "ChainRate: not within evaluation period"
         );
+        _;
+    }
+    
+    /**
+     * @dev 确保学生已加入课程
+     */
+    modifier hasJoined(uint256 courseId) {
+        require(hasJoinedCourse[courseId][msg.sender], "ChainRate: student has not joined the course");
         _;
     }
     
@@ -251,7 +271,8 @@ contract ChainRate {
             name: name,
             startTime: startTime,
             endTime: endTime,
-            isActive: true
+            isActive: true,
+            studentCount: 0
         });
         
         emit CourseCreated(courseId, msg.sender, name);
@@ -285,6 +306,77 @@ contract ChainRate {
     }
     
     /**
+     * @dev 学生加入课程
+     * @param courseId 课程ID
+     */
+    function joinCourse(uint256 courseId) external courseExists(courseId) onlyStudent {
+        require(courses[courseId].isActive, "ChainRate: course is not active");
+        require(!hasJoinedCourse[courseId][msg.sender], "ChainRate: student has already joined the course");
+        
+        // 记录学生已加入课程
+        hasJoinedCourse[courseId][msg.sender] = true;
+        
+        // 将课程ID添加到学生的课程列表
+        studentCourses[msg.sender].push(courseId);
+        
+        // 将学生地址添加到课程的学生列表
+        courseStudents[courseId].push(msg.sender);
+        
+        // 更新课程学生数量
+        courses[courseId].studentCount++;
+        
+        emit CourseJoined(courseId, msg.sender);
+    }
+    
+    /**
+     * @dev 学生退出课程
+     * @param courseId 课程ID
+     */
+    function leaveCourse(uint256 courseId) external courseExists(courseId) onlyStudent hasJoined(courseId) {
+        // 确保学生未对课程进行评价
+        require(!hasEvaluated[courseId][msg.sender], "ChainRate: student has already evaluated the course");
+        
+        // 记录学生已退出课程
+        hasJoinedCourse[courseId][msg.sender] = false;
+        
+        // 更新课程学生数量
+        courses[courseId].studentCount--;
+        
+        emit CourseLeft(courseId, msg.sender);
+        
+        // 注意：我们不会从studentCourses和courseStudents中删除记录，以保持历史数据的完整性
+        // 实际使用时应通过hasJoinedCourse检查学生是否当前加入了课程
+    }
+    
+    /**
+     * @dev 获取学生加入的所有课程ID
+     * @param studentAddress 学生地址
+     * @return 课程ID数组
+     */
+    function getStudentCourses(address studentAddress) external view returns (uint256[] memory) {
+        return studentCourses[studentAddress];
+    }
+    
+    /**
+     * @dev 获取课程中的所有学生地址
+     * @param courseId 课程ID
+     * @return 学生地址数组
+     */
+    function getCourseStudents(uint256 courseId) external view courseExists(courseId) returns (address[] memory) {
+        return courseStudents[courseId];
+    }
+    
+    /**
+     * @dev 检查学生是否已加入课程
+     * @param courseId 课程ID
+     * @param studentAddress 学生地址
+     * @return 是否已加入
+     */
+    function isStudentJoined(uint256 courseId, address studentAddress) external view courseExists(courseId) returns (bool) {
+        return hasJoinedCourse[courseId][studentAddress];
+    }
+    
+    /**
      * @dev 提交课程评价
      * @param courseId 课程ID
      * @param contentHash 评价内容哈希值
@@ -297,7 +389,7 @@ contract ChainRate {
         string memory contentHash,
         uint8 rating,
         bool isAnonymous
-    ) external onlyStudent courseExists(courseId) withinEvaluationPeriod(courseId) returns (uint256) {
+    ) external onlyStudent courseExists(courseId) withinEvaluationPeriod(courseId) hasJoined(courseId) returns (uint256) {
         require(!hasEvaluated[courseId][msg.sender], "ChainRate: already evaluated");
         require(rating >= 1 && rating <= 5, "ChainRate: invalid rating");
         
@@ -389,5 +481,43 @@ contract ChainRate {
         }
         
         return (totalRating * 100) / evalIds.length;
+    }
+    
+    /**
+     * @dev 获取所有课程
+     * @return 课程ID数组
+     */
+    function getAllCourses() external view returns (uint256[] memory) {
+        uint256[] memory allCourses = new uint256[](courseCount);
+        for (uint256 i = 0; i < courseCount; i++) {
+            allCourses[i] = i;
+        }
+        return allCourses;
+    }
+    
+    /**
+     * @dev 获取所有激活状态的课程
+     * @return 激活状态的课程ID数组
+     */
+    function getActiveCourses() external view returns (uint256[] memory) {
+        // 首先计算激活状态的课程数量
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < courseCount; i++) {
+            if (courses[i].isActive) {
+                activeCount++;
+            }
+        }
+        
+        // 创建适当大小的数组并填充激活状态的课程ID
+        uint256[] memory activeCourses = new uint256[](activeCount);
+        uint256 index = 0;
+        for (uint256 i = 0; i < courseCount; i++) {
+            if (courses[i].isActive) {
+                activeCourses[index] = i;
+                index++;
+            }
+        }
+        
+        return activeCourses;
     }
 } 
