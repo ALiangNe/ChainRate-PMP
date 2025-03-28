@@ -74,7 +74,7 @@ export default function TeacherIndexPage() {
         <section className={styles.functionSection}>
           <h2>功能区</h2>
           <div className={styles.functionGrid}>
-            <div className={styles.functionCard} onClick={() => router.push('/create-course')}>
+            <div className={styles.functionCard} onClick={() => router.push('/createCourse')}>
               <h3>创建课程</h3>
               <p>创建新的课程供学生评价</p>
             </div>
