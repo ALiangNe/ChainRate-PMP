@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ChainRate - 基于区块链的教学评价系统
 
-## Getting Started
+ChainRate 是一个基于区块链（以太坊）的教学评价系统，旨在为学校提供一个透明、不可篡改的教学评价平台。系统采用 Next.js 前端和 Solidity 智能合约开发，结合 Hardhat Ignition 框架进行部署和测试。
 
-First, run the development server:
+## 功能特性
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 用户认证和管理
+- 支持多角色用户系统：管理员、教师和学生
+- 基于区块链的用户注册和登录认证
+- 安全的用户信息存储和访问控制
+
+### 教师功能
+- 创建新课程并设置评价时间段
+- 查看和管理已创建的课程
+- 浏览学生对课程的评价（包括匿名评价）
+- 查看课程的综合评分和统计数据
+
+### 学生功能
+- 浏览所有可用课程
+- 加入感兴趣的课程
+- 在规定时间内为已加入的课程提交评价
+- 支持匿名评价选项
+- 查看课程详情和其他学生的评价
+
+### 评价系统
+- 评分和文字评价相结合的评价机制
+- 评价一旦提交不可篡改，确保真实性
+- 评价时间段控制，确保评价在合适的时间段内进行
+- 自动计算课程平均评分
+
+## 技术栈
+
+- **前端**：Next.js、React、CSS Modules、ethers.js
+- **后端**：Solidity 智能合约
+- **开发环境**：Hardhat、Hardhat Ignition
+- **区块链**：以太坊（支持Sepolia测试网和本地开发网络）
+
+## 项目结构
+
+```
+chainrate-nextjs/               # 前端项目目录
+├── public/                     # 静态资源
+├── src/
+│   ├── app/                    # Next.js 13+ 路由结构
+│   │   ├── courseDetail/[id]/  # 课程详情页面（动态路由）
+│   │   ├── dashboard/          # 用户仪表板
+│   │   ├── login/              # 登录页面
+│   │   ├── register/           # 注册页面
+│   │   ├── studentIndex/       # 学生首页
+│   │   ├── studentViewCourses/ # 学生查看课程列表
+│   │   ├── submitEvaluation/[id]/ # 学生提交评价（动态路由）
+│   │   ├── teacherCreateCourse/# 教师创建课程
+│   │   ├── teacherIndex/       # 教师首页
+│   │   ├── teacherViewCourse/  # 教师查看课程
+│   │   ├── contracts/              # 智能合约 ABI 和地址
+│   │   └── utils/                  # 工具函数
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 使用指南
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 前提条件
+- 安装 Node.js 和 npm
+- 安装并配置 MetaMask 浏览器扩展
+- 在MetaMask中添加本地开发网络或Sepolia测试网
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 本地开发
 
-## Learn More
+1. 克隆项目
+```bash
+git clone https://github.com/your-username/chainrate.git
+cd chainrate
+```
 
-To learn more about Next.js, take a look at the following resources:
+2. 安装依赖
+```bash
+cd chainrate-nextjs
+npm install
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. 启动开发服务器
+```bash
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. 在浏览器中访问 `http://localhost:3000`
 
-## Deploy on Vercel
+### 使用流程
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **注册和登录**：
+   - 用户使用MetaMask连接钱包
+   - 根据身份选择相应角色（管理员、教师、学生）
+   - 输入姓名和相关信息完成注册
+   - 使用已注册的钱包地址进行登录
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **教师创建课程**：
+   - 教师登录后，进入"创建课程"页面
+   - 输入课程名称并设置评价时间范围
+   - 点击"创建课程"，确认MetaMask交易
+
+3. **学生浏览和加入课程**：
+   - 学生登录后，可在"查看课程"页面浏览所有课程
+   - 点击"加入课程"按钮加入感兴趣的课程
+   - 通过MetaMask确认加入课程的交易
+
+4. **学生评价课程**：
+   - 在评价时间段内，进入已加入的课程详情页
+   - 点击"评价课程"按钮
+   - 选择评分、填写评价内容，并选择是否匿名
+   - 提交评价，通过MetaMask确认交易
+
+5. **查看评价和统计**：
+   - 所有用户都可查看课程的评价（视角根据角色不同）
+   - 教师可查看自己课程的所有评价和统计数据
+   - 学生可浏览所有课程的评价
+
+## 安全和隐私
+
+- 匿名评价选项保护学生隐私
+- 基于区块链的不可篡改性确保评价真实可靠
+- 智能合约权限控制确保数据安全
+
+## 贡献
+
+欢迎贡献代码或提出改进建议！请先fork项目，然后提交pull request。
+
+## 许可证
+
+本项目采用 MIT 许可证。
