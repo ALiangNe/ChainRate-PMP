@@ -151,26 +151,36 @@ export default function LoginPage() {
             const ADMIN_ROLE = await contract.ADMIN_ROLE();
             
             let readableRole = 'unknown';
+            let redirectPath = '/dashboard'; // 默认重定向路径
+            
             if (roleHash === STUDENT_ROLE.toString()) {
               readableRole = 'student';
+              redirectPath = '/studentIndex'; // 学生跳转到学生首页
             } else if (roleHash === TEACHER_ROLE.toString()) {
               readableRole = 'teacher';
+              // 未来可以添加教师首页路径
             } else if (roleHash === ADMIN_ROLE.toString()) {
               readableRole = 'admin';
+              // 未来可以添加管理员首页路径
             }
             localStorage.setItem('userRole', readableRole);
+            
+            // 登录成功提示
+            alert('登录成功！');
+            
+            // 根据角色重定向到不同页面
+            router.push(redirectPath);
+            
           } catch (err) {
             console.warn('获取角色常量失败', err);
             localStorage.setItem('userRole', 'user'); // 默认角色
+            router.push('/dashboard'); // 默认重定向
           }
         } catch (err) {
           console.warn('处理角色信息时出错', err);
           localStorage.setItem('userRole', 'user'); // 默认角色
+          router.push('/dashboard'); // 默认重定向
         }
-
-        // 登录成功重定向到首页
-        alert('登录成功！');
-        router.push('/dashboard');
       } else {
         setError('密码错误，请重试');
       }
