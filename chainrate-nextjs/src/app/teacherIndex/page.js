@@ -78,7 +78,7 @@ export default function TeacherIndexPage() {
               <h3>创建课程</h3>
               <p>创建新的课程供学生评价</p>
             </div>
-            <div className={styles.functionCard} onClick={() => router.push('/my-courses')}>
+            <div className={styles.functionCard} onClick={() => router.push('/viewCourses')}>
               <h3>我的课程</h3>
               <p>管理您已创建的课程</p>
             </div>
