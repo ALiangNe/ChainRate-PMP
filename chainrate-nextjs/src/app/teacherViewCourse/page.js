@@ -206,8 +206,7 @@ export default function ViewCoursesPage() {
   
   // 管理课程
   const handleManageCourse = (courseId) => {
-    // 未来可以实现跳转到课程管理页面
-    router.push(`/manageCourse/${courseId}`);
+    router.push(`/teacherManageCourse/${courseId}`);
   };
   
   // 查看评价

@@ -248,7 +248,7 @@ export default function StudentViewCoursesPage() {
   
   // 查看课程详情
   const handleViewCourseDetail = (courseId) => {
-    router.push(`/courseDetail/${courseId}`);
+    router.push(`/studentCourseDetail/${courseId}`);
   };
   
   // 格式化日期时间

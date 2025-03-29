@@ -136,7 +136,7 @@ export default function SubmitEvaluationPage({ params }) {
         if (!canEvaluate) {
           setError('您目前无法评价此课程，可能是因为您尚未加入课程、评价时间未到或已结束、或您已经提交过评价。');
           setTimeout(() => {
-            router.push(`/courseDetail/${courseId}`);
+            router.push(`/studentCourseDetail/${courseId}`);
           }, 3000);
           return;
         }
@@ -228,7 +228,7 @@ export default function SubmitEvaluationPage({ params }) {
   };
   
   const goBack = () => {
-    router.push(`/courseDetail/${courseId}`);
+    router.push(`/studentCourseDetail/${courseId}`);
   };
 
   if (loading) {

@@ -271,7 +271,7 @@ export default function CourseDetailPage({ params }) {
   
   // 前往评价页面
   const handleEvaluateCourse = () => {
-    router.push(`/submitEvaluation/${courseId}`);
+    router.push(`/studentSubmitEvaluation/${courseId}`);
   };
   
   // 格式化日期时间
