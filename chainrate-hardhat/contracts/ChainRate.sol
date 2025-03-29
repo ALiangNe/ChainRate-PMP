@@ -65,8 +65,12 @@ contract ChainRate {
      * @param courseId 课程ID
      * @param timestamp 评价时间戳
      * @param contentHash 评价内容哈希值
+     * @param imageHashes 评价图片哈希数组
      * @param isAnonymous 是否匿名评价
-     * @param rating 评分(1-5)
+     * @param rating 总体评分(1-5)
+     * @param teachingRating 教学质量评分(1-5)
+     * @param contentRating 内容设计评分(1-5)
+     * @param interactionRating 师生互动评分(1-5)
      * @param isActive 评价是否有效
      */
     struct Evaluation {
@@ -75,8 +79,12 @@ contract ChainRate {
         uint256 courseId;
         uint256 timestamp;
         string contentHash;
+        string[] imageHashes;
         bool isAnonymous;
         uint8 rating;
+        uint8 teachingRating;
+        uint8 contentRating; 
+        uint8 interactionRating;
         bool isActive;
     }
     
@@ -380,18 +388,29 @@ contract ChainRate {
      * @dev 提交课程评价
      * @param courseId 课程ID
      * @param contentHash 评价内容哈希值
-     * @param rating 评分(1-5)
+     * @param imageHashes 评价图片哈希数组
+     * @param rating 总体评分(1-5)
+     * @param teachingRating 教学质量评分(1-5)
+     * @param contentRating 内容设计评分(1-5)
+     * @param interactionRating 师生互动评分(1-5)
      * @param isAnonymous 是否匿名评价
      * @return 新创建的评价ID
      */
     function submitEvaluation(
         uint256 courseId,
         string memory contentHash,
+        string[] memory imageHashes,
         uint8 rating,
+        uint8 teachingRating,
+        uint8 contentRating,
+        uint8 interactionRating,
         bool isAnonymous
     ) external onlyStudent courseExists(courseId) withinEvaluationPeriod(courseId) hasJoined(courseId) returns (uint256) {
         require(!hasEvaluated[courseId][msg.sender], "ChainRate: already evaluated");
         require(rating >= 1 && rating <= 5, "ChainRate: invalid rating");
+        require(teachingRating >= 1 && teachingRating <= 5, "ChainRate: invalid teaching rating");
+        require(contentRating >= 1 && contentRating <= 5, "ChainRate: invalid content rating");
+        require(interactionRating >= 1 && interactionRating <= 5, "ChainRate: invalid interaction rating");
         
         uint256 evaluationId = evaluationCount++;
         evaluations[evaluationId] = Evaluation({
@@ -400,8 +419,12 @@ contract ChainRate {
             courseId: courseId,
             timestamp: block.timestamp,
             contentHash: contentHash,
+            imageHashes: imageHashes,
             isAnonymous: isAnonymous,
             rating: rating,
+            teachingRating: teachingRating,
+            contentRating: contentRating,
+            interactionRating: interactionRating,
             isActive: true
         });
         
@@ -421,8 +444,12 @@ contract ChainRate {
      * @return courseId 课程ID
      * @return timestamp 评价时间戳
      * @return contentHash 评价内容哈希值
+     * @return imageHashes 评价图片哈希数组
      * @return isAnonymous 是否匿名评价
-     * @return rating 评分(1-5)
+     * @return rating 总体评分
+     * @return teachingRating 教学质量评分
+     * @return contentRating 内容设计评分
+     * @return interactionRating 师生互动评分
      * @return isActive 评价是否有效
      */
     function getEvaluationDetails(uint256 evaluationId) external view evaluationExists(evaluationId) returns (
@@ -431,8 +458,12 @@ contract ChainRate {
         uint256 courseId,
         uint256 timestamp,
         string memory contentHash,
+        string[] memory imageHashes,
         bool isAnonymous,
         uint8 rating,
+        uint8 teachingRating,
+        uint8 contentRating,
+        uint8 interactionRating,
         bool isActive
     ) {
         Evaluation memory eval = evaluations[evaluationId];
@@ -442,8 +473,12 @@ contract ChainRate {
             eval.courseId,
             eval.timestamp,
             eval.contentHash,
+            eval.imageHashes,
             eval.isAnonymous,
             eval.rating,
+            eval.teachingRating,
+            eval.contentRating,
+            eval.interactionRating,
             eval.isActive
         );
     }
@@ -519,5 +554,243 @@ contract ChainRate {
         }
         
         return activeCourses;
+    }
+    
+    /**
+     * @dev 获取课程统计数据
+     * @param courseId 课程ID
+     * @return totalEvaluations 评价总数
+     * @return averageRating 平均总体评分(乘以100)
+     * @return averageTeachingRating 平均教学评分(乘以100)
+     * @return averageContentRating 平均内容评分(乘以100)
+     * @return averageInteractionRating 平均互动评分(乘以100)
+     * @return anonymousCount 匿名评价数量
+     * @return completeCount 包含内容的评价数量
+     */
+    function getCourseStatistics(uint256 courseId) external view courseExists(courseId) returns (
+        uint256 totalEvaluations,
+        uint256 averageRating,
+        uint256 averageTeachingRating,
+        uint256 averageContentRating,
+        uint256 averageInteractionRating,
+        uint256 anonymousCount,
+        uint256 completeCount
+    ) {
+        uint256[] memory evalIds = courseEvaluations[courseId];
+        totalEvaluations = evalIds.length;
+        
+        if (totalEvaluations == 0) {
+            return (0, 0, 0, 0, 0, 0, 0);
+        }
+        
+        uint256 totalRating = 0;
+        uint256 totalTeachingRating = 0;
+        uint256 totalContentRating = 0;
+        uint256 totalInteractionRating = 0;
+        uint256 anonCount = 0;
+        uint256 complete = 0;
+        
+        for (uint256 i = 0; i < evalIds.length; i++) {
+            Evaluation memory eval = evaluations[evalIds[i]];
+            totalRating += eval.rating;
+            totalTeachingRating += eval.teachingRating;
+            totalContentRating += eval.contentRating;
+            totalInteractionRating += eval.interactionRating;
+            
+            if (eval.isAnonymous) {
+                anonCount++;
+            }
+            
+            // 判断是否为完整评价（有文字内容）
+            if (bytes(eval.contentHash).length > 0) {
+                complete++;
+            }
+        }
+        
+        // 乘以100避免小数
+        averageRating = (totalRating * 100) / totalEvaluations;
+        averageTeachingRating = (totalTeachingRating * 100) / totalEvaluations;
+        averageContentRating = (totalContentRating * 100) / totalEvaluations;
+        averageInteractionRating = (totalInteractionRating * 100) / totalEvaluations;
+        anonymousCount = anonCount;
+        completeCount = complete;
+    }
+    
+    /**
+     * @dev 批量获取课程评价数据（用于导出）
+     * @param courseId 课程ID
+     * @param offset 起始位置
+     * @param limit 获取数量
+     * @return ids 评价ID数组
+     * @return students 学生地址数组
+     * @return names 学生姓名数组（匿名则为"Anonymous"）
+     * @return timestamps 时间戳数组
+     * @return ratings 总体评分数组
+     * @return teachingRatings 教学评分数组
+     * @return contentRatings 内容评分数组
+     * @return interactionRatings 互动评分数组
+     * @return isAnonymous 是否匿名数组
+     */
+    function getCourseBatchEvaluations(uint256 courseId, uint256 offset, uint256 limit) external view courseExists(courseId) returns (
+        uint256[] memory ids,
+        address[] memory students,
+        string[] memory names,
+        uint256[] memory timestamps,
+        uint8[] memory ratings,
+        uint8[] memory teachingRatings,
+        uint8[] memory contentRatings,
+        uint8[] memory interactionRatings,
+        bool[] memory isAnonymous
+    ) {
+        uint256[] memory allEvalIds = courseEvaluations[courseId];
+        uint256 totalEvals = allEvalIds.length;
+        
+        // 检查边界条件
+        if (offset >= totalEvals) {
+            return (
+                new uint256[](0), 
+                new address[](0), 
+                new string[](0), 
+                new uint256[](0), 
+                new uint8[](0),
+                new uint8[](0),
+                new uint8[](0),
+                new uint8[](0),
+                new bool[](0)
+            );
+        }
+        
+        // 计算实际要返回的数量
+        uint256 count = totalEvals - offset;
+        if (count > limit) {
+            count = limit;
+        }
+        
+        // 初始化返回数组
+        ids = new uint256[](count);
+        students = new address[](count);
+        names = new string[](count);
+        timestamps = new uint256[](count);
+        ratings = new uint8[](count);
+        teachingRatings = new uint8[](count);
+        contentRatings = new uint8[](count);
+        interactionRatings = new uint8[](count);
+        isAnonymous = new bool[](count);
+        
+        // 填充数据
+        for (uint256 i = 0; i < count; i++) {
+            uint256 evalId = allEvalIds[offset + i];
+            Evaluation memory eval = evaluations[evalId];
+            
+            ids[i] = eval.id;
+            students[i] = eval.student;
+            
+            // 获取学生姓名（如果不匿名）
+            if (!eval.isAnonymous) {
+                names[i] = users[eval.student].name;
+            } else {
+                names[i] = "Anonymous";
+            }
+            
+            timestamps[i] = eval.timestamp;
+            ratings[i] = eval.rating;
+            teachingRatings[i] = eval.teachingRating;
+            contentRatings[i] = eval.contentRating;
+            interactionRatings[i] = eval.interactionRating;
+            isAnonymous[i] = eval.isAnonymous;
+        }
+    }
+    
+    /**
+     * @dev 获取教师数据概览（用于dashboard）
+     * @param teacherAddress 教师地址
+     * @return totalCourses 教师创建的课程总数
+     * @return totalStudents 选修教师课程的学生总数
+     * @return totalEvaluations 教师课程的评价总数
+     * @return courseIds 课程ID数组
+     * @return courseNames 课程名称数组
+     * @return studentCounts 每个课程的学生数量
+     * @return evaluationCounts 每个课程的评价数量
+     * @return averageRatings 每个课程的平均评分（乘以100）
+     */
+    function getTeacherDashboard(address teacherAddress) external view returns (
+        uint256 totalCourses,
+        uint256 totalStudents,
+        uint256 totalEvaluations,
+        uint256[] memory courseIds,
+        string[] memory courseNames,
+        uint256[] memory studentCounts,
+        uint256[] memory evaluationCounts,
+        uint256[] memory averageRatings
+    ) {
+        // 统计教师创建的课程数量
+        uint256 courseCounter = 0;
+        for (uint256 i = 0; i < courseCount; i++) {
+            if (courses[i].teacher == teacherAddress) {
+                courseCounter++;
+            }
+        }
+        
+        totalCourses = courseCounter;
+        
+        // 如果没有课程，返回空数据
+        if (courseCounter == 0) {
+            return (0, 0, 0, new uint256[](0), new string[](0), new uint256[](0), new uint256[](0), new uint256[](0));
+        }
+        
+        // 初始化返回数组
+        courseIds = new uint256[](courseCounter);
+        courseNames = new string[](courseCounter);
+        studentCounts = new uint256[](courseCounter);
+        evaluationCounts = new uint256[](courseCounter);
+        averageRatings = new uint256[](courseCounter);
+        
+        // 填充数据
+        uint256 index = 0;
+        uint256 studentsTotal = 0;
+        uint256 evalsTotal = 0;
+        
+        for (uint256 i = 0; i < courseCount; i++) {
+            if (courses[i].teacher == teacherAddress) {
+                Course memory course = courses[i];
+                courseIds[index] = i;
+                courseNames[index] = course.name;
+                studentCounts[index] = course.studentCount;
+                
+                // 获取评价数量
+                uint256[] memory evalIds = courseEvaluations[i];
+                evaluationCounts[index] = evalIds.length;
+                
+                // 计算平均评分
+                if (evalIds.length > 0) {
+                    uint256 totalRating = 0;
+                    for (uint256 j = 0; j < evalIds.length; j++) {
+                        totalRating += evaluations[evalIds[j]].rating;
+                    }
+                    averageRatings[index] = (totalRating * 100) / evalIds.length;
+                } else {
+                    averageRatings[index] = 0;
+                }
+                
+                // 累加总计
+                studentsTotal += course.studentCount;
+                evalsTotal += evalIds.length;
+                
+                index++;
+            }
+        }
+        
+        totalStudents = studentsTotal;
+        totalEvaluations = evalsTotal;
+    }
+    
+    /**
+     * @dev 检查学生是否已评价课程
+     * @param courseId 课程ID
+     * @param studentAddress 学生地址
+     * @return 是否已评价
+     */
+    function isStudentEvaluated(uint256 courseId, address studentAddress) external view courseExists(courseId) returns (bool) {
+        return hasEvaluated[courseId][studentAddress];
     }
 } 
