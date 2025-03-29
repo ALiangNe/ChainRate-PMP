@@ -78,7 +78,7 @@ export default function StudentIndexPage() {
               <h3>查看课程</h3>
               <p>浏览所有可评价的课程</p>
             </div>
-            <div className={styles.functionCard} onClick={() => router.push('/my-evaluations')}>
+            <div className={styles.functionCard} onClick={() => router.push('/studentMyEvaluation')}>
               <h3>我的评价</h3>
               <p>查看我已提交的课程评价</p>
             </div>

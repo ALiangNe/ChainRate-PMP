@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import ChainRateABI from '../../../contracts/ChainRate.json';
 import ChainRateAddress from '../../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
+import Image from 'next/image';
 
 export default function SubmitEvaluationPage({ params }) {
   const router = useRouter();
@@ -25,7 +26,11 @@ export default function SubmitEvaluationPage({ params }) {
   // 评价表单数据
   const [content, setContent] = useState('');
   const [rating, setRating] = useState(5);
+  const [teachingRating, setTeachingRating] = useState(5); // 新增：教学质量评分
+  const [contentRating, setContentRating] = useState(5); // 新增：内容设计评分
+  const [interactionRating, setInteractionRating] = useState(5); // 新增：师生互动评分
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [images, setImages] = useState([]); // 新增：评价图片
   
   // 状态管理
   const [loading, setLoading] = useState(true);
@@ -123,7 +128,7 @@ export default function SubmitEvaluationPage({ params }) {
         const studentJoined = await contractInstance.isStudentJoined(courseId, studentAddress);
         
         // 检查学生是否已评价课程
-        const hasEvaluated = await contractInstance.hasEvaluated(courseId, studentAddress);
+        const hasEvaluated = await contractInstance.isStudentEvaluated(courseId, studentAddress);
         
         // 检查当前是否在评价期间内
         const now = Math.floor(Date.now() / 1000);
@@ -164,6 +169,71 @@ export default function SubmitEvaluationPage({ params }) {
     }
   };
 
+  // 处理图片上传
+  const handleImageUpload = (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    
+    // 限制最多上传5张图片
+    if (images.length + files.length > 5) {
+      setError('最多只能上传5张图片');
+      return;
+    }
+    
+    // 验证文件类型和大小
+    const validFiles = files.filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+      
+      if (!isImage) {
+        setError('请只上传图片文件');
+        return false;
+      }
+      
+      if (!isValidSize) {
+        setError('图片大小不能超过5MB');
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
+    
+    // 为每个文件创建预览URL
+    const newImages = validFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+    
+    setImages(prev => [...prev, ...newImages]);
+    setError(''); // 清除错误信息
+  };
+  
+  // 删除已上传的图片
+  const removeImage = (index) => {
+    setImages(prev => {
+      const newImages = [...prev];
+      // 释放预览URL
+      URL.revokeObjectURL(newImages[index].preview);
+      newImages.splice(index, 1);
+      return newImages;
+    });
+  };
+
+  // 上传图片到IPFS或其他存储服务（实际应用中应实现）
+  const uploadImages = async () => {
+    // 这里应该实现实际的上传逻辑
+    // 例如上传到IPFS，并返回哈希值数组
+    
+    // 模拟上传，返回图片内容的哈希
+    // 在实际应用中，应该使用IPFS或其他存储服务
+    return Promise.all(images.map(async (image) => {
+      // 示例：返回随机哈希，实际应用中替换为真实上传逻辑
+      return `image_hash_${Math.random().toString(36).substring(2, 15)}`;
+    }));
+  };
+
   // 提交评价
   const handleSubmitEvaluation = async (e) => {
     e.preventDefault();
@@ -179,13 +249,22 @@ export default function SubmitEvaluationPage({ params }) {
         return;
       }
       
+      // 上传图片（如果有）
+      let imageHashes = [];
+      if (images.length > 0) {
+        imageHashes = await uploadImages();
+      }
+      
       // 调用合约提交评价
       // 在实际应用中，应将内容保存到IPFS或其他存储，然后将哈希值提交到区块链
-      // 这里简化处理，直接将内容作为哈希提交
       const tx = await contract.submitEvaluation(
         courseId,
         content, // 在实际应用中应该是内容的哈希值
+        imageHashes,
         rating,
+        teachingRating,
+        contentRating,
+        interactionRating,
         isAnonymous
       );
       
@@ -196,7 +275,7 @@ export default function SubmitEvaluationPage({ params }) {
       
       // 3秒后重定向回课程详情页
       setTimeout(() => {
-        router.push(`/courseDetail/${courseId}`);
+        router.push(`/studentCourseDetail/${courseId}`);
       }, 3000);
     } catch (err) {
       console.error("提交评价失败:", err);
@@ -212,9 +291,48 @@ export default function SubmitEvaluationPage({ params }) {
     }
   };
   
-  const handleRatingChange = (newRating) => {
-    setRating(newRating);
+  const handleRatingChange = (ratingType, newRating) => {
+    switch (ratingType) {
+      case 'overall':
+        setRating(newRating);
+        break;
+      case 'teaching':
+        setTeachingRating(newRating);
+        break;
+      case 'content':
+        setContentRating(newRating);
+        break;
+      case 'interaction':
+        setInteractionRating(newRating);
+        break;
+      default:
+        break;
+    }
   };
+  
+  // 渲染星级评分组件
+  const RatingStars = ({ value, onChange, label }) => (
+    <div className={styles.ratingGroup}>
+      <span className={styles.ratingLabel}>{label}</span>
+      <div className={styles.ratingContainer}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <button
+            key={star}
+            type="button"
+            className={styles.ratingButton}
+            onClick={() => onChange(star)}
+          >
+            <span 
+              className={`${styles.star} ${value >= star ? styles.starFilled : ''}`}
+            >
+              ★
+            </span>
+          </button>
+        ))}
+        <span className={styles.ratingText}>{value}/5</span>
+      </div>
+    </div>
+  );
   
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
@@ -288,27 +406,36 @@ export default function SubmitEvaluationPage({ params }) {
         </div>
         
         <form onSubmit={handleSubmitEvaluation} className={styles.evaluationForm}>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              课程评分
-              <div className={styles.ratingContainer}>
-                {[1, 2, 3, 4, 5].map(star => (
-                  <button
-                    key={star}
-                    type="button"
-                    className={styles.ratingButton}
-                    onClick={() => handleRatingChange(star)}
-                  >
-                    <span 
-                      className={`${styles.star} ${rating >= star ? styles.starFilled : ''}`}
-                    >
-                      ★
-                    </span>
-                  </button>
-                ))}
-                <span className={styles.ratingText}>{rating}/5</span>
-              </div>
-            </label>
+          <div className={styles.ratingsContainer}>
+            <h3 className={styles.sectionTitle}>多维度评分</h3>
+            
+            {/* 总体评分 */}
+            <RatingStars 
+              label="总体评分" 
+              value={rating} 
+              onChange={(val) => handleRatingChange('overall', val)} 
+            />
+            
+            {/* 教学质量评分 */}
+            <RatingStars 
+              label="教学质量" 
+              value={teachingRating} 
+              onChange={(val) => handleRatingChange('teaching', val)} 
+            />
+            
+            {/* 内容设计评分 */}
+            <RatingStars 
+              label="内容设计" 
+              value={contentRating} 
+              onChange={(val) => handleRatingChange('content', val)} 
+            />
+            
+            {/* 师生互动评分 */}
+            <RatingStars 
+              label="师生互动" 
+              value={interactionRating} 
+              onChange={(val) => handleRatingChange('interaction', val)} 
+            />
           </div>
           
           <div className={styles.formGroup}>
@@ -322,6 +449,49 @@ export default function SubmitEvaluationPage({ params }) {
                 rows={5}
                 required
               />
+            </label>
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              上传图片（可选，最多5张）
+              <div className={styles.imageUploadContainer}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className={styles.imageInput}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" className={styles.imageUploadButton}>
+                  选择图片
+                </label>
+                <span className={styles.imageCount}>
+                  已选择 {images.length}/5 张图片
+                </span>
+              </div>
+              
+              {images.length > 0 && (
+                <div className={styles.imagePreviewContainer}>
+                  {images.map((image, index) => (
+                    <div key={index} className={styles.imagePreview}>
+                      <img 
+                        src={image.preview} 
+                        alt={`上传图片 ${index + 1}`}
+                        className={styles.previewImage}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className={styles.removeImageButton}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </label>
           </div>
           
