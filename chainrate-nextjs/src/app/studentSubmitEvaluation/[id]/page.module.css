@@ -153,6 +153,7 @@
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .cancelButton {
@@ -338,4 +339,12 @@
   .cancelButton, .submitButton {
     width: 100%;
   }
+}
+
+.footer {
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.9rem;
 } 

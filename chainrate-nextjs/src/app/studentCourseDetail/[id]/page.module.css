@@ -89,6 +89,7 @@
   border-radius: 50px;
   font-size: 0.9rem;
   font-weight: 500;
+  align-self: flex-start;
 }
 
 .statusActive {
@@ -301,4 +302,12 @@
   .courseStatus {
     align-self: flex-start;
   }
+}
+
+.footer {
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.9rem;
 } 

@@ -225,6 +225,14 @@
   cursor: not-allowed;
 }
 
+.footer {
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .courseGrid {
