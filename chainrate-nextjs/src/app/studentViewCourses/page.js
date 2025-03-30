@@ -6,9 +6,54 @@ import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
+import React from 'react';
+import { 
+  UserOutlined, 
+  BookOutlined, 
+  CommentOutlined, 
+  FormOutlined, 
+  LogoutOutlined,
+  SearchOutlined,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  StarOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
+  LoadingOutlined
+} from '@ant-design/icons';
+import { 
+  Breadcrumb, 
+  Layout, 
+  Menu, 
+  ConfigProvider, 
+  theme, 
+  Card, 
+  Row, 
+  Col, 
+  Input, 
+  Button, 
+  Tag, 
+  Empty, 
+  Spin, 
+  Space,
+  Alert,
+  Tooltip,
+  Badge,
+  Divider
+} from 'antd';
+
+const { Header, Content, Sider } = Layout;
+const { Meta } = Card;
+const { Search } = Input;
 
 export default function StudentViewCoursesPage() {
   const router = useRouter();
+  
+  // 提前调用 useToken，确保Hook顺序一致
+  const { token } = theme.useToken();
+  const { colorBgContainer, borderRadiusLG } = token;
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -39,24 +84,29 @@ export default function StudentViewCoursesPage() {
   useEffect(() => {
     // 检查用户是否已登录并且是学生角色
     const checkUserAuth = () => {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
-      
-      if (!isLoggedIn || userRole !== 'student') {
-        router.push('/login');
-        return;
-      }
+      try {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+        
+        if (!isLoggedIn || userRole !== 'student') {
+          router.push('/login');
+          return;
+        }
 
-      // 获取用户信息
-      setUserData({
-        isLoggedIn: true,
-        address: localStorage.getItem('userAddress') || '',
-        name: localStorage.getItem('userName') || '',
-        role: userRole
-      });
-      
-      // 初始化Web3连接
-      initWeb3();
+        // 获取用户信息
+        setUserData({
+          isLoggedIn: true,
+          address: localStorage.getItem('userAddress') || '',
+          name: localStorage.getItem('userName') || '',
+          role: userRole
+        });
+        
+        // 初始化Web3连接
+        initWeb3();
+      } catch (error) {
+        console.error("Authentication check error:", error);
+        setLoading(false);
+      }
     };
 
     const initWeb3 = async () => {
@@ -192,8 +242,8 @@ export default function StudentViewCoursesPage() {
   }, [searchTerm, courses]);
   
   // 处理搜索输入
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
   };
   
   // 加入课程
@@ -253,132 +303,273 @@ export default function StudentViewCoursesPage() {
   
   // 格式化日期时间
   const formatDateTime = (date) => {
-    if (!date) return 'N/A';
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
   
-  // 检查课程评价状态
+  // 获取课程状态
   const getCourseStatus = (course) => {
     const now = new Date();
-    
-    if (now < course.startTime) {
-      return { status: 'upcoming', text: '未开始', className: styles.statusUpcoming };
-    } else if (now >= course.startTime && now <= course.endTime) {
-      return { status: 'active', text: '评价中', className: styles.statusActive };
-    } else {
-      return { status: 'ended', text: '已结束', className: styles.statusEnded };
-    }
+    if (now < course.startTime) return { status: '即将开始', color: 'blue' };
+    if (now >= course.startTime && now <= course.endTime) return { status: '进行中', color: 'green' };
+    return { status: '已结束', color: 'default' };
   };
   
+  // 返回
   const goBack = () => {
     router.push('/studentIndex');
+  };
+
+  // 侧边栏菜单项
+  const siderItems = [
+    {
+      key: 'sub1',
+      icon: React.createElement(UserOutlined),
+      label: '个人中心',
+      children: [
+        {
+          key: '1',
+          label: '个人信息',
+          onClick: () => router.push('/studentIndex')
+        }
+      ],
+    },
+    {
+      key: 'sub2',
+      icon: React.createElement(BookOutlined),
+      label: '课程管理',
+      children: [
+        {
+          key: '2',
+          label: '查看课程',
+          onClick: () => router.push('/studentViewCourses')
+        }
+      ],
+    },
+    {
+      key: 'sub3',
+      icon: React.createElement(CommentOutlined),
+      label: '评价管理',
+      children: [
+        {
+          key: '3',
+          label: '我的评价',
+          onClick: () => router.push('/studentMyEvaluation')
+        },
+        {
+          key: '4',
+          label: '提交评价',
+          onClick: () => router.push('/submit-evaluation')
+        }
+      ],
+    }
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAddress');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userRoleHash');
+    router.push('/login');
   };
 
   if (loading) {
     return <div className={styles.container}>正在加载...</div>;
   }
-
+  
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>可选课程列表</h1>
-        <button onClick={goBack} className={styles.backButton}>返回首页</button>
-      </header>
-
-      <main className={styles.main}>
-        <div className={styles.courseContainer}>
-          <div className={styles.searchBox}>
-            <input 
-              type="text" 
-              placeholder="搜索课程名称或教师..." 
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className={styles.searchInput}
-            />
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1a73e8',
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className={styles.logo} />
+            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）
+            </div>
           </div>
-          
-          {error && (
-            <div className={styles.errorBox}>
-              {error}
-            </div>
-          )}
-          
-          {successMessage && (
-            <div className={styles.successBox}>
-              {successMessage}
-            </div>
-          )}
-          
-          {loadingCourses ? (
-            <div className={styles.loadingBox}>正在加载课程数据...</div>
-          ) : filteredCourses.length === 0 ? (
-            <div className={styles.emptyBox}>
-              <p>未找到课程</p>
-              {searchTerm ? (
-                <p>尝试使用其他关键词搜索</p>
-              ) : (
-                <p>当前没有可选的课程，请稍后再来查看</p>
-              )}
-            </div>
-          ) : (
-            <div className={styles.courseGrid}>
-              {filteredCourses.map(course => {
-                const courseStatus = getCourseStatus(course);
+          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <Tooltip title="退出登录">
+              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
+            </Tooltip>
+          </div>
+        </Header>
+        <Layout>
+          <Sider width={200} style={{ background: colorBgContainer }}>
+            <Menu
+              mode="inline"
+              defaultSelectedKeys={['2']}
+              defaultOpenKeys={['sub2']}
+              style={{ height: '100%', borderRight: 0 }}
+              items={siderItems}
+            />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb
+              items={[
+                { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
+                { title: '查看课程' }
+              ]}
+              style={{ margin: '16px 0' }}
+            />
+            <Content
+              style={{
+                padding: 24,
+                margin: 0,
+                minHeight: 280,
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
+              }}
+            >
+              <div className={styles.courseContainer}>
+                <div style={{ marginBottom: '20px' }}>
+                  <Search
+                    placeholder="搜索课程名称或教师"
+                    allowClear
+                    enterButton={<><SearchOutlined /> 搜索</>}
+                    size="large"
+                    onSearch={handleSearchChange}
+                    style={{ maxWidth: '600px' }}
+                  />
+                </div>
+
+                {error && 
+                  <Alert
+                    message="错误"
+                    description={error}
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: '20px' }}
+                    closable
+                    onClose={() => setError('')}
+                  />
+                }
                 
-                return (
-                  <div key={course.id} className={styles.courseCard}>
-                    <div className={styles.courseHeader}>
-                      <h3 className={styles.courseName}>{course.name}</h3>
-                      <span className={`${styles.courseStatus} ${courseStatus.className}`}>
-                        {courseStatus.text}
-                      </span>
-                    </div>
-                    <div className={styles.courseBody}>
-                      <p><strong>教师:</strong> {course.teacherName}</p>
-                      <p><strong>评价开始:</strong> {formatDateTime(course.startTime)}</p>
-                      <p><strong>评价结束:</strong> {formatDateTime(course.endTime)}</p>
-                      <p><strong>已选人数:</strong> {course.studentCount}</p>
-                      {course.averageRating > 0 && (
-                        <p><strong>平均评分:</strong> {course.averageRating.toFixed(1)}/5</p>
-                      )}
-                    </div>
-                    <div className={styles.courseActions}>
-                      <button 
-                        onClick={() => handleViewCourseDetail(course.id)}
-                        className={styles.viewButton}
-                      >
-                        查看详情
-                      </button>
-                      {course.isJoined ? (
-                        <button 
-                          className={styles.joinedButton}
-                          disabled
-                        >
-                          已加入
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleJoinCourse(course.id)}
-                          className={styles.joinButton}
-                          disabled={joinCoursePending[course.id]}
-                        >
-                          {joinCoursePending[course.id] ? '加入中...' : '加入课程'}
-                        </button>
-                      )}
-                    </div>
+                {successMessage && 
+                  <Alert
+                    message="成功"
+                    description={successMessage}
+                    type="success"
+                    showIcon
+                    style={{ marginBottom: '20px' }}
+                    closable
+                    onClose={() => setSuccessMessage('')}
+                  />
+                }
+
+                {loadingCourses ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+                    <p style={{ marginTop: '16px' }}>正在加载课程列表...</p>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ) : filteredCourses.length === 0 ? (
+                  <Empty 
+                    description="没有找到符合条件的课程" 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    style={{ margin: '40px 0' }}
+                  />
+                ) : (
+                  <Row gutter={[16, 16]}>
+                    {filteredCourses.map(course => {
+                      const courseStatus = getCourseStatus(course);
+                      
+                      return (
+                        <Col xs={24} sm={12} md={8} lg={8} xl={6} key={course.id}>
+                          <Card
+                            hoverable
+                            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                            cover={
+                              <div style={{ 
+                                height: '8px', 
+                                background: courseStatus.color === 'default' ? '#d9d9d9' : 
+                                            courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
+                              }} />
+                            }
+                            actions={[
+                              <Button 
+                                key="view" 
+                                icon={<BookOutlined />}
+                                onClick={() => handleViewCourseDetail(course.id)}
+                              >
+                                查看详情
+                              </Button>,
+                              course.isJoined ? (
+                                <Button 
+                                  key="joined" 
+                                  type="primary" 
+                                  ghost 
+                                  disabled 
+                                  icon={<CheckCircleOutlined />}
+                                >
+                                  已加入
+                                </Button>
+                              ) : (
+                                <Button 
+                                  key="join" 
+                                  type="primary" 
+                                  loading={joinCoursePending[course.id]} 
+                                  onClick={() => handleJoinCourse(course.id)}
+                                  icon={<TeamOutlined />}
+                                >
+                                  加入课程
+                                </Button>
+                              )
+                            ]}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                              <Meta
+                                title={<span style={{ fontSize: '16px', fontWeight: 'bold' }}>{course.name}</span>}
+                              />
+                              <Tag color={courseStatus.color}>{courseStatus.status}</Tag>
+                            </div>
+                            
+                            <div style={{ flex: 1 }}>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <UserOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
+                                <span>{course.teacherName}</span>
+                              </div>
+                              
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <CalendarOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
+                                <span>{formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</span>
+                              </div>
+                              
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <TeamOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
+                                <span>学生数: {course.studentCount}</span>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <StarOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
+                                <span>评分: {course.averageRating.toFixed(1)}</span>
+                              </div>
+                            </div>
+                          </Card>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                )}
+              </div>
+            </Content>
+          </Layout>
+        </Layout>
+        <div className={styles.footer}>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
         </div>
-      </main>
-    </div>
+      </Layout>
+    </ConfigProvider>
   );
 } 
