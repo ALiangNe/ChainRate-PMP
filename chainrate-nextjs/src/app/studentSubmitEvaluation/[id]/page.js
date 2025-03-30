@@ -293,75 +293,50 @@ export default function SubmitEvaluationPage({ params }) {
       
       // 确保参数类型正确
       const courseIdNumber = Number(courseId);
-      const ratingNumber = Math.round(rating * 100); // 确保是整数
-      const teachingRatingNumber = Math.round(teachingRating * 100);
-      const contentRatingNumber = Math.round(contentRating * 100);
-      const interactionRatingNumber = Math.round(interactionRating * 100);
+      // 评分应该是uint8类型(1-5)，不需要乘以100
+      const ratingValue = Math.round(rating);
+      const teachingRatingValue = Math.round(teachingRating);
+      const contentRatingValue = Math.round(contentRating);
+      const interactionRatingValue = Math.round(interactionRating);
+      
+      // 创建空的字符串数组 - 对应合约中的string[]类型
+      const imageHashes = images.length > 0 
+        ? images.map((_, index) => `image_hash_${index}_${Date.now()}`) // 临时模拟哈希值
+        : ["empty_image_hash"]; // 空字符串数组
       
       console.log("提交参数:", {
         courseIdNumber,
         content,
-        ratingNumber,
-        teachingRatingNumber,
-        contentRatingNumber,
-        interactionRatingNumber,
+        imageHashes,     // 第3个参数是imageHashes
+        ratingValue,     // 第4个参数是rating (1-5)
+        teachingRatingValue,
+        contentRatingValue,
+        interactionRatingValue,
         isAnonymous
       });
       
-      // 修改合约调用方式，使用对象形式并省略imageHashes参数
-      // 尝试方案1：不传递图片哈希参数
-      try {
-        const tx = await contract.submitEvaluation(
-          courseIdNumber,
-          content,
-          ratingNumber,
-          teachingRatingNumber,
-          contentRatingNumber,
-          interactionRatingNumber,
-          isAnonymous
-        );
+      // 正确的参数顺序，与合约定义匹配
+      const tx = await contract.submitEvaluation(
+        courseIdNumber,
+        content,
+        imageHashes,     // 第3个参数是imageHashes
+        ratingValue,     // 第4个参数是rating (1-5)
+        teachingRatingValue,
+        contentRatingValue,
+        interactionRatingValue,
+        isAnonymous
+      );
         
-        // 等待交易确认
-        await tx.wait();
+      // 等待交易确认
+      await tx.wait();
         
-        // 显示成功消息
-        setSuccessMessage('评价提交成功！');
+      // 显示成功消息
+      setSuccessMessage('评价提交成功！');
         
-        // 3秒后重定向回课程详情页
-        setTimeout(() => {
-          router.push(`/studentCourseDetail/${courseId}`);
-        }, 3000);
-      } catch (innerErr) {
-        console.error("方案1失败:", innerErr);
-        
-        // 如果方案1失败，尝试方案2：使用格式化的空数组
-        try {
-          const tx = await contract.submitEvaluation(
-            courseIdNumber,
-            content,
-            ratingNumber,
-            teachingRatingNumber,
-            contentRatingNumber,
-            interactionRatingNumber,
-            isAnonymous,
-            []
-          );
-          
-          // 等待交易确认
-          await tx.wait();
-          
-          // 显示成功消息
-          setSuccessMessage('评价提交成功！');
-          
-          // 3秒后重定向回课程详情页
-          setTimeout(() => {
-            router.push(`/studentCourseDetail/${courseId}`);
-          }, 3000);
-        } catch (innerErr2) {
-          console.error("方案2失败:", innerErr2);
-          throw innerErr2; // 两种方案都失败，抛出最后的错误
-        }
-      }
+      // 3秒后重定向回课程详情页
+      setTimeout(() => {
+        router.push(`/studentCourseDetail/${courseId}`);
+      }, 3000);
     } catch (err) {
       console.error("提交评价失败:", err);
       
