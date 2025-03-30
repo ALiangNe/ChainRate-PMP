@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import styles from './page.module.css';
 import React from 'react';
 import { 
@@ -179,7 +180,15 @@ export default function TeacherIndexPage() {
       <Layout style={{ minHeight: '100vh' }}>
         <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className={styles.logo} />
+            <div className={styles.logo}>
+              <Image 
+                src="/images/logo1.png" 
+                alt="链评系统Logo" 
+                width={40} 
+                height={40}
+                style={{ borderRadius: '6px' }}
+              />
+            </div>
             <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
               链评系统（ChainRate）- 教师端
             </div>
