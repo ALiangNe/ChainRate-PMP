@@ -96,4 +96,34 @@
   text-align: center;
   color: #5f6368;
   font-size: 0.9rem;
+}
+
+/* Ant Design 相关样式 */
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.functionCardEnhanced {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.functionCardEnhanced:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(52, 168, 83, 0.2);
+}
+
+/* 点击效果 */
+.clickable-breadcrumb {
+  cursor: pointer;
+  color: #34a853;
+}
+
+.clickable-breadcrumb:hover {
+  color: #2d964a;
 } 
