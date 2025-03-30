@@ -7,9 +7,54 @@ import Image from 'next/image';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
+import React from 'react';
+import { 
+  UserOutlined, 
+  BookOutlined, 
+  CommentOutlined, 
+  FormOutlined, 
+  LogoutOutlined,
+  SearchOutlined,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  StarOutlined,
+  StarFilled,
+  ClockCircleOutlined,
+  EyeOutlined,
+  FileImageOutlined,
+  EnvironmentOutlined
+} from '@ant-design/icons';
+import { 
+  Breadcrumb, 
+  Layout, 
+  Menu, 
+  ConfigProvider, 
+  theme, 
+  Card, 
+  Row, 
+  Col, 
+  Button, 
+  Tag, 
+  Empty, 
+  Spin, 
+  Space,
+  Alert,
+  Tooltip,
+  Divider,
+  Typography,
+  Rate
+} from 'antd';
+
+const { Header, Content, Sider } = Layout;
+const { Title, Text, Paragraph } = Typography;
 
 export default function StudentMyEvaluationsPage() {
   const router = useRouter();
+  
+  // 提前调用 useToken，确保Hook顺序一致
+  const { token } = theme.useToken();
+  const { colorBgContainer, borderRadiusLG, colorPrimary } = token;
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -34,24 +79,29 @@ export default function StudentMyEvaluationsPage() {
   useEffect(() => {
     // 检查用户是否已登录并且是学生角色
     const checkUserAuth = () => {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
-      
-      if (!isLoggedIn || userRole !== 'student') {
-        router.push('/login');
-        return;
-      }
+      try {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+        
+        if (!isLoggedIn || userRole !== 'student') {
+          router.push('/login');
+          return;
+        }
 
-      // 获取用户信息
-      setUserData({
-        isLoggedIn: true,
-        address: localStorage.getItem('userAddress') || '',
-        name: localStorage.getItem('userName') || '',
-        role: userRole
-      });
-      
-      // 初始化Web3连接
-      initWeb3();
+        // 获取用户信息
+        setUserData({
+          isLoggedIn: true,
+          address: localStorage.getItem('userAddress') || '',
+          name: localStorage.getItem('userName') || '',
+          role: userRole
+        });
+        
+        // 初始化Web3连接
+        initWeb3();
+      } catch (error) {
+        console.error("Authentication check error:", error);
+        setLoading(false);
+      }
     };
 
     const initWeb3 = async () => {
@@ -169,30 +219,13 @@ export default function StudentMyEvaluationsPage() {
 
   // 格式化日期时间
   const formatDateTime = (date) => {
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // 渲染星级评分
-  const renderStars = (rating) => {
-    return (
-      <div className={styles.ratingDisplay}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span 
-            key={star} 
-            className={star <= rating ? styles.starFilled : styles.star}
-          >
-            ★
-          </span>
-        ))}
-        <span className={styles.ratingValue}>({rating}/5)</span>
-      </div>
-    );
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   // 查看课程详情
@@ -205,112 +238,263 @@ export default function StudentMyEvaluationsPage() {
     router.push('/studentViewCourses');
   };
 
+  // 侧边栏菜单项
+  const siderItems = [
+    {
+      key: 'sub1',
+      icon: React.createElement(UserOutlined),
+      label: '个人中心',
+      children: [
+        {
+          key: '1',
+          label: '个人信息',
+          onClick: () => router.push('/studentIndex')
+        }
+      ],
+    },
+    {
+      key: 'sub2',
+      icon: React.createElement(BookOutlined),
+      label: '课程管理',
+      children: [
+        {
+          key: '2',
+          label: '查看课程',
+          onClick: () => router.push('/studentViewCourses')
+        }
+      ],
+    },
+    {
+      key: 'sub3',
+      icon: React.createElement(CommentOutlined),
+      label: '评价管理',
+      children: [
+        {
+          key: '3',
+          label: '我的评价',
+          onClick: () => router.push('/studentMyEvaluation')
+        },
+        {
+          key: '4',
+          label: '提交评价',
+          onClick: () => router.push('/submit-evaluation')
+        }
+      ],
+    }
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAddress');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userRoleHash');
+    router.push('/login');
+  };
+
   // 显示加载中
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSpinner}></div>
-          <p>加载中，请稍候...</p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" tip="加载中，请稍候..." />
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>我的课程评价</h1>
-        <button className={styles.backButton} onClick={goBack}>
-          返回课程列表
-        </button>
-      </div>
-      
-      {error && <div className={styles.errorBox}>{error}</div>}
-      
-      <div className={styles.main}>
-        {evaluations.length === 0 ? (
-          <div className={styles.noEvaluations}>
-            <p>您尚未提交任何课程评价。</p>
-            <button 
-              className={styles.actionButton} 
-              onClick={() => router.push('/studentViewCourses')}
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1a73e8',
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className={styles.logo} />
+            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）
+            </div>
+          </div>
+          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <Tooltip title="退出登录">
+              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
+            </Tooltip>
+          </div>
+        </Header>
+        <Layout>
+          <Sider width={200} style={{ background: colorBgContainer }}>
+            <Menu
+              mode="inline"
+              defaultSelectedKeys={['3']}
+              defaultOpenKeys={['sub3']}
+              style={{ height: '100%', borderRight: 0 }}
+              items={siderItems}
+            />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb
+              items={[
+                { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
+                { title: '我的评价' }
+              ]}
+              style={{ margin: '16px 0' }}
+            />
+            <Content
+              style={{
+                padding: 24,
+                margin: 0,
+                minHeight: 280,
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
+              }}
             >
-              浏览可评价课程
-            </button>
-          </div>
-        ) : (
-          <div className={styles.evaluationsList}>
-            {evaluations.map((evaluation, index) => (
-              <div key={index} className={styles.evaluationCard}>
-                <div className={styles.evaluationHeader}>
-                  <h2 className={styles.courseName}>{evaluation.courseName}</h2>
-                  <button 
-                    className={styles.viewCourseButton}
-                    onClick={() => viewCourseDetail(evaluation.courseId)}
-                  >
-                    查看课程
-                  </button>
+              {error && (
+                <Alert
+                  message="错误"
+                  description={error}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setError('')}
+                />
+              )}
+              
+              {evaluations.length === 0 ? (
+                <Empty
+                  description={
+                    <span>
+                      您尚未提交任何课程评价
+                      <br />
+                      <Button 
+                        type="primary" 
+                        style={{ marginTop: '16px' }}
+                        onClick={() => router.push('/studentViewCourses')}
+                      >
+                        浏览可评价课程
+                      </Button>
+                    </span>
+                  }
+                  style={{ margin: '40px 0' }}
+                />
+              ) : (
+                <div>
+                  <Title level={4} style={{ marginBottom: '20px' }}>我的课程评价记录</Title>
+                  <Row gutter={[16, 16]}>
+                    {evaluations.map((evaluation, index) => (
+                      <Col xs={24} key={index}>
+                        <Card 
+                          title={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text strong style={{ fontSize: '18px' }}>{evaluation.courseName}</Text>
+                              <Button 
+                                type="primary" 
+                                icon={<EyeOutlined />} 
+                                size="small"
+                                onClick={() => viewCourseDetail(evaluation.courseId)}
+                              >
+                                查看课程
+                              </Button>
+                            </div>
+                          }
+                          style={{ marginBottom: '16px' }}
+                        >
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>教师: {evaluation.teacherName}</Text>
+                              </div>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <ClockCircleOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>提交时间: {formatDateTime(evaluation.timestamp)}</Text>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <TeamOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>匿名评价: {evaluation.isAnonymous ? '是' : '否'}</Text>
+                              </div>
+                            </Col>
+                            <Col xs={24} md={12}>
+                              <Card size="small" title="评分详情" style={{ marginBottom: '16px' }}>
+                                <Row gutter={[8, 8]}>
+                                  <Col span={12}>
+                                    <Text>总体评分:</Text>
+                                  </Col>
+                                  <Col span={12}>
+                                    <Rate disabled defaultValue={evaluation.rating} />
+                                  </Col>
+                                  <Col span={12}>
+                                    <Text>教学评分:</Text>
+                                  </Col>
+                                  <Col span={12}>
+                                    <Rate disabled defaultValue={evaluation.teachingRating} />
+                                  </Col>
+                                  <Col span={12}>
+                                    <Text>内容评分:</Text>
+                                  </Col>
+                                  <Col span={12}>
+                                    <Rate disabled defaultValue={evaluation.contentRating} />
+                                  </Col>
+                                  <Col span={12}>
+                                    <Text>互动评分:</Text>
+                                  </Col>
+                                  <Col span={12}>
+                                    <Rate disabled defaultValue={evaluation.interactionRating} />
+                                  </Col>
+                                </Row>
+                              </Card>
+                            </Col>
+                          </Row>
+                          
+                          <Divider orientation="left">评价内容</Divider>
+                          <Paragraph>
+                            {evaluation.content || '无评价内容'}
+                          </Paragraph>
+                          
+                          {evaluation.imageHashes && evaluation.imageHashes.length > 0 && (
+                            <>
+                              <Divider orientation="left">附件图片</Divider>
+                              <Row gutter={[16, 16]}>
+                                {evaluation.imageHashes.map((hash, idx) => (
+                                  <Col key={idx} xs={24} sm={12} md={8} lg={6}>
+                                    <Card 
+                                      size="small" 
+                                      style={{ textAlign: 'center' }}
+                                      cover={
+                                        <div style={{ 
+                                          height: 150, 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          justifyContent: 'center',
+                                          background: '#f5f5f5' 
+                                        }}>
+                                          <FileImageOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
+                                        </div>
+                                      }
+                                    >
+                                      <Text type="secondary">附件 {idx + 1}</Text>
+                                    </Card>
+                                  </Col>
+                                ))}
+                              </Row>
+                            </>
+                          )}
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
                 </div>
-                
-                <div className={styles.evaluationInfo}>
-                  <p className={styles.teacherInfo}>
-                    <span className={styles.label}>授课教师:</span> {evaluation.teacherName}
-                  </p>
-                  <p className={styles.timestampInfo}>
-                    <span className={styles.label}>提交时间:</span> {formatDateTime(evaluation.timestamp)}
-                  </p>
-                  <p className={styles.anonymousInfo}>
-                    <span className={styles.label}>匿名提交:</span> {evaluation.isAnonymous ? '是' : '否'}
-                  </p>
-                </div>
-                
-                <div className={styles.ratingsSection}>
-                  <div className={styles.ratingItem}>
-                    <span className={styles.ratingLabel}>总体评分:</span>
-                    {renderStars(evaluation.rating)}
-                  </div>
-                  <div className={styles.ratingItem}>
-                    <span className={styles.ratingLabel}>教学质量:</span>
-                    {renderStars(evaluation.teachingRating)}
-                  </div>
-                  <div className={styles.ratingItem}>
-                    <span className={styles.ratingLabel}>内容设计:</span>
-                    {renderStars(evaluation.contentRating)}
-                  </div>
-                  <div className={styles.ratingItem}>
-                    <span className={styles.ratingLabel}>师生互动:</span>
-                    {renderStars(evaluation.interactionRating)}
-                  </div>
-                </div>
-                
-                <div className={styles.contentSection}>
-                  <h3>评价内容</h3>
-                  <p>{evaluation.content}</p>
-                </div>
-                
-                {evaluation.imageHashes && evaluation.imageHashes.length > 0 && (
-                  <div className={styles.imagesSection}>
-                    <h3>评价图片</h3>
-                    <div className={styles.imagesGrid}>
-                      {evaluation.imageHashes.map((hash, imgIndex) => (
-                        <div key={imgIndex} className={styles.imageWrapper}>
-                          {/* 在实际应用中，应该从IPFS或其他存储服务获取图片 */}
-                          {/* 这里使用占位图像示例 */}
-                          <div className={styles.placeholderImage}>
-                            <span>图片 {imgIndex + 1}</span>
-                            <small>{hash.substring(0, 10)}...</small>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+              )}
+            </Content>
+          </Layout>
+        </Layout>
+        <div className={styles.footer}>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+        </div>
+      </Layout>
+    </ConfigProvider>
   );
 } 
