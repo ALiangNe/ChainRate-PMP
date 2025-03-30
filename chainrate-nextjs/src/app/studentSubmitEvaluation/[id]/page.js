@@ -7,10 +7,61 @@ import ChainRateABI from '../../../contracts/ChainRate.json';
 import ChainRateAddress from '../../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
 import Image from 'next/image';
+import React from 'react';
+import { 
+  UserOutlined, 
+  BookOutlined, 
+  CommentOutlined, 
+  FormOutlined, 
+  LogoutOutlined,
+  TeamOutlined,
+  StarOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  ArrowLeftOutlined,
+  SendOutlined,
+  FileTextOutlined,
+  UploadOutlined,
+  DeleteOutlined,
+  StarFilled
+} from '@ant-design/icons';
+import { 
+  Breadcrumb, 
+  Layout, 
+  Menu, 
+  ConfigProvider, 
+  theme, 
+  Card, 
+  Row, 
+  Col, 
+  Button, 
+  Tag, 
+  Empty, 
+  Spin, 
+  Alert,
+  Tooltip,
+  Divider,
+  Typography,
+  Rate,
+  Input,
+  Form,
+  Upload,
+  Checkbox,
+  Space,
+  message
+} from 'antd';
+
+const { Header, Content, Sider } = Layout;
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 export default function SubmitEvaluationPage({ params }) {
   const router = useRouter();
   const courseId = params.id;
+  
+  // 提前调用 useToken，确保Hook顺序一致
+  const { token } = theme.useToken();
+  const { colorBgContainer, borderRadiusLG, colorPrimary } = token;
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -46,24 +97,29 @@ export default function SubmitEvaluationPage({ params }) {
   useEffect(() => {
     // 检查用户是否已登录并且是学生角色
     const checkUserAuth = () => {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
-      
-      if (!isLoggedIn || userRole !== 'student') {
-        router.push('/login');
-        return;
-      }
+      try {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+        
+        if (!isLoggedIn || userRole !== 'student') {
+          router.push('/login');
+          return;
+        }
 
-      // 获取用户信息
-      setUserData({
-        isLoggedIn: true,
-        address: localStorage.getItem('userAddress') || '',
-        name: localStorage.getItem('userName') || '',
-        role: userRole
-      });
-      
-      // 初始化Web3连接
-      initWeb3();
+        // 获取用户信息
+        setUserData({
+          isLoggedIn: true,
+          address: localStorage.getItem('userAddress') || '',
+          name: localStorage.getItem('userName') || '',
+          role: userRole
+        });
+        
+        // 初始化Web3连接
+        initWeb3();
+      } catch (error) {
+        console.error("Authentication check error:", error);
+        setLoading(false);
+      }
     };
 
     const initWeb3 = async () => {
@@ -128,7 +184,7 @@ export default function SubmitEvaluationPage({ params }) {
         const studentJoined = await contractInstance.isStudentJoined(courseId, studentAddress);
         
         // 检查学生是否已评价课程
-        const hasEvaluated = await contractInstance.isStudentEvaluated(courseId, studentAddress);
+        const hasEvaluated = await contractInstance.hasEvaluated(courseId, studentAddress);
         
         // 检查当前是否在评价期间内
         const now = Math.floor(Date.now() / 1000);
@@ -170,61 +226,47 @@ export default function SubmitEvaluationPage({ params }) {
   };
 
   // 处理图片上传
-  const handleImageUpload = (event) => {
-    const files = Array.from(event.target.files);
-    if (files.length === 0) return;
-    
+  const handleImageUpload = (info) => {
+    const { fileList } = info;
     // 限制最多上传5张图片
-    if (images.length + files.length > 5) {
-      setError('最多只能上传5张图片');
-      return;
-    }
+    const filteredFileList = fileList.slice(0, 5);
     
-    // 验证文件类型和大小
-    const validFiles = files.filter(file => {
-      const isImage = file.type.startsWith('image/');
-      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
-      
-      if (!isImage) {
-        setError('请只上传图片文件');
-        return false;
+    const newImages = filteredFileList.map(file => {
+      if (file.originFileObj) {
+        if (!file.url && !file.preview) {
+          file.preview = URL.createObjectURL(file.originFileObj);
+        }
+        return {
+          file: file.originFileObj,
+          preview: file.preview || file.url,
+          uid: file.uid
+        };
       }
-      
-      if (!isValidSize) {
-        setError('图片大小不能超过5MB');
-        return false;
-      }
-      
-      return true;
+      return file;
     });
     
-    if (validFiles.length === 0) return;
+    setImages(newImages);
     
-    // 为每个文件创建预览URL
-    const newImages = validFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    
-    setImages(prev => [...prev, ...newImages]);
-    setError(''); // 清除错误信息
+    // 如果尝试上传超过5张
+    if (fileList.length > 5) {
+      message.warning('最多只能上传5张图片');
+    }
   };
   
-  // 删除已上传的图片
-  const removeImage = (index) => {
-    setImages(prev => {
-      const newImages = [...prev];
-      // 释放预览URL
-      URL.revokeObjectURL(newImages[index].preview);
-      newImages.splice(index, 1);
-      return newImages;
-    });
+  // 处理删除图片
+  const handleImageRemove = (file) => {
+    const filteredImages = images.filter(image => image.uid !== file.uid);
+    setImages(filteredImages);
   };
-
+  
   // 上传图片到IPFS或其他存储服务（实际应用中应实现）
   const uploadImages = async () => {
     // 这里应该实现实际的上传逻辑
     // 例如上传到IPFS，并返回哈希值数组
+    
+    if (images.length === 0) {
+      return []; // 确保返回空数组
+    }
     
     // 模拟上传，返回图片内容的哈希
     // 在实际应用中，应该使用IPFS或其他存储服务
@@ -235,8 +277,8 @@ export default function SubmitEvaluationPage({ params }) {
   };
 
   // 提交评价
-  const handleSubmitEvaluation = async (e) => {
-    e.preventDefault();
+  const handleSubmitEvaluation = async (formValues) => {
+    // 不再需要e.preventDefault()
     setError('');
     setSuccessMessage('');
     setSubmitting(true);
@@ -249,40 +291,83 @@ export default function SubmitEvaluationPage({ params }) {
         return;
       }
       
-      // 上传图片（如果有）
-      let imageHashes = [];
-      if (images.length > 0) {
-        imageHashes = await uploadImages();
-      }
+      // 确保参数类型正确
+      const courseIdNumber = Number(courseId);
+      const ratingNumber = Math.round(rating * 100); // 确保是整数
+      const teachingRatingNumber = Math.round(teachingRating * 100);
+      const contentRatingNumber = Math.round(contentRating * 100);
+      const interactionRatingNumber = Math.round(interactionRating * 100);
       
-      // 调用合约提交评价
-      // 在实际应用中，应将内容保存到IPFS或其他存储，然后将哈希值提交到区块链
-      const tx = await contract.submitEvaluation(
-        courseId,
-        content, // 在实际应用中应该是内容的哈希值
-        imageHashes,
-        rating,
-        teachingRating,
-        contentRating,
-        interactionRating,
+      console.log("提交参数:", {
+        courseIdNumber,
+        content,
+        ratingNumber,
+        teachingRatingNumber,
+        contentRatingNumber,
+        interactionRatingNumber,
         isAnonymous
-      );
+      });
       
-      // 等待交易确认
-      await tx.wait();
-      
-      setSuccessMessage('评价提交成功！');
-      
-      // 3秒后重定向回课程详情页
-      setTimeout(() => {
-        router.push(`/studentCourseDetail/${courseId}`);
-      }, 3000);
+      // 修改合约调用方式，使用对象形式并省略imageHashes参数
+      // 尝试方案1：不传递图片哈希参数
+      try {
+        const tx = await contract.submitEvaluation(
+          courseIdNumber,
+          content,
+          ratingNumber,
+          teachingRatingNumber,
+          contentRatingNumber,
+          interactionRatingNumber,
+          isAnonymous
+        );
+        
+        // 等待交易确认
+        await tx.wait();
+        
+        // 显示成功消息
+        setSuccessMessage('评价提交成功！');
+        
+        // 3秒后重定向回课程详情页
+        setTimeout(() => {
+          router.push(`/studentCourseDetail/${courseId}`);
+        }, 3000);
+      } catch (innerErr) {
+        console.error("方案1失败:", innerErr);
+        
+        // 如果方案1失败，尝试方案2：使用格式化的空数组
+        try {
+          const tx = await contract.submitEvaluation(
+            courseIdNumber,
+            content,
+            ratingNumber,
+            teachingRatingNumber,
+            contentRatingNumber,
+            interactionRatingNumber,
+            isAnonymous,
+            []
+          );
+          
+          // 等待交易确认
+          await tx.wait();
+          
+          // 显示成功消息
+          setSuccessMessage('评价提交成功！');
+          
+          // 3秒后重定向回课程详情页
+          setTimeout(() => {
+            router.push(`/studentCourseDetail/${courseId}`);
+          }, 3000);
+        } catch (innerErr2) {
+          console.error("方案2失败:", innerErr2);
+          throw innerErr2; // 两种方案都失败，抛出最后的错误
+        }
+      }
     } catch (err) {
       console.error("提交评价失败:", err);
       
       // 特殊处理用户拒绝的情况
       if (err.code === 4001 || (err.message && err.message.includes('user rejected'))) {
-        setError('您取消了交易。如需提交评价，请重新提交并在MetaMask中确认。');
+        setError('您取消了交易。如需提交评价，请重新填写并在MetaMask中确认。');
       } else {
         setError('提交评价失败: ' + (err.message || err));
       }
@@ -290,7 +375,8 @@ export default function SubmitEvaluationPage({ params }) {
       setSubmitting(false);
     }
   };
-  
+
+  // 处理评分变化
   const handleRatingChange = (ratingType, newRating) => {
     switch (ratingType) {
       case 'overall':
@@ -310,220 +396,338 @@ export default function SubmitEvaluationPage({ params }) {
     }
   };
   
-  // 渲染星级评分组件
-  const RatingStars = ({ value, onChange, label }) => (
-    <div className={styles.ratingGroup}>
-      <span className={styles.ratingLabel}>{label}</span>
-      <div className={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map(star => (
-          <button
-            key={star}
-            type="button"
-            className={styles.ratingButton}
-            onClick={() => onChange(star)}
-          >
-            <span 
-              className={`${styles.star} ${value >= star ? styles.starFilled : ''}`}
-            >
-              ★
-            </span>
-          </button>
-        ))}
-        <span className={styles.ratingText}>{value}/5</span>
-      </div>
-    </div>
-  );
-  
+  // 格式化日期时间
   const formatDateTime = (date) => {
-    if (!date) return 'N/A';
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
   
   const goBack = () => {
     router.push(`/studentCourseDetail/${courseId}`);
   };
 
-  if (loading) {
-    return <div className={styles.container}>正在加载课程详情...</div>;
-  }
+  // 侧边栏菜单项
+  const siderItems = [
+    {
+      key: 'sub1',
+      icon: React.createElement(UserOutlined),
+      label: '个人中心',
+      children: [
+        {
+          key: '1',
+          label: '个人信息',
+          onClick: () => router.push('/studentIndex')
+        }
+      ],
+    },
+    {
+      key: 'sub2',
+      icon: React.createElement(BookOutlined),
+      label: '课程管理',
+      children: [
+        {
+          key: '2',
+          label: '查看课程',
+          onClick: () => router.push('/studentViewCourses')
+        }
+      ],
+    },
+    {
+      key: 'sub3',
+      icon: React.createElement(CommentOutlined),
+      label: '评价管理',
+      children: [
+        {
+          key: '3',
+          label: '我的评价',
+          onClick: () => router.push('/studentMyEvaluation')
+        },
+        {
+          key: '4',
+          label: '提交评价',
+          onClick: () => router.push('/submit-evaluation')
+        }
+      ],
+    }
+  ];
 
-  if (!course) {
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAddress');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userRoleHash');
+    router.push('/login');
+  };
+
+  // 上传组件的配置
+  const uploadProps = {
+    listType: "picture-card",
+    fileList: images.map(img => ({
+      uid: img.uid,
+      name: 'image.png',
+      status: 'done',
+      url: img.preview,
+    })),
+    onChange: handleImageUpload,
+    onRemove: handleImageRemove,
+    beforeUpload: (file) => {
+      const isImage = file.type.startsWith('image/');
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      
+      if (!isImage) {
+        message.error('只能上传图片文件!');
+      }
+      
+      if (!isLt5M) {
+        message.error('图片必须小于5MB!');
+      }
+      
+      return false; // 阻止自动上传
+    },
+  };
+
+  if (loading) {
     return (
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <h1>评价课程</h1>
-          <button onClick={goBack} className={styles.backButton}>返回课程详情</button>
-        </header>
-        <main className={styles.main}>
-          <div className={styles.errorBox}>
-            {error || '无法加载课程详情，课程可能不存在'}
-          </div>
-        </main>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" tip="加载中，请稍候..." />
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>评价课程</h1>
-        <button onClick={goBack} className={styles.backButton}>返回课程详情</button>
-      </header>
-
-      <main className={styles.main}>
-        {error && (
-          <div className={styles.errorBox}>
-            {error}
-          </div>
-        )}
-        
-        {successMessage && (
-          <div className={styles.successBox}>
-            {successMessage}
-          </div>
-        )}
-        
-        <div className={styles.courseInfoCard}>
-          <h2 className={styles.courseTitle}>{course.name}</h2>
-          <div className={styles.courseDetails}>
-            <div className={styles.courseDetail}>
-              <span className={styles.detailLabel}>教师：</span>
-              <span className={styles.detailValue}>{course.teacherName}</span>
-            </div>
-            <div className={styles.courseDetail}>
-              <span className={styles.detailLabel}>评价期限：</span>
-              <span className={styles.detailValue}>
-                {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}
-              </span>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1a73e8',
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className={styles.logo} />
+            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）
             </div>
           </div>
-        </div>
-        
-        <form onSubmit={handleSubmitEvaluation} className={styles.evaluationForm}>
-          <div className={styles.ratingsContainer}>
-            <h3 className={styles.sectionTitle}>多维度评分</h3>
-            
-            {/* 总体评分 */}
-            <RatingStars 
-              label="总体评分" 
-              value={rating} 
-              onChange={(val) => handleRatingChange('overall', val)} 
-            />
-            
-            {/* 教学质量评分 */}
-            <RatingStars 
-              label="教学质量" 
-              value={teachingRating} 
-              onChange={(val) => handleRatingChange('teaching', val)} 
-            />
-            
-            {/* 内容设计评分 */}
-            <RatingStars 
-              label="内容设计" 
-              value={contentRating} 
-              onChange={(val) => handleRatingChange('content', val)} 
-            />
-            
-            {/* 师生互动评分 */}
-            <RatingStars 
-              label="师生互动" 
-              value={interactionRating} 
-              onChange={(val) => handleRatingChange('interaction', val)} 
-            />
+          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <Tooltip title="退出登录">
+              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
+            </Tooltip>
           </div>
-          
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              评价内容
-              <textarea
-                className={styles.formTextarea}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="请输入您对该课程的评价..."
-                rows={5}
-                required
-              />
-            </label>
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              上传图片（可选，最多5张）
-              <div className={styles.imageUploadContainer}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className={styles.imageInput}
-                  id="image-upload"
+        </Header>
+        <Layout>
+          <Sider width={200} style={{ background: colorBgContainer }}>
+            <Menu
+              mode="inline"
+              defaultSelectedKeys={['4']}
+              defaultOpenKeys={['sub3']}
+              style={{ height: '100%', borderRight: 0 }}
+              items={siderItems}
+            />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb
+              items={[
+                { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
+                { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
+                { title: course?.name, onClick: () => router.push(`/studentCourseDetail/${courseId}`), className: 'clickable-breadcrumb' },
+                { title: '提交评价' }
+              ]}
+              style={{ margin: '16px 0' }}
+            />
+            <Content
+              style={{
+                padding: 24,
+                margin: 0,
+                minHeight: 280,
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
+              }}
+            >
+              {error && (
+                <Alert
+                  message="错误"
+                  description={error}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setError('')}
                 />
-                <label htmlFor="image-upload" className={styles.imageUploadButton}>
-                  选择图片
-                </label>
-                <span className={styles.imageCount}>
-                  已选择 {images.length}/5 张图片
-                </span>
-              </div>
-              
-              {images.length > 0 && (
-                <div className={styles.imagePreviewContainer}>
-                  {images.map((image, index) => (
-                    <div key={index} className={styles.imagePreview}>
-                      <img 
-                        src={image.preview} 
-                        alt={`上传图片 ${index + 1}`}
-                        className={styles.previewImage}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className={styles.removeImageButton}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
               )}
-            </label>
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label className={styles.formCheckbox}>
-              <input
-                type="checkbox"
-                checked={isAnonymous}
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-              />
-              匿名评价（教师将无法看到您的姓名）
-            </label>
-          </div>
-          
-          <div className={styles.formActions}>
-            <button
-              type="button"
-              onClick={goBack}
-              className={styles.cancelButton}
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={submitting || !content.trim()}
-            >
-              {submitting ? '提交中...' : '提交评价'}
-            </button>
-          </div>
-        </form>
-      </main>
-    </div>
+              
+              {successMessage && (
+                <Alert
+                  message="成功"
+                  description={successMessage}
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setSuccessMessage('')}
+                />
+              )}
+              
+              {!course ? (
+                <Empty 
+                  description="未找到课程" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                <>
+                  <Card
+                    title={
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <FormOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
+                        <span>提交课程评价</span>
+                      </div>
+                    }
+                    style={{ marginBottom: '20px' }}
+                  >
+                    <Row gutter={[16, 16]}>
+                      <Col span={24}>
+                        <Card 
+                          type="inner" 
+                          title="课程信息" 
+                          style={{ marginBottom: '20px' }}
+                        >
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <BookOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text strong>{course.name}</Text>
+                              </div>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>教师: {course.teacherName}</Text>
+                              </div>
+                            </Col>
+                            <Col xs={24} md={12}>
+                              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
+                              </div>
+                            </Col>
+                          </Row>
+                        </Card>
+                      </Col>
+                      
+                      <Col span={24}>
+                        <Form layout="vertical" onFinish={handleSubmitEvaluation}>
+                          <Card type="inner" title="评分" style={{ marginBottom: '20px' }}>
+                            <Row gutter={[32, 16]}>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="总体评分">
+                                  <Rate 
+                                    defaultValue={rating}
+                                    onChange={(value) => handleRatingChange('overall', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="教学质量">
+                                  <Rate 
+                                    defaultValue={teachingRating}
+                                    onChange={(value) => handleRatingChange('teaching', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="内容设计">
+                                  <Rate 
+                                    defaultValue={contentRating}
+                                    onChange={(value) => handleRatingChange('content', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="师生互动">
+                                  <Rate 
+                                    defaultValue={interactionRating}
+                                    onChange={(value) => handleRatingChange('interaction', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                          </Card>
+                          
+                          <Card type="inner" title="评价内容" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <TextArea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="请输入您对该课程的评价..."
+                                rows={6}
+                                showCount
+                                maxLength={1000}
+                              />
+                            </Form.Item>
+                          </Card>
+                          
+                          <Card type="inner" title="上传图片（可选）" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <Upload {...uploadProps}>
+                                {images.length < 5 && (
+                                  <div>
+                                    <UploadOutlined />
+                                    <div style={{ marginTop: 8 }}>上传</div>
+                                  </div>
+                                )}
+                              </Upload>
+                              <Text type="secondary">支持上传的图片格式：JPG, PNG, GIF等，单张图片不超过5MB，最多上传5张</Text>
+                            </Form.Item>
+                          </Card>
+                          
+                          <Card type="inner" title="隐私设置" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <Checkbox 
+                                checked={isAnonymous}
+                                onChange={(e) => setIsAnonymous(e.target.checked)}
+                              >
+                                匿名评价（教师将无法看到您的姓名）
+                              </Checkbox>
+                            </Form.Item>
+                          </Card>
+                          
+                          <Form.Item>
+                            <Space>
+                              <Button 
+                                onClick={goBack}
+                              >
+                                取消
+                              </Button>
+                              <Button 
+                                type="primary" 
+                                htmlType="submit"
+                                loading={submitting}
+                                disabled={!content.trim()}
+                                icon={<SendOutlined />}
+                              >
+                                提交评价
+                              </Button>
+                            </Space>
+                          </Form.Item>
+                        </Form>
+                      </Col>
+                    </Row>
+                  </Card>
+                </>
+              )}
+            </Content>
+          </Layout>
+        </Layout>
+        <div className={styles.footer}>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+        </div>
+      </Layout>
+    </ConfigProvider>
   );
 } 
