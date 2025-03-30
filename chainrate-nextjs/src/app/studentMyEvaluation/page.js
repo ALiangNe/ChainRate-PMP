@@ -296,7 +296,9 @@ export default function StudentMyEvaluationsPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="加载中，请稍候..." />
+        <Spin size="large" tip="加载中，请稍候...">
+          <div style={{ padding: '100px', background: 'rgba(0,0,0,0.01)', borderRadius: '4px' }} />
+        </Spin>
       </div>
     );
   }

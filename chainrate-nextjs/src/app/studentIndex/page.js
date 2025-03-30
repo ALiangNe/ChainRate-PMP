@@ -219,7 +219,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
             {/* 个人信息区域 - 美化版 */}
             <Card
               className={styles.profileCard}
-              bordered={false}
+              variant="outlined"
               style={{ 
                 marginBottom: 24,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -349,7 +349,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                 </div>
               }
               style={{ marginTop: 24 }}
-              bordered={false}
+              variant="outlined"
             >
               <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
                 <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />

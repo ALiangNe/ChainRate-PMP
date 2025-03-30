@@ -52,7 +52,10 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function CourseDetailPage({ params }) {
   const router = useRouter();
-  const courseId = params.id;
+  
+  // 使用React.use()解包params参数，避免警告
+  const resolvedParams = React.use(params);
+  const courseId = resolvedParams.id;
   
   // 提前调用 useToken，确保Hook顺序一致
   const { token } = theme.useToken();
@@ -408,7 +411,9 @@ export default function CourseDetailPage({ params }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="加载中，请稍候..." />
+        <Spin size="large" tip="加载中，请稍候...">
+          <div style={{ padding: '100px', background: 'rgba(0,0,0,0.01)', borderRadius: '4px' }} />
+        </Spin>
       </div>
     );
   }
@@ -590,7 +595,9 @@ export default function CourseDetailPage({ params }) {
                   >
                     {loadingEvaluations ? (
                       <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                        <Spin tip="加载评价中..." />
+                        <Spin tip="加载评价中...">
+                          <div style={{ padding: '50px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px' }} />
+                        </Spin>
                       </div>
                     ) : evaluations.length === 0 ? (
                       <Empty 

@@ -57,7 +57,10 @@ const { TextArea } = Input;
 
 export default function SubmitEvaluationPage({ params }) {
   const router = useRouter();
-  const courseId = params.id;
+  
+  // 使用React.use()解包params参数，避免警告
+  const resolvedParams = React.use(params);
+  const courseId = resolvedParams.id;
   
   // 提前调用 useToken，确保Hook顺序一致
   const { token } = theme.useToken();
