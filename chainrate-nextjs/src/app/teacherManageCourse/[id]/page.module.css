@@ -5,6 +5,15 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -198,13 +207,12 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s;
 }
 
 .resetButton {
   background-color: transparent;
-  border: 1px solid #ccc;
-  color: #555;
+  border: 1px solid #ddd;
+  color: #666;
 }
 
 .resetButton:hover {
@@ -213,28 +221,26 @@
 
 .submitButton {
   background-color: #0070f3;
-  border: 1px solid #0070f3;
+  border: none;
   color: white;
 }
 
 .submitButton:hover {
-  background-color: #0051a8;
+  background-color: #0062cc;
 }
 
 .resetButton:disabled, .submitButton:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .tabContainer {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 2rem;
 }
 
 .tabSection {
-  flex: 1;
-  min-width: 300px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -245,7 +251,8 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 400px;
+  margin-top: 1rem;
+  max-height: 500px;
   overflow-y: auto;
   padding-right: 0.5rem;
 }
@@ -255,33 +262,32 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-radius: 6px;
-  background-color: #f5f5f5;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border-left: 3px solid #0070f3;
 }
 
 .studentInfo {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
 }
 
 .studentName {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  font-size: 1rem;
   margin-bottom: 0.25rem;
 }
 
 .studentAddress {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #666;
 }
 
 .studentStatus {
-  display: flex;
-  align-items: center;
+  margin-left: 1rem;
 }
 
 .evaluatedBadge, .notEvaluatedBadge {
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
@@ -293,17 +299,18 @@
 }
 
 .notEvaluatedBadge {
-  background-color: rgba(255, 152, 0, 0.1);
-  color: #f57c00;
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #616161;
 }
 
 .evaluationCard {
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border-left: 3px solid #0070f3;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 6px;
-  background-color: #f5f5f5;
 }
 
 .evaluationHeader {
@@ -313,40 +320,45 @@
 }
 
 .evaluationUser {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .evaluationRating {
   display: flex;
-  gap: 0.25rem;
 }
 
 .star {
-  color: #ccc;
   font-size: 1.1rem;
+  color: #ccc;
 }
 
 .starFilled {
-  color: #ffb400;
+  color: #f8b91e;
 }
 
 .evaluationContent {
-  padding: 0.75rem;
-  background-color: white;
-  border-radius: 4px;
+  font-size: 0.95rem;
+  line-height: 1.5;
   color: #333;
   word-break: break-word;
 }
 
 .evaluationFooter {
-  display: flex;
-  justify-content: flex-end;
+  text-align: right;
 }
 
 .evaluationTime {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #777;
+}
+
+.footer {
+  background-color: #f0f2f5;
+  padding: 16px;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
@@ -361,7 +373,7 @@
   }
   
   .tabContainer {
-    flex-direction: column;
+    gap: 1.5rem;
   }
   
   .formRow {

@@ -2,10 +2,59 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../../contracts/ChainRate.json';
 import ChainRateAddress from '../../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
+import React from 'react';
+import dayjs from 'dayjs';
+import { 
+  UserOutlined, 
+  BookOutlined, 
+  CommentOutlined, 
+  LogoutOutlined,
+  SettingOutlined,
+  EditOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  StarFilled,
+  StarOutlined,
+  BarChartOutlined,
+  LoadingOutlined
+} from '@ant-design/icons';
+import { 
+  Breadcrumb, 
+  Layout, 
+  Menu, 
+  ConfigProvider, 
+  Form,
+  Input,
+  DatePicker,
+  Checkbox,
+  Button,
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Tag,
+  Space,
+  Tabs,
+  List,
+  Avatar,
+  Rate,
+  Typography,
+  Divider,
+  Tooltip,
+  Spin,
+  Alert,
+  Switch,
+  Empty
+} from 'antd';
+
+const { Header, Content, Sider } = Layout;
+const { Title, Text, Paragraph } = Typography;
+const { RangePicker } = DatePicker;
 
 export default function TeacherManageCoursePage({ params }) {
   const router = useRouter();
@@ -41,6 +90,7 @@ export default function TeacherManageCoursePage({ params }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [form] = Form.useForm();
   
   // 统计数据
   const [stats, setStats] = useState({
@@ -130,7 +180,7 @@ export default function TeacherManageCoursePage({ params }) {
         if (course.teacher.toLowerCase() !== teacherAddress.toLowerCase()) {
           setError('您无权管理此课程');
           setTimeout(() => {
-            router.push('/viewCourses');
+            router.push('/teacherViewCourse');
           }, 3000);
           return;
         }
@@ -163,6 +213,13 @@ export default function TeacherManageCoursePage({ params }) {
           isActive: course.isActive
         });
         
+        // 设置表单初始值
+        form.setFieldsValue({
+          courseName: course.name,
+          timeRange: [dayjs(startDate), dayjs(endDate)],
+          isActive: course.isActive
+        });
+        
         // 加载课程统计数据
         await loadCourseStats(contractInstance, courseId);
         
@@ -175,7 +232,7 @@ export default function TeacherManageCoursePage({ params }) {
         console.error(`获取课程 ${courseId} 失败:`, error);
         setError(`课程 ID ${courseId} 不存在或无法访问`);
         setTimeout(() => {
-          router.push('/viewCourses');
+          router.push('/teacherViewCourse');
         }, 3000);
       }
     } catch (err) {
@@ -296,48 +353,24 @@ export default function TeacherManageCoursePage({ params }) {
     }
   };
 
-  // 处理表单输入变化
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
   // 处理表单提交
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (values) => {
     setError('');
     setSuccessMessage('');
     setSubmitting(true);
     
     try {
-      // 表单验证
-      if (!formData.courseName.trim()) {
-        throw new Error('请输入课程名称');
-      }
-      
-      if (!formData.startTime || !formData.endTime) {
-        throw new Error('请选择评价开始和结束时间');
-      }
-      
       // 转换时间为Unix时间戳（秒）
-      const startTimestamp = Math.floor(new Date(formData.startTime).getTime() / 1000);
-      const endTimestamp = Math.floor(new Date(formData.endTime).getTime() / 1000);
-      
-      // 确保开始时间早于结束时间
-      if (startTimestamp >= endTimestamp) {
-        throw new Error('结束时间必须晚于开始时间');
-      }
+      const startTimestamp = Math.floor(values.timeRange[0].valueOf() / 1000);
+      const endTimestamp = Math.floor(values.timeRange[1].valueOf() / 1000);
       
       // 调用合约更新课程
       const tx = await contract.updateCourse(
         courseId,
-        formData.courseName,
+        values.courseName,
         startTimestamp,
         endTimestamp,
-        formData.isActive
+        values.isActive
       );
       
       // 等待交易确认
@@ -346,10 +379,10 @@ export default function TeacherManageCoursePage({ params }) {
       // 更新原始课程数据
       setOriginalCourse(prev => ({
         ...prev,
-        name: formData.courseName,
+        name: values.courseName,
         startTime: new Date(startTimestamp * 1000),
         endTime: new Date(endTimestamp * 1000),
-        isActive: formData.isActive
+        isActive: values.isActive
       }));
       
       setSuccessMessage('课程信息已成功更新');
@@ -384,229 +417,383 @@ export default function TeacherManageCoursePage({ params }) {
     });
   };
 
-  const goBack = () => {
-    router.push('/teacherViewCourse');
+  const handleLogout = () => {
+    if (typeof window === 'undefined') return;
+    
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userAddress');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userRoleHash');
+    router.push('/login');
   };
 
-  if (loading) {
-    return <div className={styles.container}>正在加载课程详情...</div>;
-  }
+  // 侧边栏菜单项
+  const siderItems = [
+    {
+      key: 'sub1',
+      icon: <UserOutlined />,
+      label: '个人中心',
+      children: [
+        {
+          key: '1',
+          label: '个人信息',
+          onClick: () => router.push('/teacherIndex')
+        }
+      ],
+    },
+    {
+      key: 'sub2',
+      icon: <BookOutlined />,
+      label: '课程管理',
+      children: [
+        {
+          key: '2',
+          label: '创建课程',
+          onClick: () => router.push('/teacherCreateCourse')
+        },
+        {
+          key: '3',
+          label: '我的课程',
+          onClick: () => router.push('/teacherViewCourse')
+        }
+      ],
+    },
+    {
+      key: 'sub3',
+      icon: <CommentOutlined />,
+      label: '评价管理',
+      children: [
+        {
+          key: '4',
+          label: '查看评价',
+          onClick: () => router.push('/course-evaluations')
+        }
+      ],
+    },
+    {
+      key: 'sub4',
+      icon: <BarChartOutlined />,
+      label: '数据分析',
+      children: [
+        {
+          key: '5',
+          label: '统计分析',
+          onClick: () => router.push('/statistics')
+        }
+      ],
+    }
+  ];
 
-  if (!originalCourse) {
+  // 标签页配置
+  const tabItems = [
+    {
+      key: 'courseInfo',
+      label: '基本信息',
+      children: (
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{
+            courseName: originalCourse?.name || '',
+            isActive: originalCourse?.isActive || false
+          }}
+        >
+          <Form.Item
+            name="courseName"
+            label="课程名称"
+            rules={[{ required: true, message: '请输入课程名称' }]}
+          >
+            <Input placeholder="请输入课程名称" />
+          </Form.Item>
+          
+          <Form.Item
+            name="timeRange"
+            label="评价时间范围"
+            rules={[{ required: true, message: '请选择评价时间范围' }]}
+          >
+            <RangePicker 
+              showTime 
+              format="YYYY-MM-DD HH:mm:ss" 
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="isActive"
+            valuePropName="checked"
+          >
+            <Checkbox>启用课程（学生可加入和评价）</Checkbox>
+          </Form.Item>
+          
+          <Form.Item>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+              >
+                保存修改
+              </Button>
+              <Button
+                onClick={() => {
+                  form.resetFields();
+                }}
+                disabled={submitting}
+              >
+                重置
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      )
+    },
+    {
+      key: 'students',
+      label: `选课学生 (${students.length})`,
+      children: (
+        <List
+          loading={loadingStudents}
+          dataSource={students}
+          locale={{
+            emptyText: <Empty description="还没有学生选择此课程" />
+          }}
+          renderItem={student => (
+            <List.Item>
+              <List.Item.Meta
+                avatar={<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#34a853' }} />}
+                title={student.name}
+                description={`${student.address.slice(0, 6)}...${student.address.slice(-4)}`}
+              />
+              <Tag color={student.hasEvaluated ? 'success' : 'default'}>
+                {student.hasEvaluated ? '已评价' : '未评价'}
+              </Tag>
+            </List.Item>
+          )}
+        />
+      )
+    },
+    {
+      key: 'evaluations',
+      label: `课程评价 (${evaluations.length})`,
+      children: (
+        <List
+          loading={loadingEvaluations}
+          dataSource={evaluations}
+          locale={{
+            emptyText: <Empty description="暂无评价" />
+          }}
+          renderItem={evaluation => (
+            <List.Item>
+              <Card style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <Text strong>{evaluation.isAnonymous ? '匿名学生' : evaluation.studentName}</Text>
+                  <Rate disabled defaultValue={evaluation.rating} />
+                </div>
+                <Paragraph>{evaluation.contentHash}</Paragraph>
+                <div style={{ textAlign: 'right', color: '#999' }}>
+                  {formatDateTime(evaluation.timestamp)}
+                </div>
+              </Card>
+            </List.Item>
+          )}
+        />
+      )
+    }
+  ];
+
+  if (loading) {
     return (
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <h1>管理课程</h1>
-          <button onClick={goBack} className={styles.backButton}>返回课程列表</button>
-        </header>
-        <main className={styles.main}>
-          <div className={styles.errorBox}>
-            {error || '无法加载课程详情，课程可能不存在'}
-          </div>
-        </main>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+        <span style={{ marginLeft: '12px' }}>正在加载课程详情...</span>
       </div>
     );
   }
 
-  return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>管理课程</h1>
-        <button onClick={goBack} className={styles.backButton}>返回课程列表</button>
-      </header>
+  if (!originalCourse) {
+    return (
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#34a853',
+          },
+        }}
+      >
+        <Layout style={{ minHeight: '100vh' }}>
+          <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className={styles.logo}>
+                <Image 
+                  src="/images/logo1.png" 
+                  alt="链评系统Logo" 
+                  width={40} 
+                  height={40}
+                  style={{ borderRadius: '6px' }}
+                />
+              </div>
+              <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+                链评系统（ChainRate）- 教师端
+              </div>
+            </div>
+            <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+              <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+              <Tooltip title="退出登录">
+                <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
+              </Tooltip>
+            </div>
+          </Header>
+          <Content style={{ padding: '20px' }}>
+            <Alert
+              message="错误"
+              description={error || '无法加载课程详情，课程可能不存在'}
+              type="error"
+              showIcon
+              action={
+                <Button type="primary" onClick={() => router.push('/teacherViewCourse')}>
+                  返回课程列表
+                </Button>
+              }
+            />
+          </Content>
+        </Layout>
+      </ConfigProvider>
+    );
+  }
 
-      <main className={styles.main}>
-        {error && (
-          <div className={styles.errorBox}>
-            {error}
-          </div>
-        )}
-        
-        {successMessage && (
-          <div className={styles.successBox}>
-            {successMessage}
-          </div>
-        )}
-        
-        <div className={styles.courseStatsCard}>
-          <h2 className={styles.sectionTitle}>课程概览</h2>
-          <div className={styles.statsContainer}>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{originalCourse.studentCount}</span>
-              <span className={styles.statLabel}>已选学生</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{stats.evaluationCount}</span>
-              <span className={styles.statLabel}>评价数量</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>
-                {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '暂无'}
-              </span>
-              <span className={styles.statLabel}>平均评分</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={`${styles.statusBadge} ${originalCourse.isActive ? styles.statusActive : styles.statusInactive}`}>
-                {originalCourse.isActive ? '已启用' : '已停用'}
-              </span>
-              <span className={styles.statLabel}>课程状态</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className={styles.formCard}>
-          <h2 className={styles.sectionTitle}>编辑课程信息</h2>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.formGroup}>
-              <label htmlFor="courseName" className={styles.formLabel}>课程名称</label>
-              <input
-                type="text"
-                id="courseName"
-                name="courseName"
-                value={formData.courseName}
-                onChange={handleInputChange}
-                className={styles.formInput}
-                required
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh' }}>
+        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className={styles.logo}>
+              <Image 
+                src="/images/logo1.png" 
+                alt="链评系统Logo" 
+                width={40} 
+                height={40}
+                style={{ borderRadius: '6px' }}
               />
             </div>
-            
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="startTime" className={styles.formLabel}>评价开始时间</label>
-                <input
-                  type="datetime-local"
-                  id="startTime"
-                  name="startTime"
-                  value={formData.startTime}
-                  onChange={handleInputChange}
-                  className={styles.formInput}
-                  required
+            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）- 教师端
+            </div>
+          </div>
+          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <Tooltip title="退出登录">
+              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
+            </Tooltip>
+          </div>
+        </Header>
+        <Layout>
+          <Sider width={200} style={{ background: 'white' }}>
+            <Menu
+              mode="inline"
+              defaultSelectedKeys={['3']}
+              defaultOpenKeys={['sub2']}
+              style={{ height: '100%', borderRight: 0 }}
+              items={siderItems}
+            />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb
+              items={[
+                { title: '首页', onClick: () => router.push('/teacherIndex') },
+                { title: '课程管理', onClick: () => router.push('/teacherViewCourse') },
+                { title: `管理课程: ${originalCourse.name}` }
+              ]}
+              style={{ margin: '16px 0' }}
+            />
+            <Content
+              style={{
+                padding: 24,
+                margin: 0,
+                minHeight: 280,
+                background: 'white',
+                borderRadius: 8,
+              }}
+            >
+              {error && (
+                <Alert
+                  message="错误"
+                  description={error}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: '24px' }}
+                  closable
                 />
-              </div>
+              )}
               
-              <div className={styles.formGroup}>
-                <label htmlFor="endTime" className={styles.formLabel}>评价结束时间</label>
-                <input
-                  type="datetime-local"
-                  id="endTime"
-                  name="endTime"
-                  value={formData.endTime}
-                  onChange={handleInputChange}
-                  className={styles.formInput}
-                  required
+              {successMessage && (
+                <Alert
+                  message="成功"
+                  description={successMessage}
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: '24px' }}
+                  closable
                 />
-              </div>
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label className={styles.formCheckbox}>
-                <input
-                  type="checkbox"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleInputChange}
-                />
-                启用课程（学生可加入和评价）
-              </label>
-            </div>
-            
-            <div className={styles.formActions}>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({
-                    courseName: originalCourse.name,
-                    startTime: new Date(originalCourse.startTime).toISOString().slice(0, 16),
-                    endTime: new Date(originalCourse.endTime).toISOString().slice(0, 16),
-                    isActive: originalCourse.isActive
-                  });
-                }}
-                className={styles.resetButton}
-                disabled={submitting}
-              >
-                重置
-              </button>
-              <button
-                type="submit"
-                className={styles.submitButton}
-                disabled={submitting}
-              >
-                {submitting ? '保存中...' : '保存修改'}
-              </button>
-            </div>
-          </form>
+              )}
+              
+              <Card style={{ marginBottom: '24px' }}>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={6}>
+                    <Statistic 
+                      title="已选学生"
+                      value={originalCourse.studentCount}
+                      prefix={<UserOutlined />}
+                      valueStyle={{ color: '#34a853' }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic 
+                      title="评价数量"
+                      value={stats.evaluationCount}
+                      prefix={<CommentOutlined />}
+                      valueStyle={{ color: '#34a853' }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic 
+                      title="平均评分"
+                      value={stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '暂无'}
+                      prefix={<StarFilled />}
+                      valueStyle={{ color: '#34a853' }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic 
+                      title="课程状态"
+                      value={originalCourse.isActive ? '已启用' : '已停用'}
+                      valueStyle={{ 
+                        color: originalCourse.isActive ? '#34a853' : '#999',
+                      }}
+                      prefix={originalCourse.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                    />
+                  </Col>
+                </Row>
+              </Card>
+              
+              <Tabs
+                items={tabItems}
+                defaultActiveKey="courseInfo"
+                type="card"
+              />
+            </Content>
+          </Layout>
+        </Layout>
+        <div className={styles.footer}>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
         </div>
-        
-        <div className={styles.tabContainer}>
-          <div className={styles.tabSection}>
-            <h2 className={styles.sectionTitle}>选课学生 ({students.length})</h2>
-            {loadingStudents ? (
-              <div className={styles.loadingBox}>正在加载学生信息...</div>
-            ) : students.length === 0 ? (
-              <div className={styles.emptyBox}>还没有学生选择此课程</div>
-            ) : (
-              <div className={styles.studentsList}>
-                {students.map((student, index) => (
-                  <div key={student.address} className={styles.studentCard}>
-                    <div className={styles.studentInfo}>
-                      <div className={styles.studentName}>{student.name}</div>
-                      <div className={styles.studentAddress}>{`${student.address.slice(0, 6)}...${student.address.slice(-4)}`}</div>
-                    </div>
-                    <div className={styles.studentStatus}>
-                      {student.hasEvaluated ? (
-                        <span className={styles.evaluatedBadge}>已评价</span>
-                      ) : (
-                        <span className={styles.notEvaluatedBadge}>未评价</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div className={styles.tabSection}>
-            <h2 className={styles.sectionTitle}>课程评价 ({evaluations.length})</h2>
-            {loadingEvaluations ? (
-              <div className={styles.loadingBox}>正在加载评价...</div>
-            ) : evaluations.length === 0 ? (
-              <div className={styles.emptyBox}>暂无评价</div>
-            ) : (
-              <div className={styles.evaluationsList}>
-                {evaluations.map(evaluation => (
-                  <div key={evaluation.id} className={styles.evaluationCard}>
-                    <div className={styles.evaluationHeader}>
-                      <div className={styles.evaluationUser}>
-                        {evaluation.isAnonymous ? '匿名学生' : evaluation.studentName}
-                      </div>
-                      <div className={styles.evaluationRating}>
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <span 
-                            key={star}
-                            className={`${styles.star} ${evaluation.rating >= star ? styles.starFilled : ''}`}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className={styles.evaluationContent}>
-                      {evaluation.contentHash}
-                    </div>
-                    
-                    <div className={styles.evaluationFooter}>
-                      <span className={styles.evaluationTime}>
-                        {formatDateTime(evaluation.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+      </Layout>
+    </ConfigProvider>
   );
 } 

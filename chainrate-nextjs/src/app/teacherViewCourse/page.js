@@ -18,7 +18,8 @@ import {
   PlusOutlined,
   SettingOutlined,
   EyeOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -322,7 +323,8 @@ export default function ViewCoursesPage() {
     return (
       <div className={styles.container}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <Spin size="large" tip="正在加载..." />
+          <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+          <span style={{ marginLeft: '12px' }}>正在加载...</span>
         </div>
       </div>
     );
