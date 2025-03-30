@@ -5,6 +5,15 @@
   background-color: #f8f9fa;
 }
 
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -200,18 +209,18 @@
 }
 
 .statusEnded {
-  background-color: #f5f5f5;
-  color: #616161;
+  background-color: #fff8e1;
+  color: #f57f17;
 }
 
 .courseBody {
   padding: 1rem;
-  flex: 1;
+  flex-grow: 1;
 }
 
 .courseBody p {
   margin: 0.5rem 0;
-  color: #616161;
+  color: #555;
   font-size: 0.95rem;
 }
 
@@ -219,24 +228,23 @@
   display: flex;
   justify-content: space-between;
   padding: 1rem;
-  background-color: #fafafa;
+  background-color: #f9f9f9;
   border-top: 1px solid #eee;
 }
 
 .manageButton, .viewButton {
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 4px;
-  cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
   transition: background-color 0.3s;
-  flex: 1;
 }
 
 .manageButton {
   background-color: #34a853;
-  border: none;
   color: white;
-  margin-right: 0.5rem;
+  border: none;
 }
 
 .manageButton:hover {
@@ -244,17 +252,23 @@
 }
 
 .viewButton {
-  background-color: #e0e0e0;
+  background-color: #f5f5f5;
+  color: #555;
   border: 1px solid #ddd;
-  color: #616161;
-  margin-left: 0.5rem;
 }
 
 .viewButton:hover {
-  background-color: #d5d5d5;
+  background-color: #e0e0e0;
 }
 
-/* 响应式设计 */
+.footer {
+  background-color: #f0f2f5;
+  padding: 16px;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .courseGrid {
     grid-template-columns: 1fr;
@@ -262,7 +276,6 @@
   
   .controlPanel {
     flex-direction: column;
-    align-items: stretch;
   }
   
   .searchBox, .filterBox {
