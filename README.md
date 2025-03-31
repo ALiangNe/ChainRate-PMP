@@ -129,3 +129,8 @@ npx hardhat run ./ignition/deploy.js --network localhost
 
 ## 致谢
 感谢所有为本项目做出贡献的开发者们！ 
+
+
+## Git指南
+- git reflog
+- git reset --hard "HEAD@{1}"
