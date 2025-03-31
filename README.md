@@ -54,8 +54,7 @@ npm run dev
 ```bash
 cd chainrate-hardhat
 npm install
-npx hardhat compile
-npx hardhat run ./ignition/deploy.js --network localhost
+npx hardhat compile  
 ```
 
 ## 使用说明

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import styles from './page.module.css';
 import React from 'react';
 import { 
@@ -180,9 +181,17 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className={styles.logo} />
+          <div className={styles.logo}>
+            <Image 
+              src="/images/logo1.png" 
+              alt="链评系统Logo" 
+              width={40} 
+              height={40}
+              style={{ borderRadius: '6px' }}
+            />
+          </div>
           <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-            链评系统（ChainRate）
+            链评系统（ChainRate）- 学生端
           </div>
         </div>
         <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
@@ -204,7 +213,10 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
         </Sider>
         <Layout style={{ padding: '0 24px 24px' }}>
           <Breadcrumb
-            items={[{ title: '首页' }, { title: '个人中心' }]}
+            items={[
+              { title: '首页' },
+              { title: '个人中心' },
+            ]}
             style={{ margin: '16px 0' }}
           />
           <Content
@@ -216,7 +228,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               borderRadius: borderRadiusLG,
             }}
           >
-            {/* 个人信息区域 - 美化版 */}
+            {/* 个人信息区域 */}
             <Card
               className={styles.profileCard}
               variant="outlined"
@@ -260,7 +272,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                         <Statistic 
                           title={stat.title}
                           value={stat.value}
-                          prefix={stat.icon}
+                          prefix={React.cloneElement(stat.icon, { style: { color: colorPrimary } })}
                           valueStyle={{ color: colorPrimary }}
                         />
                       </Col>
@@ -270,13 +282,12 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               </Row>
             </Card>
 
-            {/* 功能区 - 美化版 */}
+            {/* 功能区 */}
             <h2 style={{ fontSize: 20, marginBottom: 16 }}>功能区</h2>
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  className={styles.functionCardEnhanced}
                   onClick={() => router.push('/studentViewCourses')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
@@ -287,10 +298,10 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                 >
                   <Meta
                     title="查看课程"
-                    description="浏览所有可评价的课程，查看课程详情及评价要求"
+                    description="浏览可评价的课程列表"
                   />
                   <div style={{ marginTop: 16 }}>
-                    <Button type="primary" ghost>立即查看</Button>
+                    <Button type="primary" ghost>进入</Button>
                   </div>
                 </Card>
               </Col>
@@ -298,7 +309,6 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  className={styles.functionCardEnhanced}
                   onClick={() => router.push('/studentMyEvaluation')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
@@ -309,10 +319,10 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                 >
                   <Meta
                     title="我的评价"
-                    description="查看我已提交的所有课程评价历史记录与状态"
+                    description="查看已提交的课程评价"
                   />
                   <div style={{ marginTop: 16 }}>
-                    <Button type="primary" ghost>查看评价</Button>
+                    <Button type="primary" ghost>进入</Button>
                   </div>
                 </Card>
               </Col>
@@ -320,7 +330,6 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  className={styles.functionCardEnhanced}
                   onClick={() => router.push('/submit-evaluation')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
@@ -331,16 +340,16 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                 >
                   <Meta
                     title="提交评价"
-                    description="为你的课程提交新的评价，记录你的学习体验"
+                    description="为已选课程提交评价"
                   />
                   <div style={{ marginTop: 16 }}>
-                    <Button type="primary" ghost>立即评价</Button>
+                    <Button type="primary" ghost>进入</Button>
                   </div>
                 </Card>
               </Col>
             </Row>
 
-            {/* 系统公告或其他内容可以添加在这里 */}
+            {/* 系统公告 */}
             <Card
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -354,9 +363,9 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
                 <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
                 <div>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>系统更新通知</p>
+                  <p style={{ margin: 0, fontWeight: 'bold' }}>课程评价入口开放</p>
                   <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-15</p>
-                  <p>链评系统已更新到最新版本，新增了评价数据分析功能，欢迎体验！</p>
+                  <p>本学期课程评价系统已开放，请同学们及时完成课程评价，您的反馈对我们非常重要！</p>
                 </div>
               </div>
               <Divider style={{ margin: '12px 0' }} />
@@ -365,7 +374,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                 <div>
                   <p style={{ margin: 0, fontWeight: 'bold' }}>评价活动通知</p>
                   <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-10</p>
-                  <p>本学期课程评价将于6月15日截止，请及时完成所有课程评价！</p>
+                  <p>本学期课程评价将于6月15日截止，请及时完成所有课程的评价工作！</p>
                 </div>
               </div>
             </Card>
