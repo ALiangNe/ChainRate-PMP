@@ -11,9 +11,11 @@
   "dependencies": {
     "antd": "^5.24.5",
     "ethers": "^6.13.5",
+    "mysql2": "^3.14.0",
     "next": "15.2.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "serverless-mysql": "^2.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
