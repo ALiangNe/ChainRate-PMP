@@ -314,9 +314,17 @@ export default function StudentMyEvaluationsPage() {
       <Layout style={{ minHeight: '100vh' }}>
         <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className={styles.logo} />
+            <div className={styles.logo}>
+              <Image 
+                src="/images/logo1.png" 
+                alt="链评系统Logo" 
+                width={40} 
+                height={40}
+                style={{ borderRadius: '6px' }}
+              />
+            </div>
             <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-              链评系统（ChainRate）
+              链评系统（ChainRate）- 学生端
             </div>
           </div>
           <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
