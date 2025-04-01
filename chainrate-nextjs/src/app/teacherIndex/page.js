@@ -141,7 +141,7 @@ export default function TeacherIndexPage() {
         {
           key: '4',
           label: '查看评价',
-          onClick: () => router.push('/course-evaluations')
+          onClick: () => router.push('/teacherViewEvaluation')
         }
       ],
     },
@@ -343,7 +343,7 @@ export default function TeacherIndexPage() {
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/course-evaluations')}
+                    onClick={() => router.push('/teacherViewEvaluation')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
                         <CommentOutlined style={{ fontSize: 48, color: '#34a853' }} />

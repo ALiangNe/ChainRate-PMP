@@ -467,7 +467,7 @@ export default function TeacherManageCoursePage({ params }) {
         {
           key: '4',
           label: '查看评价',
-          onClick: () => router.push('/course-evaluations')
+          onClick: () => router.push('/teacherViewEvaluation')
         }
       ],
     },
@@ -636,13 +636,13 @@ export default function TeacherManageCoursePage({ params }) {
               <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
                 链评系统（ChainRate）- 教师端
               </div>
-            </div>
+          </div>
             <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
               <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
               <Tooltip title="退出登录">
                 <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
               </Tooltip>
-            </div>
+      </div>
           </Header>
           <Content style={{ padding: '20px' }}>
             <Alert
@@ -691,7 +691,7 @@ export default function TeacherManageCoursePage({ params }) {
             <Tooltip title="退出登录">
               <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
             </Tooltip>
-          </div>
+        </div>
         </Header>
         <Layout>
           <Sider width={200} style={{ background: 'white' }}>

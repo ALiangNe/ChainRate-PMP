@@ -229,7 +229,7 @@ export default function CreateCoursePage() {
         {
           key: '4',
           label: '查看评价',
-          onClick: () => router.push('/course-evaluations')
+          onClick: () => router.push('/teacherViewEvaluation')
         }
       ],
     },

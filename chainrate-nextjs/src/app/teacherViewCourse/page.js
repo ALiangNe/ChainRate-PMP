@@ -248,7 +248,8 @@ export default function ViewCoursesPage() {
   // 查看评价
   const handleViewEvaluations = (courseId) => {
     // 未来可以实现跳转到课程评价页面
-    router.push(`/courseEvaluations/${courseId}`);
+    // router.push(`/courseEvaluations/${courseId}`);
+    router.push(`/teacherViewEvaluation`);
   };
   
   const handleLogout = () => {
@@ -301,7 +302,7 @@ export default function ViewCoursesPage() {
         {
           key: '4',
           label: '查看评价',
-          onClick: () => router.push('/course-evaluations')
+          onClick: () => router.push('/teacherViewEvaluation')
         }
       ],
     },

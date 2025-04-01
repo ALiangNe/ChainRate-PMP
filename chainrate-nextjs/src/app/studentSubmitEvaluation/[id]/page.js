@@ -8,6 +8,7 @@ import ChainRateAddress from '../../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
 import Image from 'next/image';
 import React from 'react';
+import axios from 'axios'; // 引入axios用于API请求
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -23,7 +24,9 @@ import {
   FileTextOutlined,
   UploadOutlined,
   DeleteOutlined,
-  StarFilled
+  StarFilled,
+  PictureOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -48,12 +51,19 @@ import {
   Upload,
   Checkbox,
   Space,
-  message
+  message,
+  Progress,
+  Modal
 } from 'antd';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+// Pinata API配置
+const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY || '';
+const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY || '';
+const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT || '';
 
 export default function SubmitEvaluationPage({ params }) {
   const router = useRouter();
@@ -85,6 +95,13 @@ export default function SubmitEvaluationPage({ params }) {
   const [interactionRating, setInteractionRating] = useState(5); // 新增：师生互动评分
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [images, setImages] = useState([]); // 新增：评价图片
+  
+  // 图片上传状态
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedImageHashes, setUploadedImageHashes] = useState([]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
   
   // 状态管理
   const [loading, setLoading] = useState(true);
@@ -260,23 +277,82 @@ export default function SubmitEvaluationPage({ params }) {
   const handleImageRemove = (file) => {
     const filteredImages = images.filter(image => image.uid !== file.uid);
     setImages(filteredImages);
+    
+    // 如果图片已上传到IPFS，也清除对应的hash
+    const filteredHashes = uploadedImageHashes.filter((_, index) => 
+      images.findIndex(img => img.uid === file.uid) !== index
+    );
+    setUploadedImageHashes(filteredHashes);
   };
   
-  // 上传图片到IPFS或其他存储服务（实际应用中应实现）
-  const uploadImages = async () => {
-    // 这里应该实现实际的上传逻辑
-    // 例如上传到IPFS，并返回哈希值数组
-    
-    if (images.length === 0) {
-      return []; // 确保返回空数组
+  // 处理图片预览
+  const handlePreview = async (file) => {
+    if (file.preview) {
+      setPreviewImage(file.preview);
+      setPreviewVisible(true);
+    }
+  };
+  
+  // 上传图片到Pinata IPFS
+  const uploadToPinata = async (file) => {
+    if (!PINATA_JWT) {
+      throw new Error('Pinata JWT不存在，请配置环境变量');
     }
     
-    // 模拟上传，返回图片内容的哈希
-    // 在实际应用中，应该使用IPFS或其他存储服务
-    return Promise.all(images.map(async (image) => {
-      // 示例：返回随机哈希，实际应用中替换为真实上传逻辑
-      return `image_hash_${Math.random().toString(36).substring(2, 15)}`;
-    }));
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const options = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${PINATA_JWT}`
+      }
+    };
+    
+    try {
+      const res = await axios.post(
+        'https://api.pinata.cloud/pinning/pinFileToIPFS',
+        formData,
+        options
+      );
+      
+      return res.data.IpfsHash;
+    } catch (error) {
+      console.error('上传到Pinata失败:', error);
+      throw new Error(`上传图片失败: ${error.message}`);
+    }
+  };
+  
+  // 上传所有图片到IPFS
+  const uploadImages = async () => {
+    if (images.length === 0) {
+      return []; // 如果没有图片，返回空数组
+    }
+    
+    setUploadingImages(true);
+    setUploadProgress(0);
+    const hashes = [];
+    
+    try {
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const hash = await uploadToPinata(image.file);
+        hashes.push(hash);
+        
+        // 更新进度
+        setUploadProgress(Math.round(((i + 1) / images.length) * 100));
+      }
+      
+      setUploadedImageHashes(hashes);
+      message.success('图片上传成功！');
+      return hashes;
+    } catch (error) {
+      console.error('上传图片失败:', error);
+      message.error(`上传图片失败: ${error.message}`);
+      return [];
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   // 提交评价
@@ -294,6 +370,20 @@ export default function SubmitEvaluationPage({ params }) {
         return;
       }
       
+      // 上传图片到IPFS并获取哈希值
+      let imageHashes = [];
+      if (images.length > 0) {
+        message.loading('正在上传图片到IPFS...', 0);
+        imageHashes = await uploadImages();
+        message.destroy();
+        
+        if (imageHashes.length === 0 && images.length > 0) {
+          setError('图片上传失败，请重试');
+          setSubmitting(false);
+          return;
+        }
+      }
+      
       // 确保参数类型正确
       const courseIdNumber = Number(courseId);
       // 评分应该是uint8类型(1-5)，不需要乘以100
@@ -302,15 +392,15 @@ export default function SubmitEvaluationPage({ params }) {
       const contentRatingValue = Math.round(contentRating);
       const interactionRatingValue = Math.round(interactionRating);
       
-      // 创建空的字符串数组 - 对应合约中的string[]类型
-      const imageHashes = images.length > 0 
-        ? images.map((_, index) => `image_hash_${index}_${Date.now()}`) // 临时模拟哈希值
-        : ["empty_image_hash"]; // 空字符串数组
+      // 如果没有上传图片，提供一个空的哈希数组
+      if (imageHashes.length === 0) {
+        imageHashes = [""];
+      }
       
       console.log("提交参数:", {
         courseIdNumber,
         content,
-        imageHashes,     // 第3个参数是imageHashes
+        imageHashes,     // 真实的IPFS哈希值数组
         ratingValue,     // 第4个参数是rating (1-5)
         teachingRatingValue,
         contentRatingValue,
@@ -322,7 +412,7 @@ export default function SubmitEvaluationPage({ params }) {
       const tx = await contract.submitEvaluation(
         courseIdNumber,
         content,
-        imageHashes,     // 第3个参数是imageHashes
+        imageHashes,     // 真实的IPFS哈希值数组
         ratingValue,     // 第4个参数是rating (1-5)
         teachingRatingValue,
         contentRatingValue,
@@ -448,25 +538,33 @@ export default function SubmitEvaluationPage({ params }) {
     listType: "picture-card",
     fileList: images.map(img => ({
       uid: img.uid,
-      name: 'image.png',
+      name: img.file ? img.file.name : 'image.png',
       status: 'done',
       url: img.preview,
     })),
     onChange: handleImageUpload,
     onRemove: handleImageRemove,
+    onPreview: handlePreview,
     beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/');
       const isLt5M = file.size / 1024 / 1024 < 5;
       
       if (!isImage) {
         message.error('只能上传图片文件!');
+        return Upload.LIST_IGNORE;
       }
       
       if (!isLt5M) {
         message.error('图片必须小于5MB!');
+        return Upload.LIST_IGNORE;
       }
       
       return false; // 阻止自动上传
+    },
+    showUploadList: {
+      showPreviewIcon: true,
+      showDownloadIcon: false,
+      showRemoveIcon: true,
     },
   };
 
@@ -668,7 +766,44 @@ export default function SubmitEvaluationPage({ params }) {
                                   </div>
                                 )}
                               </Upload>
-                              <Text type="secondary">支持上传的图片格式：JPG, PNG, GIF等，单张图片不超过5MB，最多上传5张</Text>
+                              
+                              {uploadingImages && (
+                                <div style={{ marginTop: 16 }}>
+                                  <Progress percent={uploadProgress} status="active" />
+                                  <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
+                                    <LoadingOutlined style={{ marginRight: 8 }} />
+                                    正在上传图片到IPFS...
+                                  </Text>
+                                </div>
+                              )}
+                              
+                              {uploadedImageHashes.length > 0 && (
+                                <div style={{ marginTop: 16 }}>
+                                  <Text strong style={{ marginBottom: 8, display: 'block' }}>
+                                    <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                                    图片已上传到IPFS:
+                                  </Text>
+                                  {uploadedImageHashes.map((hash, index) => (
+                                    <Tag 
+                                      key={index}
+                                      color="success" 
+                                      style={{ margin: '4px', wordBreak: 'break-all' }}
+                                    >
+                                      {hash.substring(0, 10)}...{hash.substring(hash.length - 10)}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div style={{ marginTop: 12 }}>
+                                <Text type="secondary">
+                                  支持上传的图片格式：JPG, PNG, GIF等，单张图片不超过5MB，最多上传5张
+                                </Text>
+                                <br />
+                                <Text type="secondary">
+                                  图片将上传到IPFS分布式存储网络，上传后将永久保存且不可篡改
+                                </Text>
+                              </div>
                             </Form.Item>
                           </Card>
                           
@@ -694,7 +829,7 @@ export default function SubmitEvaluationPage({ params }) {
                                 type="primary" 
                                 htmlType="submit"
                                 loading={submitting}
-                                disabled={!content.trim()}
+                                disabled={!content.trim() || uploadingImages}
                                 icon={<SendOutlined />}
                               >
                                 提交评价
@@ -707,6 +842,16 @@ export default function SubmitEvaluationPage({ params }) {
                   </Card>
                 </>
               )}
+
+              {/* 图片预览模态框 */}
+              <Modal
+                visible={previewVisible}
+                title="图片预览"
+                footer={null}
+                onCancel={() => setPreviewVisible(false)}
+              >
+                <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
+              </Modal>
             </Content>
           </Layout>
         </Layout>
