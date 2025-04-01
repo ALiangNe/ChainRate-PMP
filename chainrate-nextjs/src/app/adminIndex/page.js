@@ -140,7 +140,7 @@ export default function AdminIndexPage() {
         {
           key: '3',
           label: '教师管理',
-          onClick: () => router.push('/adminTeacherManagement')
+          onClick: () => router.push('/adminGetTeacherList')
         },
         {
           key: '4',
