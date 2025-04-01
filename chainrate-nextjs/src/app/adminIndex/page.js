@@ -145,7 +145,7 @@ export default function AdminIndexPage() {
         {
           key: '4',
           label: '学生管理',
-          onClick: () => router.push('/adminStudentManagement')
+          onClick: () => router.push('/adminGetStudentList')
         }
       ],
     },

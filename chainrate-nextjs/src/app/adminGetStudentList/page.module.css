@@ -1,0 +1,139 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1677ff; /* 使用蓝色主题区分管理员端 */
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logoutButton {
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid white;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.logoutButton:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.footer {
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.9rem;
+}
+
+/* Ant Design 相关样式 */
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 表格样式增强 */
+.customTable {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+/* 卡片样式增强 */
+.statCard {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.15);
+}
+
+/* 搜索和工具栏样式 */
+.toolBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* 详情模态框样式 */
+.detailsModal {
+  width: 800px !important;
+}
+
+.detailsHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.detailsAvatar {
+  margin-bottom: 16px;
+}
+
+.detailInfo {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.infoIcon {
+  margin-right: 8px;
+  color: #1677ff;
+}
+
+/* 点击效果 */
+.clickable-breadcrumb {
+  cursor: pointer;
+  color: #1677ff;
+}
+
+.clickable-breadcrumb:hover {
+  color: #0958d9;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .toolBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .toolBar .search {
+    width: 100%;
+  }
+} 
