@@ -630,7 +630,7 @@ contract ChainRate {
      * @param offset 起始位置
      * @param limit 获取数量
      * @return ids 评价ID数组
-     * @return students 学生地址数组
+     * @return studentAddresses 学生地址数组
      * @return names 学生姓名数组（匿名则为"Anonymous"）
      * @return timestamps 时间戳数组
      * @return ratings 总体评分数组
@@ -641,7 +641,7 @@ contract ChainRate {
      */
     function getCourseBatchEvaluations(uint256 courseId, uint256 offset, uint256 limit) external view courseExists(courseId) returns (
         uint256[] memory ids,
-        address[] memory students,
+        address[] memory studentAddresses,
         string[] memory names,
         uint256[] memory timestamps,
         uint8[] memory ratings,
@@ -676,7 +676,7 @@ contract ChainRate {
         
         // 初始化返回数组
         ids = new uint256[](count);
-        students = new address[](count);
+        studentAddresses = new address[](count);
         names = new string[](count);
         timestamps = new uint256[](count);
         ratings = new uint8[](count);
@@ -691,7 +691,7 @@ contract ChainRate {
             Evaluation memory eval = evaluations[evalId];
             
             ids[i] = eval.id;
-            students[i] = eval.student;
+            studentAddresses[i] = eval.student;
             
             // 获取学生姓名（如果不匿名）
             if (!eval.isAnonymous) {
@@ -962,8 +962,8 @@ contract ChainRate {
      * @param studentAddress 学生地址
      * @return name 学生姓名
      * @return phone 学生手机号
-     * @return courseCount 选修课程数量
-     * @return evaluationCount 提交评价数量
+     * @return studentCourseCount 选修课程数量
+     * @return studentEvalCount 提交评价数量
      * @return courseIds 选修课程ID数组
      * @return courseNames 选修课程名称数组
      * @return hasEvaluatedArray 是否已评价数组
@@ -971,8 +971,8 @@ contract ChainRate {
     function getStudentDetailInfo(address studentAddress) external view onlyAdmin returns (
         string memory name,
         string memory phone,
-        uint256 courseCount,
-        uint256 evaluationCount,
+        uint256 studentCourseCount,
+        uint256 studentEvalCount,
         uint256[] memory courseIds,
         string[] memory courseNames,
         bool[] memory hasEvaluatedArray
@@ -984,14 +984,14 @@ contract ChainRate {
         phone = student.phone;
         
         uint256[] memory joinedCourses = studentCourses[studentAddress];
-        courseCount = joinedCourses.length;
-        evaluationCount = studentEvaluations[studentAddress].length;
+        studentCourseCount = joinedCourses.length;
+        studentEvalCount = studentEvaluations[studentAddress].length;
         
-        courseIds = new uint256[](courseCount);
-        courseNames = new string[](courseCount);
-        hasEvaluatedArray = new bool[](courseCount);
+        courseIds = new uint256[](studentCourseCount);
+        courseNames = new string[](studentCourseCount);
+        hasEvaluatedArray = new bool[](studentCourseCount);
         
-        for (uint256 i = 0; i < courseCount; i++) {
+        for (uint256 i = 0; i < studentCourseCount; i++) {
             uint256 courseId = joinedCourses[i];
             courseIds[i] = courseId;
             courseNames[i] = courses[courseId].name;
