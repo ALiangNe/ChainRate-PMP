@@ -7,18 +7,23 @@ import styles from './page.module.css';
 import React from 'react';
 import { 
   UserOutlined, 
+  TeamOutlined, 
   BookOutlined, 
   CommentOutlined, 
   LogoutOutlined,
   MailOutlined,
   GlobalOutlined,
-  TeamOutlined,
   RocketOutlined,
   ClockCircleOutlined,
-  TrophyOutlined,
-  FileAddOutlined,
+  SafetyCertificateOutlined,
+  AppstoreAddOutlined,
   BarChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  SettingOutlined,
+  UserAddOutlined,
+  ProfileOutlined,
+  AuditOutlined,
+  SafetyOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -40,8 +45,13 @@ import {
 const { Header, Content, Sider } = Layout;
 const { Meta } = Card;
 
-export default function TeacherIndexPage() {
+export default function AdminIndexPage() {
   const router = useRouter();
+  
+  // 提前调用 useToken，确保Hook顺序一致
+  const { token } = theme.useToken();
+  const { colorBgContainer, borderRadiusLG, colorPrimary } = token;
+  
   const [userData, setUserData] = useState({
     isLoggedIn: false,
     address: '',
@@ -54,30 +64,31 @@ export default function TeacherIndexPage() {
     // 确保代码仅在客户端执行
     if (typeof window === 'undefined') return;
 
-    // 检查用户是否已登录并且是教师角色
+    // 检查用户是否已登录并且是管理员角色
     const checkUserAuth = () => {
       try {
-        console.log('检查教师认证...');
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
-        
+        console.log('检查管理员认证...');
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+          
         console.log('认证状态:', { isLoggedIn, userRole });
-      
-      if (!isLoggedIn || userRole !== 'teacher') {
-          console.log('未认证为教师，重定向到登录页面');
-        router.push('/login');
-        return;
-      }
+        
+        if (!isLoggedIn || userRole !== 'admin') {
+          console.log('未认证为管理员，重定向到登录页面');
+          router.push('/login');
+          return;
+        }
 
-      // 获取用户信息
-      setUserData({
-        isLoggedIn: true,
-        address: localStorage.getItem('userAddress') || '',
-        name: localStorage.getItem('userName') || '',
-        role: userRole
-      });
-        console.log('教师认证成功，停止加载状态');
-      setLoading(false);
+        // 获取用户信息
+        setUserData({
+          isLoggedIn: true,
+          address: localStorage.getItem('userAddress') || '',
+          name: localStorage.getItem('userName') || '',
+          role: userRole
+        });
+          
+        console.log('管理员认证成功，停止加载状态');
+        setLoading(false);
       } catch (error) {
         console.error("Authentication check error:", error);
         setLoading(false); // 确保即使出错也会停止加载状态
@@ -86,7 +97,7 @@ export default function TeacherIndexPage() {
 
     // 添加延迟执行验证，避免客户端渲染问题
     const timer = setTimeout(() => {
-    checkUserAuth();
+      checkUserAuth();
     }, 100);
 
     return () => clearTimeout(timer);
@@ -108,52 +119,79 @@ export default function TeacherIndexPage() {
     {
       key: 'sub1',
       icon: <UserOutlined />,
-      label: '个人中心',
+      label: '系统管理',
       children: [
         {
           key: '1',
-          label: '个人信息',
+          label: '管理员主页',
+        },
+        {
+          key: '2',
+          label: '系统设置',
+          onClick: () => router.push('/adminSettings')
         }
       ],
     },
     {
       key: 'sub2',
-      icon: <BookOutlined />,
-      label: '课程管理',
+      icon: <TeamOutlined />,
+      label: '用户管理',
       children: [
         {
-          key: '2',
-          label: '创建课程',
-          onClick: () => router.push('/teacherCreateCourse')
+          key: '3',
+          label: '教师管理',
+          onClick: () => router.push('/adminTeacherManagement')
         },
         {
-          key: '3',
-          label: '我的课程',
-          onClick: () => router.push('/teacherViewCourse')
+          key: '4',
+          label: '学生管理',
+          onClick: () => router.push('/adminStudentManagement')
         }
       ],
     },
     {
       key: 'sub3',
-      icon: <CommentOutlined />,
-      label: '评价管理',
+      icon: <BookOutlined />,
+      label: '课程管理',
       children: [
         {
-          key: '4',
-          label: '查看评价',
-          onClick: () => router.push('/teacherViewEvaluation')
+          key: '5',
+          label: '所有课程',
+          onClick: () => router.push('/adminCourseManagement')
         }
       ],
     },
     {
       key: 'sub4',
+      icon: <CommentOutlined />,
+      label: '评价管理',
+      children: [
+        {
+          key: '6',
+          label: '评价审核',
+          onClick: () => router.push('/adminEvaluationReview')
+        },
+        {
+          key: '7',
+          label: '评价统计',
+          onClick: () => router.push('/adminEvaluationStats')
+        }
+      ],
+    },
+    {
+      key: 'sub5',
       icon: <BarChartOutlined />,
       label: '数据分析',
       children: [
         {
-          key: '5',
-          label: '统计分析',
-          onClick: () => router.push('/statistics')
+          key: '8',
+          label: '系统概览',
+          onClick: () => router.push('/adminDashboard')
+        },
+        {
+          key: '9',
+          label: '详细分析',
+          onClick: () => router.push('/adminAnalytics')
         }
       ],
     }
@@ -161,9 +199,9 @@ export default function TeacherIndexPage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          正在加载教师首页...
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div style={{ padding: '100px', background: 'rgba(0,0,0,0.01)', borderRadius: '4px' }}>
+          正在加载管理员首页...
         </div>
       </div>
     );
@@ -173,7 +211,7 @@ export default function TeacherIndexPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1677ff', // 使用蓝色作为管理员端主题色
         },
       }}
     >
@@ -190,7 +228,7 @@ export default function TeacherIndexPage() {
               />
             </div>
             <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-              链评系统（ChainRate）- 教师端
+              链评系统（ChainRate）- 管理员端
             </div>
           </div>
           <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
@@ -201,7 +239,7 @@ export default function TeacherIndexPage() {
           </div>
         </Header>
         <Layout>
-          <Sider width={200} style={{ background: 'white' }}>
+          <Sider width={200} style={{ background: colorBgContainer }}>
             <Menu
               mode="inline"
               defaultSelectedKeys={['1']}
@@ -212,7 +250,7 @@ export default function TeacherIndexPage() {
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>
             <Breadcrumb
-              items={[{ title: '首页' }, { title: '个人中心' }]}
+              items={[{ title: '首页' }, { title: '系统管理' }]}
               style={{ margin: '16px 0' }}
             />
             <Content
@@ -220,11 +258,11 @@ export default function TeacherIndexPage() {
                 padding: 24,
                 margin: 0,
                 minHeight: 280,
-                background: 'white',
-                borderRadius: 8,
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
               }}
             >
-              {/* 个人信息区域 */}
+              {/* 管理员信息区域 */}
               <Card
                 className={styles.profileCard}
                 variant="outlined"
@@ -240,51 +278,51 @@ export default function TeacherIndexPage() {
                         size={100} 
                         icon={<UserOutlined />} 
                         style={{ 
-                          backgroundColor: '#34a853',
-                          boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
+                          backgroundColor: '#1677ff',
+                          boxShadow: '0 4px 8px rgba(22,119,255,0.2)'
                         }} 
                       />
                     </div>
                   </Col>
                   <Col xs={24} sm={18} md={18} lg={14}>
-                    <h2 style={{ marginBottom: 16, fontSize: 24 }}>{userData.name} <Tag color="green">教师</Tag></h2>
+                    <h2 style={{ marginBottom: 16, fontSize: 24 }}>{userData.name} <Tag color="blue">系统管理员</Tag></h2>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <GlobalOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <GlobalOutlined style={{ marginRight: 8, color: '#1677ff' }} />
                       <span style={{ wordBreak: 'break-all' }}><strong>钱包地址:</strong> {userData.address}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <MailOutlined style={{ marginRight: 8, color: '#34a853' }} />
-                      <span><strong>邮箱:</strong> teacher@example.com</span>
+                      <MailOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                      <span><strong>邮箱:</strong> admin@chainrate.edu</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center' }}>
-                      <TeamOutlined style={{ marginRight: 8, color: '#34a853' }} />
-                      <span><strong>学院:</strong> 计算机科学与技术学院</span>
+                      <SafetyOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                      <span><strong>权限级别:</strong> 系统超级管理员</span>
                     </p>
                   </Col>
                   <Col xs={24} sm={24} md={24} lg={6}>
                     <Row gutter={[16, 16]}>
                       <Col span={8}>
                         <Statistic 
-                          title="已创建课程"
-                          value={5}
-                          prefix={<BookOutlined />}
-                          valueStyle={{ color: '#34a853' }}
-                        />
-                      </Col>
-                      <Col span={8}>
-                        <Statistic 
-                          title="学生人数"
-                          value={120}
+                          title="用户总数"
+                          value={253}
                           prefix={<TeamOutlined />}
-                          valueStyle={{ color: '#34a853' }}
+                          valueStyle={{ color: '#1677ff' }}
                         />
                       </Col>
                       <Col span={8}>
                         <Statistic 
-                          title="收到评价"
-                          value={45}
+                          title="课程总数"
+                          value={68}
+                          prefix={<BookOutlined />}
+                          valueStyle={{ color: '#1677ff' }}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <Statistic 
+                          title="评价总数"
+                          value={856}
                           prefix={<CommentOutlined />}
-                          valueStyle={{ color: '#34a853' }}
+                          valueStyle={{ color: '#1677ff' }}
                         />
                       </Col>
                     </Row>
@@ -293,26 +331,26 @@ export default function TeacherIndexPage() {
               </Card>
 
               {/* 功能区 */}
-              <h2 style={{ fontSize: 20, marginBottom: 16 }}>功能区</h2>
+              <h2 style={{ fontSize: 20, marginBottom: 16 }}>系统管理功能</h2>
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/teacherCreateCourse')}
+                    onClick={() => router.push('/adminTeacherManagement')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <FileAddOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <UserAddOutlined style={{ fontSize: 48, color: '#1677ff' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
                   >
                     <Meta
-                      title="创建课程"
-                      description="创建新的课程供学生评价"
+                      title="用户管理"
+                      description="管理系统中的教师和学生用户"
                     />
                     <div style={{ marginTop: 16 }}>
-                      <Button type="primary" ghost>立即创建</Button>
+                      <Button type="primary" ghost>管理用户</Button>
                     </div>
                   </Card>
                 </Col>
@@ -321,20 +359,20 @@ export default function TeacherIndexPage() {
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/teacherViewCourse')}
+                    onClick={() => router.push('/adminCourseManagement')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <BookOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <BookOutlined style={{ fontSize: 48, color: '#1677ff' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
                   >
                     <Meta
-                      title="我的课程"
-                      description="管理您已创建的课程"
+                      title="课程管理"
+                      description="查看和管理系统中的所有课程"
                     />
                     <div style={{ marginTop: 16 }}>
-                      <Button type="primary" ghost>查看课程</Button>
+                      <Button type="primary" ghost>管理课程</Button>
                     </div>
                   </Card>
                 </Col>
@@ -343,20 +381,20 @@ export default function TeacherIndexPage() {
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/teacherViewEvaluation')}
+                    onClick={() => router.push('/adminEvaluationReview')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <CommentOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <AuditOutlined style={{ fontSize: 48, color: '#1677ff' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
                   >
                     <Meta
-                      title="查看评价"
-                      description="查看学生对课程的评价"
+                      title="评价审核"
+                      description="审核学生提交的评价内容"
                     />
                     <div style={{ marginTop: 16 }}>
-                      <Button type="primary" ghost>查看评价</Button>
+                      <Button type="primary" ghost>审核评价</Button>
                     </div>
                   </Card>
                 </Col>
@@ -365,31 +403,31 @@ export default function TeacherIndexPage() {
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/statistics')}
+                    onClick={() => router.push('/adminDashboard')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <PieChartOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <PieChartOutlined style={{ fontSize: 48, color: '#1677ff' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
                   >
                     <Meta
-                      title="统计分析"
-                      description="查看课程评价的统计数据"
+                      title="系统统计"
+                      description="查看系统整体使用数据和统计"
                     />
                     <div style={{ marginTop: 16 }}>
-                      <Button type="primary" ghost>查看分析</Button>
+                      <Button type="primary" ghost>查看统计</Button>
                     </div>
                   </Card>
                 </Col>
               </Row>
 
-              {/* 系统公告 */}
+              {/* 系统公告与状态 */}
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <RocketOutlined style={{ marginRight: 8, color: '#34a853' }} />
-                    <span>系统公告</span>
+                    <SafetyCertificateOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                    <span>系统状态与通知</span>
                   </div>
                 }
                 style={{ marginTop: 24 }}
@@ -398,18 +436,57 @@ export default function TeacherIndexPage() {
                 <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
                   <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
                   <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>教师评价分析功能上线</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-15</p>
-                    <p>链评系统已上线教师评价分析功能，可视化展示学生评价数据，帮助您更好地改进教学。</p>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>系统升级通知</p>
+                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-10</p>
+                    <p>链评系统将于本周日凌晨2:00-4:00进行系统升级维护，期间系统可能暂时无法访问，请安排好相关工作。</p>
                   </div>
                 </div>
                 <Divider style={{ margin: '12px 0' }} />
                 <div style={{ display: 'flex', alignItems: 'start' }}>
                   <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
                   <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>评价活动通知</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-10</p>
-                    <p>本学期课程评价将于6月15日截止，请及时提醒学生完成课程评价！</p>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>管理员审核提醒</p>
+                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-08</p>
+                    <p>目前有5条新评价和3条疑似违规内容需要管理员审核，请及时处理！</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* 系统活动记录 */}
+              <Card
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <ProfileOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                    <span>最近系统活动</span>
+                  </div>
+                }
+                style={{ marginTop: 24 }}
+                variant="outlined"
+              >
+                <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
+                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>新教师账号注册</p>
+                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-09 15:32</p>
+                    <p>教师"张明"完成注册并认证，等待管理员审核。</p>
+                  </div>
+                </div>
+                <Divider style={{ margin: '12px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
+                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>系统安全警告</p>
+                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-09 10:15</p>
+                    <p>检测到多次异常登录尝试，IP地址已被临时封禁。</p>
+                  </div>
+                </div>
+                <Divider style={{ margin: '12px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'start' }}>
+                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>学期评价统计完成</p>
+                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-08 18:40</p>
+                    <p>2023春季学期评价数据统计完成，可在统计分析页面查看详情。</p>
                   </div>
                 </div>
               </Card>
@@ -417,8 +494,8 @@ export default function TeacherIndexPage() {
           </Layout>
         </Layout>
         <div className={styles.footer}>
-        <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
-    </div>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+        </div>
       </Layout>
     </ConfigProvider>
   );

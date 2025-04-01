@@ -178,6 +178,7 @@ export default function LoginPage() {
             } else if (roleHash === ADMIN_ROLE.toString()) {
               readableRole = 'admin';
               // 未来可以添加管理员首页路径
+              redirectPath = '/adminIndex'; // 教师跳转到教师首页
             }
             localStorage.setItem('userRole', readableRole);
             
