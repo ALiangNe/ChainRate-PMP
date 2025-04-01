@@ -43,7 +43,8 @@ import {
   Tooltip,
   Divider,
   Typography,
-  Rate
+  Rate,
+  Image as AntImage
 } from 'antd';
 
 const { Header, Content, Sider } = Layout;
@@ -473,19 +474,17 @@ export default function StudentMyEvaluationsPage() {
                                     <Card 
                                       size="small" 
                                       style={{ textAlign: 'center' }}
-                                      cover={
-                                        <div style={{ 
-                                          height: 150, 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          justifyContent: 'center',
-                                          background: '#f5f5f5' 
-                                        }}>
-                                          <FileImageOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
-                                        </div>
-                                      }
                                     >
-                                      <Text type="secondary">附件 {idx + 1}</Text>
+                                      <AntImage
+                                        width={200}
+                                        height={150}
+                                        src={`https://gateway.pinata.cloud/ipfs/${hash}`}
+                                        alt={`评价图片 ${idx + 1}`}
+                                        fallback="/images/image-error.png"
+                                        preview={{
+                                          src: `https://gateway.pinata.cloud/ipfs/${hash}`
+                                        }}
+                                      />
                                     </Card>
                                   </Col>
                                 ))}
