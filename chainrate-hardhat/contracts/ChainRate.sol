@@ -107,6 +107,11 @@ contract ChainRate {
     // 新增映射：记录课程中的学生地址列表
     mapping(uint256 => address[]) public courseStudents;  // 课程ID到其学生地址列表的映射
     
+    // 新增变量：存储所有注册用户的地址
+    address[] public allStudents;  // 所有注册的学生地址列表
+    address[] public allTeachers;  // 所有注册的教师地址列表
+    address[] public allAdmins;    // 所有注册的管理员地址列表
+    
     uint256 public courseCount;  // 课程总数
     uint256 public evaluationCount;  // 评价总数
     
@@ -222,10 +227,13 @@ contract ChainRate {
         // 根据角色设置相应的权限
         if (role == ADMIN_ROLE) {
             admins[msg.sender] = true;
+            allAdmins.push(msg.sender);  // 添加到管理员列表
         } else if (role == TEACHER_ROLE) {
             teachers[msg.sender] = true;
+            allTeachers.push(msg.sender);  // 添加到教师列表
         } else if (role == STUDENT_ROLE) {
             students[msg.sender] = true;
+            allStudents.push(msg.sender);  // 添加到学生列表
         }
         
         emit UserRegistered(msg.sender, name, role);
@@ -792,5 +800,256 @@ contract ChainRate {
      */
     function isStudentEvaluated(uint256 courseId, address studentAddress) external view courseExists(courseId) returns (bool) {
         return hasEvaluated[courseId][studentAddress];
+    }
+    
+    /**
+     * @dev 获取所有注册的学生地址列表
+     * @return 所有学生地址数组
+     */
+    function getAllStudents() external view onlyAdmin returns (address[] memory) {
+        return allStudents;
+    }
+    
+    /**
+     * @dev 获取所有注册的教师地址列表
+     * @return 所有教师地址数组
+     */
+    function getAllTeachers() external view onlyAdmin returns (address[] memory) {
+        return allTeachers;
+    }
+    
+    /**
+     * @dev 获取所有注册的管理员地址列表
+     * @return 所有管理员地址数组
+     */
+    function getAllAdmins() external view onlyAdmin returns (address[] memory) {
+        return allAdmins;
+    }
+    
+    /**
+     * @dev 获取所有学生信息（批量获取）
+     * @param offset 起始位置
+     * @param limit 获取数量
+     * @return addresses 学生地址数组
+     * @return names 学生姓名数组
+     * @return phones 学生手机号数组
+     * @return coursesCounts 选修课程数量数组
+     * @return evaluationsCounts 提交评价数量数组
+     */
+    function getStudentsBatch(uint256 offset, uint256 limit) external view onlyAdmin returns (
+        address[] memory addresses,
+        string[] memory names,
+        string[] memory phones,
+        uint256[] memory coursesCounts,
+        uint256[] memory evaluationsCounts
+    ) {
+        // 检查边界条件
+        if (offset >= allStudents.length) {
+            return (
+                new address[](0),
+                new string[](0),
+                new string[](0),
+                new uint256[](0),
+                new uint256[](0)
+            );
+        }
+        
+        // 计算实际要返回的数量
+        uint256 count = allStudents.length - offset;
+        if (count > limit) {
+            count = limit;
+        }
+        
+        // 初始化返回数组
+        addresses = new address[](count);
+        names = new string[](count);
+        phones = new string[](count);
+        coursesCounts = new uint256[](count);
+        evaluationsCounts = new uint256[](count);
+        
+        // 填充数据
+        for (uint256 i = 0; i < count; i++) {
+            address studentAddress = allStudents[offset + i];
+            addresses[i] = studentAddress;
+            names[i] = users[studentAddress].name;
+            phones[i] = users[studentAddress].phone;
+            coursesCounts[i] = studentCourses[studentAddress].length;
+            evaluationsCounts[i] = studentEvaluations[studentAddress].length;
+        }
+    }
+    
+    /**
+     * @dev 获取所有教师信息（批量获取）
+     * @param offset 起始位置
+     * @param limit 获取数量
+     * @return addresses 教师地址数组
+     * @return names 教师姓名数组
+     * @return phones 教师手机号数组
+     * @return coursesCounts 创建课程数量数组
+     * @return averageRatings 平均评分数组（乘以100）
+     */
+    function getTeachersBatch(uint256 offset, uint256 limit) external view onlyAdmin returns (
+        address[] memory addresses,
+        string[] memory names,
+        string[] memory phones,
+        uint256[] memory coursesCounts,
+        uint256[] memory averageRatings
+    ) {
+        // 检查边界条件
+        if (offset >= allTeachers.length) {
+            return (
+                new address[](0),
+                new string[](0),
+                new string[](0),
+                new uint256[](0),
+                new uint256[](0)
+            );
+        }
+        
+        // 计算实际要返回的数量
+        uint256 count = allTeachers.length - offset;
+        if (count > limit) {
+            count = limit;
+        }
+        
+        // 初始化返回数组
+        addresses = new address[](count);
+        names = new string[](count);
+        phones = new string[](count);
+        coursesCounts = new uint256[](count);
+        averageRatings = new uint256[](count);
+        
+        // 填充数据
+        for (uint256 i = 0; i < count; i++) {
+            address teacherAddress = allTeachers[offset + i];
+            addresses[i] = teacherAddress;
+            names[i] = users[teacherAddress].name;
+            phones[i] = users[teacherAddress].phone;
+            
+            // 计算教师创建的课程数量
+            uint256 teacherCourseCount = 0;
+            uint256 totalRating = 0;
+            uint256 totalEvaluations = 0;
+            
+            for (uint256 j = 0; j < courseCount; j++) {
+                if (courses[j].teacher == teacherAddress) {
+                    teacherCourseCount++;
+                    
+                    // 计算该课程的评价总分
+                    uint256[] memory evalIds = courseEvaluations[j];
+                    if (evalIds.length > 0) {
+                        for (uint256 k = 0; k < evalIds.length; k++) {
+                            totalRating += evaluations[evalIds[k]].rating;
+                        }
+                        totalEvaluations += evalIds.length;
+                    }
+                }
+            }
+            
+            coursesCounts[i] = teacherCourseCount;
+            
+            // 计算教师所有课程的平均评分
+            if (totalEvaluations > 0) {
+                averageRatings[i] = (totalRating * 100) / totalEvaluations;
+            } else {
+                averageRatings[i] = 0;
+            }
+        }
+    }
+    
+    /**
+     * @dev 获取指定学生的详细信息和统计
+     * @param studentAddress 学生地址
+     * @return name 学生姓名
+     * @return phone 学生手机号
+     * @return courseCount 选修课程数量
+     * @return evaluationCount 提交评价数量
+     * @return courseIds 选修课程ID数组
+     * @return courseNames 选修课程名称数组
+     * @return hasEvaluatedArray 是否已评价数组
+     */
+    function getStudentDetailInfo(address studentAddress) external view onlyAdmin returns (
+        string memory name,
+        string memory phone,
+        uint256 courseCount,
+        uint256 evaluationCount,
+        uint256[] memory courseIds,
+        string[] memory courseNames,
+        bool[] memory hasEvaluatedArray
+    ) {
+        require(students[studentAddress], "ChainRate: not a student");
+        
+        User memory student = users[studentAddress];
+        name = student.name;
+        phone = student.phone;
+        
+        uint256[] memory joinedCourses = studentCourses[studentAddress];
+        courseCount = joinedCourses.length;
+        evaluationCount = studentEvaluations[studentAddress].length;
+        
+        courseIds = new uint256[](courseCount);
+        courseNames = new string[](courseCount);
+        hasEvaluatedArray = new bool[](courseCount);
+        
+        for (uint256 i = 0; i < courseCount; i++) {
+            uint256 courseId = joinedCourses[i];
+            courseIds[i] = courseId;
+            courseNames[i] = courses[courseId].name;
+            hasEvaluatedArray[i] = hasEvaluated[courseId][studentAddress];
+        }
+    }
+    
+    /**
+     * @dev 获取指定教师的详细信息和统计
+     * @param teacherAddress 教师地址
+     * @return name 教师姓名
+     * @return phone 教师手机号
+     * @return totalCourses 创建课程总数
+     * @return totalStudents 选修学生总数
+     * @return totalEvaluations 收到评价总数
+     * @return averageRating 平均评分（乘以100）
+     */
+    function getTeacherDetailInfo(address teacherAddress) external view onlyAdmin returns (
+        string memory name,
+        string memory phone,
+        uint256 totalCourses,
+        uint256 totalStudents,
+        uint256 totalEvaluations,
+        uint256 averageRating
+    ) {
+        require(teachers[teacherAddress], "ChainRate: not a teacher");
+        
+        User memory teacher = users[teacherAddress];
+        name = teacher.name;
+        phone = teacher.phone;
+        
+        uint256 courseCounter = 0;
+        uint256 studentsTotal = 0;
+        uint256 evalsTotal = 0;
+        uint256 totalRating = 0;
+        
+        for (uint256 i = 0; i < courseCount; i++) {
+            if (courses[i].teacher == teacherAddress) {
+                courseCounter++;
+                studentsTotal += courses[i].studentCount;
+                
+                uint256[] memory evalIds = courseEvaluations[i];
+                evalsTotal += evalIds.length;
+                
+                for (uint256 j = 0; j < evalIds.length; j++) {
+                    totalRating += evaluations[evalIds[j]].rating;
+                }
+            }
+        }
+        
+        totalCourses = courseCounter;
+        totalStudents = studentsTotal;
+        totalEvaluations = evalsTotal;
+        
+        if (evalsTotal > 0) {
+            averageRating = (totalRating * 100) / evalsTotal;
+        } else {
+            averageRating = 0;
+        }
     }
 } 
