@@ -51,6 +51,7 @@ import {
   Switch,
   Empty
 } from 'antd';
+import UserAvatar from '../../components/UserAvatar';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -65,7 +66,12 @@ export default function TeacherManageCoursePage({ params }) {
     isLoggedIn: false,
     address: '',
     name: '',
-    role: ''
+    role: '',
+    email: '',
+    college: '',
+    major: '',
+    grade: '',
+    avatar: ''
   });
   
   // 课程原始数据
@@ -107,24 +113,34 @@ export default function TeacherManageCoursePage({ params }) {
   useEffect(() => {
     // 检查用户是否已登录并且是教师角色
     const checkUserAuth = () => {
-      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      const userRole = localStorage.getItem('userRole');
-      
-      if (!isLoggedIn || userRole !== 'teacher') {
-        router.push('/login');
-        return;
-      }
+      try {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+        
+        if (!isLoggedIn || userRole !== 'teacher') {
+          router.push('/login');
+          return;
+        }
 
-      // 获取用户信息
-      setUserData({
-        isLoggedIn: true,
-        address: localStorage.getItem('userAddress') || '',
-        name: localStorage.getItem('userName') || '',
-        role: userRole
-      });
-      
-      // 初始化Web3连接
-      initWeb3();
+        // 获取用户信息
+        setUserData({
+          isLoggedIn: true,
+          address: localStorage.getItem('userAddress') || '',
+          name: localStorage.getItem('userName') || '',
+          role: userRole,
+          email: localStorage.getItem('userEmail') || '',
+          college: localStorage.getItem('userCollege') || '',
+          major: localStorage.getItem('userMajor') || '',
+          grade: localStorage.getItem('userGrade') || '',
+          avatar: localStorage.getItem('userAvatar') || ''
+        });
+        
+        // 初始化Web3连接
+        initWeb3();
+      } catch (error) {
+        console.error("Authentication check error:", error);
+        setLoading(false);
+      }
     };
 
     const initWeb3 = async () => {
@@ -418,13 +434,16 @@ export default function TeacherManageCoursePage({ params }) {
   };
 
   const handleLogout = () => {
-    if (typeof window === 'undefined') return;
-    
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userAddress');
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userRoleHash');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userCollege');
+    localStorage.removeItem('userMajor');
+    localStorage.removeItem('userGrade');
+    localStorage.removeItem('userAvatar');
     router.push('/login');
   };
 
@@ -639,10 +658,8 @@ export default function TeacherManageCoursePage({ params }) {
           </div>
             <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
               <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-              <Tooltip title="退出登录">
-                <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
-              </Tooltip>
-      </div>
+              <UserAvatar color="#fff" />
+            </div>
           </Header>
           <Content style={{ padding: '20px' }}>
             <Alert
@@ -688,10 +705,8 @@ export default function TeacherManageCoursePage({ params }) {
           </div>
           <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
             <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-            <Tooltip title="退出登录">
-              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
-            </Tooltip>
-        </div>
+            <UserAvatar color="#fff" />
+          </div>
         </Header>
         <Layout>
           <Sider width={200} style={{ background: 'white' }}>
