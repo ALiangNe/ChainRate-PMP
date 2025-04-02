@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './page.module.css';
 import React from 'react';
+import { ethers } from 'ethers';
+import ChainRateABI from '../../contracts/ChainRate.json';
+import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -35,7 +38,8 @@ import {
   Divider, 
   Tag,
   Tooltip,
-  Button
+  Button,
+  Spin
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -56,17 +60,29 @@ export default function StudentIndexPage() {
     avatar: ''
   });
   const [loading, setLoading] = useState(true);
+  const [contract, setContract] = useState(null);
   
-  // 将theme.useToken()移到条件渲染后使用
-
+  // 统计数据状态
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [evaluatedCoursesCount, setEvaluatedCoursesCount] = useState(0);
+  const [unevaluatedCoursesCount, setUnevaluatedCoursesCount] = useState(0);
+  const [totalEvaluationsCount, setTotalEvaluationsCount] = useState(0);
+  
   useEffect(() => {
+    // 确保代码仅在客户端执行
+    if (typeof window === 'undefined') return;
+
     // 检查用户是否已登录并且是学生角色
     const checkUserAuth = () => {
       try {
+        console.log('检查学生认证...');
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         const userRole = localStorage.getItem('userRole');
         
+        console.log('认证状态:', { isLoggedIn, userRole });
+        
         if (!isLoggedIn || userRole !== 'student') {
+          console.log('未认证为学生，重定向到登录页面');
           router.push('/login');
           return;
         }
@@ -83,15 +99,143 @@ export default function StudentIndexPage() {
           grade: localStorage.getItem('userGrade') || '',
           avatar: localStorage.getItem('userAvatar') || ''
         });
-        setLoading(false);
+        console.log('学生认证成功，初始化Web3连接');
+        initWeb3();
       } catch (error) {
         console.error("Authentication check error:", error);
         setLoading(false); // 确保即使出错也会停止加载状态
       }
     };
 
-    checkUserAuth();
+    // 初始化Web3连接
+    const initWeb3 = async () => {
+      try {
+        // 检查是否有 MetaMask
+        if (typeof window.ethereum === 'undefined') {
+          console.error('请安装 MetaMask 钱包以使用此应用');
+          setLoading(false);
+          return;
+        }
+        
+        // 请求用户连接钱包
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // 创建 Web3 Provider
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // 获取 Signer
+        const signer = await provider.getSigner();
+        
+        // 连接到合约
+        const chainRateContract = new ethers.Contract(
+          ChainRateAddress.address,
+          ChainRateABI.abi,
+          signer
+        );
+        setContract(chainRateContract);
+        
+        // 获取学生统计数据
+        await loadStudentStatistics(chainRateContract);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("初始化Web3失败:", err);
+        setLoading(false);
+      }
+    };
+    
+    // 加载学生统计数据
+    const loadStudentStatistics = async (contractInstance) => {
+      try {
+        setStatsLoading(true);
+        console.log("开始加载学生统计数据...");
+        
+        const studentAddress = localStorage.getItem('userAddress');
+        if (!studentAddress) {
+          console.error("未找到学生地址");
+          setStatsLoading(false);
+          return;
+        }
+        
+        console.log("正在获取学生课程和评价数据...");
+        
+        // 使用现有合约函数获取学生统计数据
+        try {
+          // 1. 获取学生加入的所有课程ID
+          const studentCourses = await contractInstance.getStudentCourses(studentAddress);
+          console.log("学生课程:", studentCourses);
+          
+          // 2. 获取学生的所有评价ID
+          const studentEvals = await contractInstance.getStudentEvaluations(studentAddress);
+          console.log("学生评价:", studentEvals);
+          
+          // 3. 计算已评价课程数量
+          let evaluatedCount = 0;
+          
+          // 对每个课程，检查学生是否已评价
+          const coursesCount = studentCourses.length;
+          console.log("学生加入的课程总数:", coursesCount);
+          
+          for (let i = 0; i < coursesCount; i++) {
+            const courseId = studentCourses[i];
+            const hasEvaluated = await contractInstance.isStudentEvaluated(courseId, studentAddress);
+            if (hasEvaluated) {
+              evaluatedCount++;
+            }
+          }
+          
+          console.log("已评价课程数:", evaluatedCount);
+          
+          // 4. 计算未评价课程数
+          const unevaluatedCount = coursesCount - evaluatedCount;
+          console.log("未评价课程数:", unevaluatedCount);
+          
+          // 5. 获取评价总数
+          const totalEvals = studentEvals.length;
+          console.log("评价总数:", totalEvals);
+          
+          // 更新状态
+          setEvaluatedCoursesCount(evaluatedCount);
+          setUnevaluatedCoursesCount(unevaluatedCount);
+          setTotalEvaluationsCount(totalEvals);
+          
+        } catch (contractErr) {
+          console.error("合约调用失败:", contractErr);
+          // 设置默认值，避免显示加载中状态
+          setEvaluatedCoursesCount(0);
+          setUnevaluatedCoursesCount(0);
+          setTotalEvaluationsCount(0);
+        }
+        
+        setStatsLoading(false);
+      } catch (err) {
+        console.error("加载学生统计数据失败:", err);
+        setStatsLoading(false);
+        // 设置默认值，避免显示加载中状态
+        setEvaluatedCoursesCount(0);
+        setUnevaluatedCoursesCount(0);
+        setTotalEvaluationsCount(0);
+      }
+    };
+
+    // 添加延迟执行验证，避免客户端渲染问题
+    const timer = setTimeout(() => {
+      checkUserAuth();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [router]);
+
+  // 刷新学生统计数据
+  const refreshStudentStatistics = async () => {
+    if (!contract) return;
+    
+    try {
+      await loadStudentStatistics(contract);
+    } catch (err) {
+      console.error("刷新学生统计数据失败:", err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -160,7 +304,13 @@ export default function StudentIndexPage() {
   ];
 
   if (loading) {
-    return <div className={styles.container}>正在加载...</div>;
+    return (
+      <div className={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          正在加载学生首页...
+        </div>
+      </div>
+    );
   }
   
   // 将 ConfigProvider 包裹整个应用，并使用 defaultToken 代替直接使用 useToken
@@ -178,22 +328,50 @@ export default function StudentIndexPage() {
         headerItems={headerItems} 
         siderItems={siderItems} 
         router={router}
+        statsLoading={statsLoading}
+        evaluatedCoursesCount={evaluatedCoursesCount}
+        unevaluatedCoursesCount={unevaluatedCoursesCount}
+        totalEvaluationsCount={totalEvaluationsCount}
+        refreshStats={refreshStudentStatistics}
       />
     </ConfigProvider>
   );
 }
 
 // 将 Ant Design 组件分离到单独的组件中，避免在主组件中直接使用 useToken
-function AntDesignContent({ userData, handleLogout, headerItems, siderItems, router }) {
+function AntDesignContent({ 
+  userData, 
+  handleLogout, 
+  headerItems, 
+  siderItems, 
+  router,
+  statsLoading,
+  evaluatedCoursesCount,
+  unevaluatedCoursesCount,
+  totalEvaluationsCount,
+  refreshStats
+}) {
   const {
     token: { colorBgContainer, borderRadiusLG, colorPrimary },
   } = theme.useToken();
   
-  // 统计数据（示例数据）
+  // 统计数据（动态数据）
   const stats = [
-    { title: '已评价课程', value: 8, icon: <BookOutlined /> },
-    { title: '总评价数', value: 12, icon: <CommentOutlined /> },
-    { title: '完成率', value: '85%', icon: <TrophyOutlined /> },
+    { 
+      title: '已评价课程', 
+      value: statsLoading ? <Spin size="small" /> : evaluatedCoursesCount, 
+      icon: <BookOutlined /> 
+    },
+    { 
+      title: '未评价课程', 
+      value: statsLoading ? <Spin size="small" /> : unevaluatedCoursesCount, 
+      icon: <FormOutlined /> 
+    },
+    { 
+      title: '总评价数', 
+      value: statsLoading ? <Spin size="small" /> : totalEvaluationsCount, 
+      icon: <CommentOutlined /> 
+    },
   ];
   
   return (

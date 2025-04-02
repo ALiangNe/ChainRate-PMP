@@ -1167,4 +1167,37 @@ contract ChainRate {
             averageRating = 0;
         }
     }
+    
+    /**
+     * @dev 获取学生数据概览（用于dashboard）
+     * @param studentAddress 学生地址
+     * @return totalJoinedCourses 学生加入的课程总数
+     * @return evaluatedCourses 学生已评价的课程数量
+     * @return totalEvaluations 学生提交的评价总数
+     */
+    function getStudentDashboard(address studentAddress) external view returns (
+        uint256 totalJoinedCourses,
+        uint256 evaluatedCourses,
+        uint256 totalEvaluations
+    ) {
+        require(students[studentAddress], "ChainRate: not a student");
+        
+        // 获取学生加入的所有课程
+        uint256[] memory joinedCourses = studentCourses[studentAddress];
+        totalJoinedCourses = joinedCourses.length;
+        
+        // 计算已评价的课程数量
+        uint256 evalCourseCount = 0;
+        for (uint256 i = 0; i < totalJoinedCourses; i++) {
+            uint256 courseId = joinedCourses[i];
+            if (hasEvaluated[courseId][studentAddress]) {
+                evalCourseCount++;
+            }
+        }
+        
+        // 统计提交的评价总数
+        totalEvaluations = studentEvaluations[studentAddress].length;
+        
+        return (totalJoinedCourses, evalCourseCount, totalEvaluations);
+    }
 } 

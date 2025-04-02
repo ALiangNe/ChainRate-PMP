@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './page.module.css';
 import React from 'react';
+import { ethers } from 'ethers';
+import ChainRateABI from '../../contracts/ChainRate.json';
+import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import { 
   UserOutlined, 
   TeamOutlined, 
@@ -39,7 +42,8 @@ import {
   Divider, 
   Tag,
   Tooltip,
-  Button
+  Button,
+  Spin
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -65,6 +69,13 @@ export default function AdminIndexPage() {
     avatar: ''
   });
   const [loading, setLoading] = useState(true);
+  const [contract, setContract] = useState(null);
+  
+  // 统计数据状态
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalCourses, setTotalCourses] = useState(0);
+  const [totalEvaluations, setTotalEvaluations] = useState(0);
 
   useEffect(() => {
     // 确保代码仅在客户端执行
@@ -98,11 +109,85 @@ export default function AdminIndexPage() {
           avatar: localStorage.getItem('userAvatar') || ''
         });
           
-        console.log('管理员认证成功，停止加载状态');
-        setLoading(false);
+        console.log('管理员认证成功，初始化Web3连接');
+        initWeb3();
       } catch (error) {
         console.error("Authentication check error:", error);
         setLoading(false); // 确保即使出错也会停止加载状态
+      }
+    };
+    
+    // 初始化Web3连接
+    const initWeb3 = async () => {
+      try {
+        // 检查是否有 MetaMask
+        if (typeof window.ethereum === 'undefined') {
+          console.error('请安装 MetaMask 钱包以使用此应用');
+          setLoading(false);
+          return;
+        }
+        
+        // 请求用户连接钱包
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // 创建 Web3 Provider
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // 获取 Signer
+        const signer = await provider.getSigner();
+        
+        // 连接到合约
+        const chainRateContract = new ethers.Contract(
+          ChainRateAddress.address,
+          ChainRateABI.abi,
+          signer
+        );
+        setContract(chainRateContract);
+        
+        // 获取统计数据
+        await loadStatistics(chainRateContract);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("初始化Web3失败:", err);
+        setLoading(false);
+      }
+    };
+    
+    // 加载统计数据
+    const loadStatistics = async (contractInstance) => {
+      try {
+        setStatsLoading(true);
+        console.log("开始加载统计数据...");
+        
+        // 获取学生总数
+        const students = await contractInstance.getAllStudents();
+        console.log("学生总数:", students.length);
+        
+        // 获取教师总数
+        const teachers = await contractInstance.getAllTeachers();
+        console.log("教师总数:", teachers.length);
+        
+        // 计算用户总数
+        const userCount = students.length + teachers.length;
+        setTotalUsers(userCount);
+        
+        // 获取课程总数
+        // 注意：合约中可能没有直接获取课程总数的方法，这里使用courseCount状态变量
+        const coursesCount = await contractInstance.courseCount();
+        console.log("课程总数:", Number(coursesCount));
+        setTotalCourses(Number(coursesCount));
+        
+        // 获取评价总数
+        // 注意：合约中可能没有直接获取评价总数的方法，这里使用evaluationCount状态变量
+        const evalsCount = await contractInstance.evaluationCount();
+        console.log("评价总数:", Number(evalsCount));
+        setTotalEvaluations(Number(evalsCount));
+        
+        setStatsLoading(false);
+      } catch (err) {
+        console.error("加载统计数据失败:", err);
+        setStatsLoading(false);
       }
     };
 
@@ -113,6 +198,17 @@ export default function AdminIndexPage() {
 
     return () => clearTimeout(timer);
   }, [router]);
+
+  // 添加刷新统计数据的函数
+  const refreshStatistics = async () => {
+    if (!contract) return;
+    
+    try {
+      await loadStatistics(contract);
+    } catch (err) {
+      console.error("刷新统计数据失败:", err);
+    }
+  };
 
   const handleLogout = () => {
     if (typeof window === 'undefined') return;
@@ -336,7 +432,7 @@ export default function AdminIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="用户总数"
-                          value={253}
+                          value={statsLoading ? <Spin size="small" /> : totalUsers}
                           prefix={<TeamOutlined />}
                           valueStyle={{ color: '#1677ff' }}
                         />
@@ -344,7 +440,7 @@ export default function AdminIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="课程总数"
-                          value={68}
+                          value={statsLoading ? <Spin size="small" /> : totalCourses}
                           prefix={<BookOutlined />}
                           valueStyle={{ color: '#1677ff' }}
                         />
@@ -352,7 +448,7 @@ export default function AdminIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="评价总数"
-                          value={856}
+                          value={statsLoading ? <Spin size="small" /> : totalEvaluations}
                           prefix={<CommentOutlined />}
                           valueStyle={{ color: '#1677ff' }}
                         />

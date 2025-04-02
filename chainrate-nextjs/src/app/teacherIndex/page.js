@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import styles from './page.module.css';
 import React from 'react';
+import { ethers } from 'ethers';
+import ChainRateABI from '../../contracts/ChainRate.json';
+import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -34,7 +37,8 @@ import {
   Divider, 
   Tag,
   Tooltip,
-  Button
+  Button,
+  Spin
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -55,6 +59,13 @@ export default function TeacherIndexPage() {
     avatar: ''
   });
   const [loading, setLoading] = useState(true);
+  const [contract, setContract] = useState(null);
+  
+  // 统计数据状态
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [coursesCount, setCoursesCount] = useState(0);
+  const [studentsCount, setStudentsCount] = useState(0);
+  const [evaluationsCount, setEvaluationsCount] = useState(0);
 
   useEffect(() => {
     // 确保代码仅在客户端执行
@@ -87,11 +98,82 @@ export default function TeacherIndexPage() {
           grade: localStorage.getItem('userGrade') || '',
           avatar: localStorage.getItem('userAvatar') || ''
         });
-        console.log('教师认证成功，停止加载状态');
-        setLoading(false);
+        console.log('教师认证成功，初始化Web3连接');
+        initWeb3();
       } catch (error) {
         console.error("Authentication check error:", error);
         setLoading(false); // 确保即使出错也会停止加载状态
+      }
+    };
+    
+    // 初始化Web3连接
+    const initWeb3 = async () => {
+      try {
+        // 检查是否有 MetaMask
+        if (typeof window.ethereum === 'undefined') {
+          console.error('请安装 MetaMask 钱包以使用此应用');
+          setLoading(false);
+          return;
+        }
+        
+        // 请求用户连接钱包
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // 创建 Web3 Provider
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // 获取 Signer
+        const signer = await provider.getSigner();
+        
+        // 连接到合约
+        const chainRateContract = new ethers.Contract(
+          ChainRateAddress.address,
+          ChainRateABI.abi,
+          signer
+        );
+        setContract(chainRateContract);
+        
+        // 获取教师统计数据
+        await loadTeacherStatistics(chainRateContract);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error("初始化Web3失败:", err);
+        setLoading(false);
+      }
+    };
+    
+    // 加载教师统计数据
+    const loadTeacherStatistics = async (contractInstance) => {
+      try {
+        setStatsLoading(true);
+        console.log("开始加载教师统计数据...");
+        
+        const teacherAddress = localStorage.getItem('userAddress');
+        if (!teacherAddress) {
+          console.error("未找到教师地址");
+          setStatsLoading(false);
+          return;
+        }
+        
+        // 获取教师面板数据 - 这个函数返回教师的所有课程和统计信息
+        const teacherDashboard = await contractInstance.getTeacherDashboard(teacherAddress);
+        console.log("教师面板数据:", teacherDashboard);
+        
+        // 解构数据
+        const totalCourses = Number(teacherDashboard[0] || 0);
+        const totalStudents = Number(teacherDashboard[1] || 0);
+        const totalEvaluations = Number(teacherDashboard[2] || 0);
+        
+        // 更新状态
+        setCoursesCount(totalCourses);
+        setStudentsCount(totalStudents);
+        setEvaluationsCount(totalEvaluations);
+        
+        setStatsLoading(false);
+      } catch (err) {
+        console.error("加载教师统计数据失败:", err);
+        setStatsLoading(false);
       }
     };
 
@@ -102,6 +184,17 @@ export default function TeacherIndexPage() {
 
     return () => clearTimeout(timer);
   }, [router]);
+  
+  // 刷新教师统计数据
+  const refreshTeacherStatistics = async () => {
+    if (!contract) return;
+    
+    try {
+      await loadTeacherStatistics(contract);
+    } catch (err) {
+      console.error("刷新教师统计数据失败:", err);
+    }
+  };
 
   const handleLogout = () => {
     if (typeof window === 'undefined') return;
@@ -298,7 +391,7 @@ export default function TeacherIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="已创建课程"
-                          value={5}
+                          value={statsLoading ? <Spin size="small" /> : coursesCount}
                           prefix={<BookOutlined />}
                           valueStyle={{ color: '#34a853' }}
                         />
@@ -306,7 +399,7 @@ export default function TeacherIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="学生人数"
-                          value={120}
+                          value={statsLoading ? <Spin size="small" /> : studentsCount}
                           prefix={<TeamOutlined />}
                           valueStyle={{ color: '#34a853' }}
                         />
@@ -314,7 +407,7 @@ export default function TeacherIndexPage() {
                       <Col span={8}>
                         <Statistic 
                           title="收到评价"
-                          value={45}
+                          value={statsLoading ? <Spin size="small" /> : evaluationsCount}
                           prefix={<CommentOutlined />}
                           valueStyle={{ color: '#34a853' }}
                         />
