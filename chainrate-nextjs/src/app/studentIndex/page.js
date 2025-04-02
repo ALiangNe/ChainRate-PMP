@@ -16,7 +16,10 @@ import {
   TeamOutlined,
   RocketOutlined,
   ClockCircleOutlined,
-  TrophyOutlined
+  TrophyOutlined,
+  BankOutlined,
+  ReadOutlined,
+  NumberOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -34,6 +37,7 @@ import {
   Tooltip,
   Button
 } from 'antd';
+import UserAvatar from '../components/UserAvatar';
 
 const { Header, Content, Sider } = Layout;
 const { Meta } = Card;
@@ -44,7 +48,12 @@ export default function StudentIndexPage() {
     isLoggedIn: false,
     address: '',
     name: '',
-    role: ''
+    role: '',
+    email: '',
+    college: '',
+    major: '',
+    grade: '',
+    avatar: ''
   });
   const [loading, setLoading] = useState(true);
   
@@ -67,7 +76,12 @@ export default function StudentIndexPage() {
           isLoggedIn: true,
           address: localStorage.getItem('userAddress') || '',
           name: localStorage.getItem('userName') || '',
-          role: userRole
+          role: userRole,
+          email: localStorage.getItem('userEmail') || '',
+          college: localStorage.getItem('userCollege') || '',
+          major: localStorage.getItem('userMajor') || '',
+          grade: localStorage.getItem('userGrade') || '',
+          avatar: localStorage.getItem('userAvatar') || ''
         });
         setLoading(false);
       } catch (error) {
@@ -85,6 +99,11 @@ export default function StudentIndexPage() {
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userRoleHash');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userCollege');
+    localStorage.removeItem('userMajor');
+    localStorage.removeItem('userGrade');
+    localStorage.removeItem('userAvatar');
     router.push('/login');
   };
 
@@ -196,9 +215,7 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
         </div>
         <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
           <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-          <Tooltip title="退出登录">
-            <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
-          </Tooltip>
+          <UserAvatar color="#fff" />
         </div>
       </Header>
       <Layout>
@@ -240,14 +257,24 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
               <Row gutter={[24, 24]} align="middle">
                 <Col xs={24} sm={6} md={6} lg={4}>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <Avatar 
-                      size={100} 
-                      icon={<UserOutlined />} 
-                      style={{ 
-                        backgroundColor: colorPrimary,
-                        boxShadow: '0 4px 8px rgba(26,115,232,0.2)'
-                      }} 
-                    />
+                    {userData.avatar ? (
+                      <Avatar 
+                        size={100} 
+                        src={userData.avatar}
+                        style={{ 
+                          boxShadow: '0 4px 8px rgba(26,115,232,0.2)'
+                        }} 
+                      />
+                    ) : (
+                      <Avatar 
+                        size={100} 
+                        icon={<UserOutlined />} 
+                        style={{ 
+                          backgroundColor: colorPrimary,
+                          boxShadow: '0 4px 8px rgba(26,115,232,0.2)'
+                        }} 
+                      />
+                    )}
                   </div>
                 </Col>
                 <Col xs={24} sm={18} md={18} lg={14}>
@@ -258,11 +285,19 @@ function AntDesignContent({ userData, handleLogout, headerItems, siderItems, rou
                   </p>
                   <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                     <MailOutlined style={{ marginRight: 8, color: colorPrimary }} />
-                    <span><strong>邮箱:</strong> student@example.com</span>
+                    <span><strong>邮箱:</strong> {userData.email}</span>
+                  </p>
+                  <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                    <BankOutlined style={{ marginRight: 8, color: colorPrimary }} />
+                    <span><strong>学院:</strong> {userData.college}</span>
+                  </p>
+                  <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                    <ReadOutlined style={{ marginRight: 8, color: colorPrimary }} />
+                    <span><strong>专业:</strong> {userData.major}</span>
                   </p>
                   <p style={{ display: 'flex', alignItems: 'center' }}>
-                    <TeamOutlined style={{ marginRight: 8, color: colorPrimary }} />
-                    <span><strong>学院:</strong> 计算机科学与技术学院</span>
+                    <NumberOutlined style={{ marginRight: 8, color: colorPrimary }} />
+                    <span><strong>年级:</strong> {userData.grade}</span>
                   </p>
                 </Col>
                 <Col xs={24} sm={24} md={24} lg={6}>
