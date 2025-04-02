@@ -250,14 +250,24 @@ export default function TeacherIndexPage() {
                 <Row gutter={[24, 24]} align="middle">
                   <Col xs={24} sm={6} md={6} lg={4}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <Avatar 
-                        size={100} 
-                        icon={<UserOutlined />} 
-                        style={{ 
-                          backgroundColor: '#34a853',
-                          boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
-                        }} 
-                      />
+                      {userData.avatar ? (
+                        <Avatar 
+                          size={100} 
+                          src={userData.avatar}
+                          style={{ 
+                            boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
+                          }} 
+                        />
+                      ) : (
+                        <Avatar 
+                          size={100} 
+                          icon={<UserOutlined />} 
+                          style={{ 
+                            backgroundColor: '#34a853',
+                            boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
+                          }} 
+                        />
+                      )}
                     </div>
                   </Col>
                   <Col xs={24} sm={18} md={18} lg={14}>
@@ -268,11 +278,19 @@ export default function TeacherIndexPage() {
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                       <MailOutlined style={{ marginRight: 8, color: '#34a853' }} />
-                      <span><strong>邮箱:</strong> teacher@example.com</span>
+                      <span><strong>邮箱:</strong> {userData.email || '未设置'}</span>
+                    </p>
+                    <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <TeamOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <span><strong>学院:</strong> {userData.college || '未设置'}</span>
+                    </p>
+                    <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <BookOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <span><strong>专业:</strong> {userData.major || '未设置'}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center' }}>
-                      <TeamOutlined style={{ marginRight: 8, color: '#34a853' }} />
-                      <span><strong>学院:</strong> 计算机科学与技术学院</span>
+                      <TrophyOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <span><strong>职称:</strong> {userData.grade || '未设置'}</span>
                     </p>
                   </Col>
                   <Col xs={24} sm={24} md={24} lg={6}>

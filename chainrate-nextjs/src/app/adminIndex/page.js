@@ -288,14 +288,24 @@ export default function AdminIndexPage() {
                 <Row gutter={[24, 24]} align="middle">
                   <Col xs={24} sm={6} md={6} lg={4}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <Avatar 
-                        size={100} 
-                        icon={<UserOutlined />} 
-                        style={{ 
-                          backgroundColor: '#1677ff',
-                          boxShadow: '0 4px 8px rgba(22,119,255,0.2)'
-                        }} 
-                      />
+                      {userData.avatar ? (
+                        <Avatar 
+                          size={100} 
+                          src={userData.avatar}
+                          style={{ 
+                            boxShadow: '0 4px 8px rgba(22,119,255,0.2)'
+                          }} 
+                        />
+                      ) : (
+                        <Avatar 
+                          size={100} 
+                          icon={<UserOutlined />} 
+                          style={{ 
+                            backgroundColor: '#1677ff',
+                            boxShadow: '0 4px 8px rgba(22,119,255,0.2)'
+                          }} 
+                        />
+                      )}
                     </div>
                   </Col>
                   <Col xs={24} sm={18} md={18} lg={14}>
@@ -306,11 +316,19 @@ export default function AdminIndexPage() {
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                       <MailOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-                      <span><strong>邮箱:</strong> admin@chainrate.edu</span>
+                      <span><strong>邮箱:</strong> {userData.email || 'admin@chainrate.edu'}</span>
+                    </p>
+                    <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <TeamOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                      <span><strong>学院:</strong> {userData.college || '系统管理部门'}</span>
+                    </p>
+                    <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                      <BookOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                      <span><strong>专业:</strong> {userData.major || '系统管理'}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center' }}>
                       <SafetyOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-                      <span><strong>权限级别:</strong> 系统超级管理员</span>
+                      <span><strong>权限级别:</strong> {userData.grade || '系统超级管理员'}</span>
                     </p>
                   </Col>
                   <Col xs={24} sm={24} md={24} lg={6}>
