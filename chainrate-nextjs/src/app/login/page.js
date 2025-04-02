@@ -86,7 +86,7 @@ export default function LoginPage() {
         try {
           const info = await chainRateContract.getUserInfo(account);
           // 检查用户是否已注册
-          if (info && info[7]) { // isRegistered 由于新增字段，索引变为7
+          if (info && info[8]) { // isRegistered 由于新增字段，索引变为8
             setUserInfo({
               name: info[0],
               phone: info[1],
@@ -94,7 +94,8 @@ export default function LoginPage() {
               college: info[3],
               major: info[4],
               grade: info[5],
-              role: info[6]
+              avatar: info[6], // 新增avatar字段
+              role: info[7]    // role索引从6变为7
             });
           }
         } catch (err) {
@@ -163,6 +164,7 @@ export default function LoginPage() {
           localStorage.setItem('userAddress', account);
           localStorage.setItem('userName', userInfo.name);
           localStorage.setItem('userRoleHash', roleHash);
+          localStorage.setItem('userAvatar', userInfo.avatar || ''); // 保存用户头像URL
           
           // 尝试从合约获取角色常量
           try {

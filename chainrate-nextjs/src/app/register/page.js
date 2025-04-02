@@ -7,6 +7,7 @@ import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import Image from 'next/image';
 import styles from './page.module.css';
+import axios from 'axios';
 import { 
   Form, 
   Input, 
@@ -20,7 +21,9 @@ import {
   Alert,
   ConfigProvider,
   Select,
-  Space
+  Space,
+  Upload,
+  Spin
 } from 'antd';
 import { 
   LockOutlined, 
@@ -34,7 +37,10 @@ import {
   MailOutlined,
   BankOutlined,
   BookOutlined,
-  NumberOutlined
+  NumberOutlined,
+  PictureOutlined,
+  UploadOutlined,
+  LoadingOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -52,10 +58,15 @@ export default function RegisterPage() {
     email: '', // 添加邮箱
     college: '', // 添加学院
     major: '', // 添加专业
-    grade: '' // 添加年级
+    grade: '', // 添加年级
+    avatar: '' // 添加头像URL
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarIpfsHash, setAvatarIpfsHash] = useState('');
   const [walletConnected, setWalletConnected] = useState(false);
   const [account, setAccount] = useState('');
   const [provider, setProvider] = useState(null);
@@ -115,6 +126,105 @@ export default function RegisterPage() {
     };
   }, []);
 
+  // 上传头像到IPFS
+  const uploadToIPFS = async (file) => {
+    if (!file) {
+      message.error('请先选择头像文件');
+      return null;
+    }
+    
+    setUploading(true);
+    try {
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // 上传到Pinata
+      const pinataEndpoint = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
+      
+      // 使用Pinata JWT进行身份验证
+      const jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
+      if (!jwt) {
+        message.error('缺少Pinata JWT配置，请联系管理员');
+        setUploading(false);
+        return null;
+      }
+      
+      const response = await axios.post(pinataEndpoint, formData, {
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data && response.data.IpfsHash) {
+        const ipfsHash = response.data.IpfsHash;
+        const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
+        setAvatarIpfsHash(ipfsUrl);
+        form.setFieldsValue({ avatar: ipfsUrl });
+        message.success('头像上传成功！');
+        return ipfsUrl;
+      } else {
+        throw new Error('上传失败，未收到IPFS哈希');
+      }
+    } catch (error) {
+      console.error('上传到IPFS失败:', error);
+      message.error(`头像上传失败: ${error.message || '未知错误'}`);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // 处理文件预览点击事件
+  const handlePreviewClick = () => {
+    document.getElementById('avatar-upload-input').click();
+  };
+
+  // 上传按钮属性
+  const uploadProps = {
+    name: 'file',
+    multiple: false,
+    accept: 'image/*',
+    beforeUpload: (file) => {
+      // 验证文件类型
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        message.error('只能上传图片文件!');
+        return Upload.LIST_IGNORE;
+      }
+      
+      // 验证文件大小 (限制为2MB)
+      const isLt2M = file.size / 1024 / 1024 < 2;
+      if (!isLt2M) {
+        message.error('图片必须小于2MB!');
+        return Upload.LIST_IGNORE;
+      }
+      
+      // 预览图片
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      setAvatarFile(file);
+      
+      // 自动上传到IPFS
+      setTimeout(() => {
+        uploadToIPFS(file);
+      }, 500);
+      
+      return false; // 阻止自动上传
+    },
+    showUploadList: false,
+    customRequest: ({ file, onSuccess }) => {
+      setTimeout(() => {
+        onSuccess("ok");
+      }, 0);
+    }
+  };
+
   const handleSubmit = async (values) => {
     setError('');
     setLoading(true);
@@ -129,6 +239,13 @@ export default function RegisterPage() {
 
       if (!walletConnected) {
         setError('请先连接钱包');
+        setLoading(false);
+        return;
+      }
+
+      // 检查是否上传了头像
+      if (!avatarIpfsHash) {
+        message.warning('请上传头像');
         setLoading(false);
         return;
       }
@@ -156,6 +273,7 @@ export default function RegisterPage() {
         values.college,
         values.major,
         values.grade,
+        avatarIpfsHash,
         passwordHash,
         roleBytes
       );
@@ -167,6 +285,12 @@ export default function RegisterPage() {
 
       // 注册成功
       message.success('注册成功！');
+      
+      // 保存头像信息到localStorage，因为合约中暂时没有存储
+      if (avatarIpfsHash) {
+        localStorage.setItem('userAvatar', avatarIpfsHash);
+      }
+      
       router.push('/login');
     } catch (err) {
       console.error("注册失败:", err);
@@ -340,7 +464,59 @@ export default function RegisterPage() {
                     prefix={<NumberOutlined />} 
                     placeholder="请输入年级，如：大一、大二" 
                     size="large"
-                  />
+                  >
+                  </Input>
+                </Form.Item>
+
+                {/* 头像上传 */}
+                <Form.Item
+                  name="avatar"
+                  rules={[{ required: true, message: '请上传头像' }]}
+                  style={{ marginBottom: 24 }}
+                >
+                  <div className={styles.avatarUploadContainer}>
+                    <div 
+                      className={styles.avatarPreview}
+                      onClick={handlePreviewClick}
+                    >
+                      {avatarPreview ? (
+                        <img 
+                          src={avatarPreview} 
+                          alt="Avatar Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                        />
+                      ) : (
+                        <div className={styles.avatarPlaceholder}>
+                          <PictureOutlined style={{ fontSize: 40, color: '#ccc' }} />
+                          <div style={{ marginTop: 8, color: '#999' }}>点击上传头像</div>
+                        </div>
+                      )}
+                      {uploading && (
+                        <div className={styles.uploadingOverlay}>
+                          <Spin tip="上传中..." />
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.avatarUploadActions}>
+                      <Upload {...uploadProps} id="avatar-upload">
+                        <Button 
+                          icon={<UploadOutlined />}
+                          type="primary"
+                          size="large"
+                          id="avatar-upload-input"
+                          loading={uploading}
+                        >
+                          {avatarPreview ? '更换头像' : '选择头像'}
+                        </Button>
+                      </Upload>
+                    </div>
+                    {avatarIpfsHash && (
+                      <div className={styles.ipfsInfo}>
+                        <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                        <span>头像已上传到IPFS</span>
+                      </div>
+                    )}
+                  </div>
                 </Form.Item>
 
                 <Form.Item
@@ -402,7 +578,7 @@ export default function RegisterPage() {
                     block
                     icon={<SolutionOutlined />}
                     loading={loading}
-                    disabled={!walletConnected}
+                    disabled={!walletConnected || !avatarIpfsHash}
                     className={styles.registerButton}
                   >
                     {loading ? '注册中...' : '注册'}
