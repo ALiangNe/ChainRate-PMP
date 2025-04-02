@@ -46,7 +46,8 @@ import {
   Divider,
   Avatar,
   Row,
-  Col
+  Col,
+  List
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -243,20 +244,36 @@ export default function AdminGetStudentListPage() {
       
       // 调用合约的批量获取函数
       const result = await contractInstance.getStudentsBatch(actualOffset, actualLimit);
+      console.log("合约返回学生批量数据:", result);
       
-      // 解构结果
-      const [batchAddresses, names, phones, courseCounts, evaluationCounts] = result;
+      // 安全地获取数据，而不是使用解构
+      const batchAddresses = result[0] || [];
+      const names = result[1] || [];
+      const phones = result[2] || [];
+      const emails = result[3] || [];
+      const colleges = result[4] || [];
+      const majors = result[5] || [];
+      const grades = result[6] || [];
+      const avatars = result[7] || [];  // 添加avatars字段解析
+      const courseCounts = result[8] || [];  // 修正索引从7到8
+      const evaluationCounts = result[9] || [];  // 修正索引从8到9
       
       // 构建学生数据
       const studentsData = batchAddresses.map((addr, index) => ({
         key: addr,
         address: addr,
-        name: names[index],
-        phone: phones[index],
-        coursesCount: Number(courseCounts[index]),
-        evaluationsCount: Number(evaluationCounts[index])
+        name: names[index] || '',
+        phone: phones[index] || '',
+        email: emails[index] || '',
+        college: colleges[index] || '',
+        major: majors[index] || '',
+        grade: grades[index] || '',
+        avatar: avatars[index] || '',  // 添加avatar字段
+        coursesCount: courseCounts && courseCounts[index] ? Number(courseCounts[index]) : 0,
+        evaluationsCount: evaluationCounts && evaluationCounts[index] ? Number(evaluationCounts[index]) : 0
       }));
       
+      console.log("处理后的学生数据:", studentsData);
       setStudents(studentsData);
       applyFilters(studentsData);
     } catch (err) {
@@ -297,7 +314,11 @@ export default function AdminGetStudentListPage() {
     const filtered = data.filter(student => 
       student.name.toLowerCase().includes(searchLower) || 
       student.address.toLowerCase().includes(searchLower) ||
-      student.phone.toLowerCase().includes(searchLower)
+      student.phone.toLowerCase().includes(searchLower) ||
+      student.email?.toLowerCase().includes(searchLower) ||
+      student.college?.toLowerCase().includes(searchLower) ||
+      student.major?.toLowerCase().includes(searchLower) ||
+      student.grade?.toLowerCase().includes(searchLower)
     );
     
     setFilteredStudents(filtered);
@@ -338,28 +359,58 @@ export default function AdminGetStudentListPage() {
       
       // 调用合约函数获取学生详情
       const details = await contract.getStudentDetailInfo(studentAddress);
-      console.log("学生详情:", details);
+      console.log("学生详情原始数据:", details);
       
-      // 解构结果
-      const [name, phone, courseCount, evaluationCount, courseIds, courseNames, hasEvaluatedArray] = details;
+      // 安全地获取数据，按照合约返回的正确顺序获取
+      // 合约返回顺序: name, phone, email, college, major, grade, avatar, courseCount, evalCount, courseIds, courseNames, hasEvalArray
+      const name = details[0] || '';
+      const phone = details[1] || '';
+      const email = details[2] || '';
+      const college = details[3] || '';
+      const major = details[4] || '';
+      const grade = details[5] || '';
+      const avatar = details[6] || '';
+      const courseCount = details[7] ? Number(details[7]) : 0;
+      const evaluationCount = details[8] ? Number(details[8]) : 0;
       
-      // 构建课程信息
-      const courses = courseIds.map((id, index) => ({
-        id: Number(id),
-        name: courseNames[index],
-        hasEvaluated: hasEvaluatedArray[index]
-      }));
+      // 处理课程数据，访问正确的索引
+      let courses = [];
+      try {
+        const courseIds = details[9] || [];  // 修正索引从8到9
+        const courseNames = details[10] || []; // 修正索引从9到10
+        const hasEvaluatedArray = details[11] || []; // 修正索引从10到11
+        
+        console.log("课程数据:", { courseIds, courseNames, hasEvaluatedArray });
+        
+        // 只在有课程数据时构建课程信息
+        if (courseIds && courseIds.length > 0) {
+          courses = courseIds.map((id, index) => ({
+            id: Number(id),
+            name: courseNames[index] || `课程${index+1}`,
+            hasEvaluated: hasEvaluatedArray[index] || false
+          }));
+        }
+      } catch (courseErr) {
+        console.error("处理课程数据时出错:", courseErr);
+        // 如果课程处理失败也不影响整体数据
+      }
       
       // 构建学生详情对象
       const studentDetailsObj = {
         address: studentAddress,
         name,
         phone,
-        courseCount: Number(courseCount),
-        evaluationCount: Number(evaluationCount),
+        email,
+        college,
+        major,
+        grade,
+        avatar,
+        courseCount,
+        evaluationCount,
         courses
       };
       
+      console.log("处理后的学生详情:", studentDetailsObj);
       setStudentDetails(studentDetailsObj);
       setLoadingDetails(false);
     } catch (err) {
@@ -410,6 +461,23 @@ export default function AdminGetStudentListPage() {
           {phone}
         </div>
       ),
+    },
+    {
+      title: '邮箱',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email) => (
+        <div>
+          <MailOutlined style={{ marginRight: 8 }} />
+          {email || '未设置'}
+        </div>
+      ),
+    },
+    {
+      title: '学院',
+      dataIndex: 'college',
+      key: 'college',
+      render: (college) => college || '未设置',
     },
     {
       title: '选修课程数',
@@ -694,7 +762,19 @@ export default function AdminGetStudentListPage() {
                 ) : studentDetails ? (
                   <div>
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+                      {studentDetails.avatar ? (
+                        <Avatar 
+                          size={64} 
+                          src={studentDetails.avatar} 
+                          style={{ backgroundColor: '#1677ff' }}
+                        />
+                      ) : (
+                        <Avatar 
+                          size={64} 
+                          icon={<UserOutlined />} 
+                          style={{ backgroundColor: '#1677ff' }}
+                        />
+                      )}
                       <h2 style={{ marginTop: 16, marginBottom: 4 }}>{studentDetails.name}</h2>
                       <p style={{ color: '#666' }}>{studentDetails.address}</p>
                     </div>
@@ -705,6 +785,18 @@ export default function AdminGetStudentListPage() {
                         <p><PhoneOutlined style={{ marginRight: 8 }} /> 联系方式: {studentDetails.phone}</p>
                       </Col>
                       <Col span={12}>
+                        <p><MailOutlined style={{ marginRight: 8 }} /> 邮箱: {studentDetails.email || '未设置'}</p>
+                      </Col>
+                      <Col span={12}>
+                        <p><TeamOutlined style={{ marginRight: 8 }} /> 学院: {studentDetails.college || '未设置'}</p>
+                      </Col>
+                      <Col span={12}>
+                        <p><BookOutlined style={{ marginRight: 8 }} /> 专业: {studentDetails.major || '未设置'}</p>
+                      </Col>
+                      <Col span={12}>
+                        <p><UserOutlined style={{ marginRight: 8 }} /> 年级: {studentDetails.grade || '未设置'}</p>
+                      </Col>
+                      <Col span={12}>
                         <p><BookOutlined style={{ marginRight: 8 }} /> 选修课程数: {studentDetails.courseCount}</p>
                       </Col>
                       <Col span={12}>
@@ -712,55 +804,42 @@ export default function AdminGetStudentListPage() {
                       </Col>
                     </Row>
                     
-                    <Divider orientation="left">选修课程</Divider>
-                    {studentDetails.courseCount > 0 ? (
-                      <Table
-                        columns={[
-                          {
-                            title: '课程ID',
-                            dataIndex: 'id',
-                            key: 'id',
-                          },
-                          {
-                            title: '课程名称',
-                            dataIndex: 'name',
-                            key: 'name',
-                          },
-                          {
-                            title: '是否已评价',
-                            dataIndex: 'hasEvaluated',
-                            key: 'hasEvaluated',
-                            render: (hasEvaluated) => (
-                              <Tag color={hasEvaluated ? 'green' : 'orange'}>
-                                {hasEvaluated ? '已评价' : '未评价'}
-                              </Tag>
-                            ),
-                          },
-                          {
-                            title: '操作',
-                            key: 'action',
-                            render: (_, record) => (
-                              <Button 
-                                type="link" 
-                                size="small"
-                                onClick={() => viewCourse(record.id)}
-                              >
-                                查看课程
-                              </Button>
-                            ),
-                          }
-                        ]}
-                        dataSource={studentDetails.courses}
-                        pagination={false}
-                        rowKey="id"
-                        size="small"
-                      />
-                    ) : (
-                      <p style={{ textAlign: 'center', color: '#999' }}>该学生尚未选修任何课程</p>
+                    {studentDetails.courses && studentDetails.courses.length > 0 && (
+                      <>
+                        <Divider orientation="left">已选课程</Divider>
+                        <List
+                          itemLayout="horizontal"
+                          dataSource={studentDetails.courses}
+                          renderItem={item => (
+                            <List.Item 
+                              actions={[
+                                <Tag color={item.hasEvaluated ? 'green' : 'orange'}>
+                                  {item.hasEvaluated ? '已评价' : '未评价'}
+                                </Tag>,
+                                <Button 
+                                  type="link" 
+                                  size="small"
+                                  onClick={() => viewCourse(item.id)}
+                                >
+                                  查看课程
+                                </Button>
+                              ]}
+                            >
+                              <List.Item.Meta
+                                avatar={<Avatar icon={<BookOutlined />} style={{ backgroundColor: '#1677ff' }} />}
+                                title={item.name}
+                                description={`课程ID: ${item.id}`}
+                              />
+                            </List.Item>
+                          )}
+                        />
+                      </>
                     )}
                   </div>
                 ) : (
-                  <p>无法加载学生详情</p>
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <p>未能加载学生信息</p>
+                  </div>
                 )}
               </Modal>
             </Content>

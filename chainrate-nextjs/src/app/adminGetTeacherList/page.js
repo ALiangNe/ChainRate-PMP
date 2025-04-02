@@ -47,7 +47,8 @@ import {
   Row,
   Col,
   Rate,
-  Progress
+  Progress,
+  Empty
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -244,20 +245,37 @@ export default function AdminGetTeacherListPage() {
       
       // 调用合约的批量获取函数
       const result = await contractInstance.getTeachersBatch(actualOffset, actualLimit);
+      console.log("合约返回教师批量数据:", result);
       
-      // 解构结果
-      const [batchAddresses, names, phones, courseCounts, averageRatings] = result;
+      // 解构结果 - 根据实际合约返回的数据结构进行修改
+      // 合约返回的顺序是: addresses, names, phones, emails, colleges, majors, grades, avatars, courseCounts, avgRatings
+      const batchAddresses = result[0] || [];
+      const names = result[1] || [];
+      const phones = result[2] || [];
+      const emails = result[3] || [];
+      const colleges = result[4] || [];
+      const majors = result[5] || [];
+      const grades = result[6] || [];
+      const avatars = result[7] || [];
+      const courseCounts = result[8] || [];
+      const averageRatings = result[9] || [];
       
       // 构建教师数据
       const teachersData = batchAddresses.map((addr, index) => ({
         key: addr,
         address: addr,
-        name: names[index],
-        phone: phones[index],
-        coursesCount: Number(courseCounts[index]),
-        averageRating: Number(averageRatings[index]) / 100 // 转换为小数
+        name: names[index] || '',
+        phone: phones[index] || '',
+        email: emails[index] || '',
+        college: colleges[index] || '',
+        major: majors[index] || '',
+        grade: grades[index] || '',
+        avatar: avatars[index] || '',
+        coursesCount: courseCounts && courseCounts[index] ? Number(courseCounts[index]) : 0,
+        averageRating: averageRatings && averageRatings[index] ? Number(averageRatings[index]) / 100 : 0 // 转换为小数
       }));
       
+      console.log("处理后的教师数据:", teachersData);
       setTeachers(teachersData);
       applyFilters(teachersData);
     } catch (err) {
@@ -298,7 +316,10 @@ export default function AdminGetTeacherListPage() {
     const filtered = data.filter(teacher => 
       teacher.name.toLowerCase().includes(searchLower) || 
       teacher.address.toLowerCase().includes(searchLower) ||
-      teacher.phone.toLowerCase().includes(searchLower)
+      teacher.phone.toLowerCase().includes(searchLower) ||
+      teacher.email.toLowerCase().includes(searchLower) ||
+      teacher.college.toLowerCase().includes(searchLower) ||
+      teacher.major.toLowerCase().includes(searchLower)
     );
     
     setFilteredTeachers(filtered);
@@ -339,22 +360,39 @@ export default function AdminGetTeacherListPage() {
       
       // 调用合约函数获取教师详情
       const details = await contract.getTeacherDetailInfo(teacherAddress);
-      console.log("教师详情:", details);
+      console.log("教师详情返回数据:", details);
       
-      // 解构结果
-      const [name, phone, totalCourses, totalStudents, totalEvaluations, averageRating] = details;
+      // 解构结果 - 根据合约实际返回的数据结构进行修改
+      // 合约返回顺序: name, phone, email, college, major, grade, avatar, totalCourses, totalStudents, totalEvals, avgRating
+      const name = details[0] || '';
+      const phone = details[1] || '';
+      const email = details[2] || '';
+      const college = details[3] || '';
+      const major = details[4] || '';
+      const grade = details[5] || '';
+      const avatar = details[6] || '';
+      const totalCourses = details[7] ? Number(details[7]) : 0;
+      const totalStudents = details[8] ? Number(details[8]) : 0;
+      const totalEvaluations = details[9] ? Number(details[9]) : 0;
+      const averageRating = details[10] ? Number(details[10]) / 100 : 0; // 转换为小数
       
       // 构建教师详情对象
       const teacherDetailsObj = {
         address: teacherAddress,
         name,
         phone,
-        totalCourses: Number(totalCourses),
-        totalStudents: Number(totalStudents),
-        totalEvaluations: Number(totalEvaluations),
-        averageRating: Number(averageRating) / 100 // 转换为小数
+        email,
+        college,
+        major,
+        grade,
+        avatar,
+        totalCourses,
+        totalStudents,
+        totalEvaluations,
+        averageRating
       };
       
+      console.log("处理后的教师详情:", teacherDetailsObj);
       setTeacherDetails(teacherDetailsObj);
       setLoadingDetails(false);
     } catch (err) {
@@ -405,6 +443,23 @@ export default function AdminGetTeacherListPage() {
           {phone}
         </div>
       ),
+    },
+    {
+      title: '邮箱',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email) => (
+        <div>
+          <MailOutlined style={{ marginRight: 8 }} />
+          {email || '未设置'}
+        </div>
+      ),
+    },
+    {
+      title: '学院',
+      dataIndex: 'college',
+      key: 'college',
+      render: (college) => college || '未设置',
     },
     {
       title: '创建课程数',
@@ -641,7 +696,7 @@ export default function AdminGetTeacherListPage() {
                     <Card bordered={false}>
                       <Statistic
                         title="已创建课程的教师数"
-                        value={teachers.filter(t => t.coursesCount > 0).length}
+                        value={teachers.filter(t => t.coursesCount && t.coursesCount > 0).length || 0}
                         prefix={<BookOutlined />}
                         valueStyle={{ color: '#52c41a' }}
                       />
@@ -652,13 +707,14 @@ export default function AdminGetTeacherListPage() {
                       <Statistic
                         title="平均教师评分"
                         value={
-                          teachers.length > 0 
-                            ? (teachers.reduce((sum, t) => sum + t.averageRating, 0) / teachers.length).toFixed(2)
+                          teachers.length > 0 && teachers.some(t => t.averageRating > 0)
+                            ? (teachers.reduce((sum, t) => sum + (t.averageRating || 0), 0) / 
+                               teachers.filter(t => t.averageRating > 0).length).toFixed(2)
                             : "暂无数据"
                         }
                         prefix={<StarOutlined />}
                         valueStyle={{ color: '#fa8c16' }}
-                        suffix={teachers.length > 0 ? "/ 5.00" : ""}
+                        suffix={teachers.length > 0 && teachers.some(t => t.averageRating > 0) ? "/ 5.00" : ""}
                       />
                     </Card>
                   </Col>
@@ -706,7 +762,19 @@ export default function AdminGetTeacherListPage() {
                 ) : teacherDetails ? (
                   <div>
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#34a853' }} />
+                      {teacherDetails.avatar ? (
+                        <Avatar 
+                          size={64} 
+                          src={teacherDetails.avatar} 
+                          style={{ backgroundColor: '#34a853' }}
+                        />
+                      ) : (
+                        <Avatar 
+                          size={64} 
+                          icon={<UserOutlined />} 
+                          style={{ backgroundColor: '#34a853' }}
+                        />
+                      )}
                       <h2 style={{ marginTop: 16, marginBottom: 4 }}>{teacherDetails.name}</h2>
                       <p style={{ color: '#666' }}>{teacherDetails.address}</p>
                     </div>
@@ -717,74 +785,78 @@ export default function AdminGetTeacherListPage() {
                         <p><PhoneOutlined style={{ marginRight: 8 }} /> 联系方式: {teacherDetails.phone}</p>
                       </Col>
                       <Col span={12}>
-                        <p><BookOutlined style={{ marginRight: 8 }} /> 创建课程数: {teacherDetails.totalCourses}</p>
+                        <p><MailOutlined style={{ marginRight: 8 }} /> 邮箱: {teacherDetails.email || '未设置'}</p>
                       </Col>
                       <Col span={12}>
-                        <p><TeamOutlined style={{ marginRight: 8 }} /> 学生总数: {teacherDetails.totalStudents}</p>
+                        <p><TeamOutlined style={{ marginRight: 8 }} /> 学院: {teacherDetails.college || '未设置'}</p>
                       </Col>
                       <Col span={12}>
-                        <p><CommentOutlined style={{ marginRight: 8 }} /> 收到评价数: {teacherDetails.totalEvaluations}</p>
+                        <p><BookOutlined style={{ marginRight: 8 }} /> 专业: {teacherDetails.major || '未设置'}</p>
+                      </Col>
+                      <Col span={12}>
+                        <p><TrophyOutlined style={{ marginRight: 8 }} /> 职称: {teacherDetails.grade || '未设置'}</p>
                       </Col>
                     </Row>
                     
-                    <Divider orientation="left">教学评价</Divider>
-                    {teacherDetails.totalEvaluations > 0 ? (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                          <div style={{ marginRight: 16, width: 100 }}>平均评分:</div>
-                          <Rate disabled allowHalf value={teacherDetails.averageRating} />
-                          <span style={{ marginLeft: 8 }}>{teacherDetails.averageRating.toFixed(2)}</span>
-                        </div>
-                        <div>
-                          <h4>评分分布</h4>
-                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ width: 80 }}>优秀 (4-5):</div>
-                            <Progress 
-                              percent={70} 
-                              strokeColor="#52c41a" 
-                              showInfo={false} 
-                              style={{ flex: 1, marginRight: 8 }} 
-                            />
-                            <span>70%</span>
+                    <Divider orientation="left">教学统计</Divider>
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Statistic
+                          title="创建课程数"
+                          value={teacherDetails.totalCourses}
+                          valueStyle={{ color: '#1677ff' }}
+                          prefix={<BookOutlined />}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <Statistic
+                          title="教授学生数"
+                          value={teacherDetails.totalStudents}
+                          valueStyle={{ color: '#1677ff' }}
+                          prefix={<TeamOutlined />}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <Statistic
+                          title="收到评价数"
+                          value={teacherDetails.totalEvaluations}
+                          valueStyle={{ color: '#1677ff' }}
+                          prefix={<CommentOutlined />}
+                        />
+                      </Col>
+                    </Row>
+                    
+                    <Divider orientation="left">评分情况</Divider>
+                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                      {teacherDetails.totalEvaluations > 0 ? (
+                        <>
+                          <div style={{ marginBottom: 16 }}>
+                            <Rate disabled value={teacherDetails.averageRating} allowHalf />
+                            <span style={{ fontSize: 24, marginLeft: 16, color: '#faad14' }}>
+                              {teacherDetails.averageRating.toFixed(1)}
+                            </span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ width: 80 }}>良好 (3-4):</div>
-                            <Progress 
-                              percent={20} 
-                              strokeColor="#1677ff" 
-                              showInfo={false} 
-                              style={{ flex: 1, marginRight: 8 }} 
-                            />
-                            <span>20%</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ width: 80 }}>一般 (2-3):</div>
-                            <Progress 
-                              percent={8} 
-                              strokeColor="#faad14" 
-                              showInfo={false} 
-                              style={{ flex: 1, marginRight: 8 }} 
-                            />
-                            <span>8%</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <div style={{ width: 80 }}>较差 (1-2):</div>
-                            <Progress 
-                              percent={2} 
-                              strokeColor="#f5222d" 
-                              showInfo={false} 
-                              style={{ flex: 1, marginRight: 8 }} 
-                            />
-                            <span>2%</span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p style={{ textAlign: 'center', color: '#999' }}>该教师尚未收到任何评价</p>
-                    )}
+                          <Progress 
+                            percent={teacherDetails.averageRating * 20} 
+                            status="active" 
+                            strokeColor={{
+                              '0%': '#108ee9',
+                              '100%': '#87d068',
+                            }}
+                          />
+                          <p style={{ marginTop: 8, color: '#666' }}>
+                            共 {teacherDetails.totalEvaluations} 条学生评价
+                          </p>
+                        </>
+                      ) : (
+                        <Empty description="暂无评分数据" />
+                      )}
+                    </div>
                   </div>
                 ) : (
-                  <p>无法加载教师详情</p>
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <p>未能加载教师信息</p>
+                  </div>
                 )}
               </Modal>
             </Content>
