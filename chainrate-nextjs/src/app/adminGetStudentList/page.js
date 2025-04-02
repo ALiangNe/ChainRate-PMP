@@ -48,6 +48,7 @@ import {
   Row,
   Col
 } from 'antd';
+import UserAvatar from '../components/UserAvatar';
 
 const { Header, Content, Sider } = Layout;
 const { Search } = Input;
@@ -64,7 +65,12 @@ export default function AdminGetStudentListPage() {
     isLoggedIn: false,
     address: '',
     name: '',
-    role: ''
+    role: '',
+    email: '',
+    college: '',
+    major: '',
+    grade: '',
+    avatar: ''
   });
 
   // 加载状态
@@ -117,7 +123,12 @@ export default function AdminGetStudentListPage() {
           isLoggedIn: true,
           address: localStorage.getItem('userAddress') || '',
           name: localStorage.getItem('userName') || '',
-          role: userRole
+          role: userRole,
+          email: localStorage.getItem('userEmail') || '',
+          college: localStorage.getItem('userCollege') || '',
+          major: localStorage.getItem('userMajor') || '',
+          grade: localStorage.getItem('userGrade') || '',
+          avatar: localStorage.getItem('userAvatar') || ''
         });
           
         console.log('管理员认证成功，初始化Web3连接');
@@ -514,6 +525,11 @@ export default function AdminGetStudentListPage() {
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userRoleHash');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userCollege');
+    localStorage.removeItem('userMajor');
+    localStorage.removeItem('userGrade');
+    localStorage.removeItem('userAvatar');
     router.push('/login');
   };
 
@@ -556,9 +572,7 @@ export default function AdminGetStudentListPage() {
           </div>
           <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
             <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-            <Tooltip title="退出登录">
-              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
-            </Tooltip>
+            <UserAvatar color="#fff" />
           </div>
         </Header>
         <Layout>
