@@ -30,7 +30,11 @@ import {
   ExclamationCircleOutlined,
   PhoneOutlined,
   SolutionOutlined,
-  TeamOutlined
+  TeamOutlined,
+  MailOutlined,
+  BankOutlined,
+  BookOutlined,
+  NumberOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -44,7 +48,11 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     role: 'STUDENT_ROLE', // 默认角色
-    phone: '' // 添加手机号
+    phone: '', // 添加手机号
+    email: '', // 添加邮箱
+    college: '', // 添加学院
+    major: '', // 添加专业
+    grade: '' // 添加年级
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,6 +152,10 @@ export default function RegisterPage() {
       const tx = await contract.registerUser(
         values.username,
         values.phone,
+        values.email,
+        values.college,
+        values.major,
+        values.grade,
         passwordHash,
         roleBytes
       );
@@ -280,6 +292,53 @@ export default function RegisterPage() {
                   <Input 
                     prefix={<PhoneOutlined />} 
                     placeholder="请输入手机号码" 
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="email"
+                  rules={[
+                    { required: true, message: '请输入邮箱' },
+                    { type: 'email', message: '请输入有效的邮箱地址' }
+                  ]}
+                >
+                  <Input 
+                    prefix={<MailOutlined />} 
+                    placeholder="请输入邮箱" 
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="college"
+                  rules={[{ required: true, message: '请输入所属学院' }]}
+                >
+                  <Input 
+                    prefix={<BankOutlined />} 
+                    placeholder="请输入所属学院" 
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="major"
+                  rules={[{ required: true, message: '请输入所学专业' }]}
+                >
+                  <Input 
+                    prefix={<BookOutlined />} 
+                    placeholder="请输入所学专业" 
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="grade"
+                  rules={[{ required: true, message: '请输入年级' }]}
+                >
+                  <Input 
+                    prefix={<NumberOutlined />} 
+                    placeholder="请输入年级，如：大一、大二" 
                     size="large"
                   />
                 </Form.Item>

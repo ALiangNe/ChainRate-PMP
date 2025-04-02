@@ -86,11 +86,15 @@ export default function LoginPage() {
         try {
           const info = await chainRateContract.getUserInfo(account);
           // 检查用户是否已注册
-          if (info && info[3]) { // isRegistered
+          if (info && info[7]) { // isRegistered 由于新增字段，索引变为7
             setUserInfo({
               name: info[0],
               phone: info[1],
-              role: info[2]
+              email: info[2],
+              college: info[3],
+              major: info[4],
+              grade: info[5],
+              role: info[6]
             });
           }
         } catch (err) {

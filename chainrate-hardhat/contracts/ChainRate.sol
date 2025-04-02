@@ -26,6 +26,10 @@ contract ChainRate {
      * @dev 用户数据结构
      * @param name 用户姓名
      * @param phone 用户手机号
+     * @param email 用户邮箱
+     * @param college 用户所属学院
+     * @param major 用户所学专业
+     * @param grade 用户年级(大几)
      * @param passwordHash 密码哈希值
      * @param role 用户角色哈希值
      * @param isRegistered 是否已注册
@@ -33,6 +37,10 @@ contract ChainRate {
     struct User {
         string name;
         string phone;
+        string email;
+        string college;
+        string major;
+        string grade;
         bytes32 passwordHash;
         bytes32 role;
         bool isRegistered;
@@ -205,12 +213,20 @@ contract ChainRate {
      * @dev 用户注册函数
      * @param name 用户姓名
      * @param phone 用户手机号
+     * @param email 用户邮箱
+     * @param college 用户所属学院
+     * @param major 用户所学专业
+     * @param grade 用户年级(大几)
      * @param passwordHash 密码哈希值
      * @param role 用户角色哈希值
      */
     function registerUser(
         string memory name,
         string memory phone,
+        string memory email,
+        string memory college,
+        string memory major,
+        string memory grade,
         bytes32 passwordHash,
         bytes32 role
     ) external {
@@ -219,6 +235,10 @@ contract ChainRate {
         users[msg.sender] = User({
             name: name,
             phone: phone,
+            email: email,
+            college: college,
+            major: major,
+            grade: grade,
             passwordHash: passwordHash,
             role: role,
             isRegistered: true
@@ -253,17 +273,25 @@ contract ChainRate {
      * @param userAddress 用户地址
      * @return name 用户姓名
      * @return phone 用户手机号
+     * @return email 用户邮箱
+     * @return college 用户所属学院
+     * @return major 用户所学专业
+     * @return grade 用户年级
      * @return role 用户角色
      * @return isRegistered 是否已注册
      */
     function getUserInfo(address userAddress) external view returns (
         string memory name,
         string memory phone,
+        string memory email,
+        string memory college,
+        string memory major,
+        string memory grade,
         bytes32 role,
         bool isRegistered
     ) {
         User memory user = users[userAddress];
-        return (user.name, user.phone, user.role, user.isRegistered);
+        return (user.name, user.phone, user.email, user.college, user.major, user.grade, user.role, user.isRegistered);
     }
     
     /**
@@ -833,6 +861,10 @@ contract ChainRate {
      * @return addresses 学生地址数组
      * @return names 学生姓名数组
      * @return phones 学生手机号数组
+     * @return emails 学生邮箱数组
+     * @return colleges 学生所属学院数组
+     * @return majors 学生所学专业数组
+     * @return grades 学生年级数组
      * @return coursesCounts 选修课程数量数组
      * @return evaluationsCounts 提交评价数量数组
      */
@@ -840,6 +872,10 @@ contract ChainRate {
         address[] memory addresses,
         string[] memory names,
         string[] memory phones,
+        string[] memory emails,
+        string[] memory colleges,
+        string[] memory majors,
+        string[] memory grades,
         uint256[] memory coursesCounts,
         uint256[] memory evaluationsCounts
     ) {
@@ -847,6 +883,10 @@ contract ChainRate {
         if (offset >= allStudents.length) {
             return (
                 new address[](0),
+                new string[](0),
+                new string[](0),
+                new string[](0),
+                new string[](0),
                 new string[](0),
                 new string[](0),
                 new uint256[](0),
@@ -864,6 +904,10 @@ contract ChainRate {
         addresses = new address[](count);
         names = new string[](count);
         phones = new string[](count);
+        emails = new string[](count);
+        colleges = new string[](count);
+        majors = new string[](count);
+        grades = new string[](count);
         coursesCounts = new uint256[](count);
         evaluationsCounts = new uint256[](count);
         
@@ -873,6 +917,10 @@ contract ChainRate {
             addresses[i] = studentAddress;
             names[i] = users[studentAddress].name;
             phones[i] = users[studentAddress].phone;
+            emails[i] = users[studentAddress].email;
+            colleges[i] = users[studentAddress].college;
+            majors[i] = users[studentAddress].major;
+            grades[i] = users[studentAddress].grade;
             coursesCounts[i] = studentCourses[studentAddress].length;
             evaluationsCounts[i] = studentEvaluations[studentAddress].length;
         }
@@ -885,6 +933,10 @@ contract ChainRate {
      * @return addresses 教师地址数组
      * @return names 教师姓名数组
      * @return phones 教师手机号数组
+     * @return emails 教师邮箱数组
+     * @return colleges 教师所属学院数组
+     * @return majors 教师所学专业数组
+     * @return grades 教师年级数组
      * @return coursesCounts 创建课程数量数组
      * @return averageRatings 平均评分数组（乘以100）
      */
@@ -892,6 +944,10 @@ contract ChainRate {
         address[] memory addresses,
         string[] memory names,
         string[] memory phones,
+        string[] memory emails,
+        string[] memory colleges,
+        string[] memory majors,
+        string[] memory grades,
         uint256[] memory coursesCounts,
         uint256[] memory averageRatings
     ) {
@@ -899,6 +955,10 @@ contract ChainRate {
         if (offset >= allTeachers.length) {
             return (
                 new address[](0),
+                new string[](0),
+                new string[](0),
+                new string[](0),
+                new string[](0),
                 new string[](0),
                 new string[](0),
                 new uint256[](0),
@@ -916,6 +976,10 @@ contract ChainRate {
         addresses = new address[](count);
         names = new string[](count);
         phones = new string[](count);
+        emails = new string[](count);
+        colleges = new string[](count);
+        majors = new string[](count);
+        grades = new string[](count);
         coursesCounts = new uint256[](count);
         averageRatings = new uint256[](count);
         
@@ -925,6 +989,10 @@ contract ChainRate {
             addresses[i] = teacherAddress;
             names[i] = users[teacherAddress].name;
             phones[i] = users[teacherAddress].phone;
+            emails[i] = users[teacherAddress].email;
+            colleges[i] = users[teacherAddress].college;
+            majors[i] = users[teacherAddress].major;
+            grades[i] = users[teacherAddress].grade;
             
             // 计算教师创建的课程数量
             uint256 teacherCourseCount = 0;
@@ -962,6 +1030,10 @@ contract ChainRate {
      * @param studentAddress 学生地址
      * @return name 学生姓名
      * @return phone 学生手机号
+     * @return email 学生邮箱
+     * @return college 学生所属学院
+     * @return major 学生所学专业
+     * @return grade 学生年级
      * @return studentCourseCount 选修课程数量
      * @return studentEvalCount 提交评价数量
      * @return courseIds 选修课程ID数组
@@ -971,6 +1043,10 @@ contract ChainRate {
     function getStudentDetailInfo(address studentAddress) external view onlyAdmin returns (
         string memory name,
         string memory phone,
+        string memory email,
+        string memory college,
+        string memory major,
+        string memory grade,
         uint256 studentCourseCount,
         uint256 studentEvalCount,
         uint256[] memory courseIds,
@@ -982,6 +1058,10 @@ contract ChainRate {
         User memory student = users[studentAddress];
         name = student.name;
         phone = student.phone;
+        email = student.email;
+        college = student.college;
+        major = student.major;
+        grade = student.grade;
         
         uint256[] memory joinedCourses = studentCourses[studentAddress];
         studentCourseCount = joinedCourses.length;
@@ -1004,6 +1084,10 @@ contract ChainRate {
      * @param teacherAddress 教师地址
      * @return name 教师姓名
      * @return phone 教师手机号
+     * @return email 教师邮箱
+     * @return college 教师所属学院
+     * @return major 教师所学专业
+     * @return grade 教师年级
      * @return totalCourses 创建课程总数
      * @return totalStudents 选修学生总数
      * @return totalEvaluations 收到评价总数
@@ -1012,6 +1096,10 @@ contract ChainRate {
     function getTeacherDetailInfo(address teacherAddress) external view onlyAdmin returns (
         string memory name,
         string memory phone,
+        string memory email,
+        string memory college,
+        string memory major,
+        string memory grade,
         uint256 totalCourses,
         uint256 totalStudents,
         uint256 totalEvaluations,
@@ -1022,6 +1110,10 @@ contract ChainRate {
         User memory teacher = users[teacherAddress];
         name = teacher.name;
         phone = teacher.phone;
+        email = teacher.email;
+        college = teacher.college;
+        major = teacher.major;
+        grade = teacher.grade;
         
         uint256 courseCounter = 0;
         uint256 studentsTotal = 0;
