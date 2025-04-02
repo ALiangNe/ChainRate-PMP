@@ -9,6 +9,7 @@ import styles from './page.module.css';
 import Image from 'next/image';
 import React from 'react';
 import axios from 'axios'; // 引入axios用于API请求
+import UserAvatar from '../../components/UserAvatar';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -81,7 +82,12 @@ export default function SubmitEvaluationPage({ params }) {
     isLoggedIn: false,
     address: '',
     name: '',
-    role: ''
+    role: '',
+    email: '',
+    college: '',
+    major: '',
+    grade: '',
+    avatar: ''
   });
   
   // 课程数据
@@ -131,7 +137,12 @@ export default function SubmitEvaluationPage({ params }) {
           isLoggedIn: true,
           address: localStorage.getItem('userAddress') || '',
           name: localStorage.getItem('userName') || '',
-          role: userRole
+          role: userRole,
+          email: localStorage.getItem('userEmail') || '',
+          college: localStorage.getItem('userCollege') || '',
+          major: localStorage.getItem('userMajor') || '',
+          grade: localStorage.getItem('userGrade') || '',
+          avatar: localStorage.getItem('userAvatar') || ''
         });
         
         // 初始化Web3连接
@@ -530,6 +541,11 @@ export default function SubmitEvaluationPage({ params }) {
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userRoleHash');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userCollege');
+    localStorage.removeItem('userMajor');
+    localStorage.removeItem('userGrade');
+    localStorage.removeItem('userAvatar');
     router.push('/login');
   };
 
@@ -602,9 +618,7 @@ export default function SubmitEvaluationPage({ params }) {
           </div>
           <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
             <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-            <Tooltip title="退出登录">
-              <LogoutOutlined onClick={handleLogout} style={{ fontSize: '18px', cursor: 'pointer' }} />
-            </Tooltip>
+            <UserAvatar color="#fff" />
           </div>
         </Header>
         <Layout>
