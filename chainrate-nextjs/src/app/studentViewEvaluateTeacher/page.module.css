@@ -1,0 +1,312 @@
+.logo {
+  height: 54px;
+  margin: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* 统计数据区域 */
+.statsContainer {
+  margin-bottom: 28px;
+}
+
+.statCard {
+  height: 100%;
+  transition: all 0.3s;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.statIcon {
+  color: #1a73e8;
+  font-size: 24px;
+  margin-right: 8px;
+}
+
+/* 工具栏区域 */
+.toolbarContainer {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* 评价卡片列表 */
+.evaluationListContainer {
+  margin-top: 16px;
+}
+
+.evaluationCard {
+  position: relative;
+  transition: all 0.3s;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.evaluationCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.teacherAvatar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.evaluationInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.teacherName {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.teacherCollege {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.evaluationRating {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.ratingText {
+  margin-left: 8px;
+  color: #f5a623;
+  font-weight: 600;
+}
+
+.evaluationTime {
+  font-size: 12px;
+  color: #999;
+}
+
+.detailedRatings {
+  margin-top: 8px;
+}
+
+.ratingItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ratingLabel {
+  width: 70px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* 评价详情抽屉 */
+.evaluationDetail {
+  padding: 8px;
+}
+
+.teacherInfoDetail {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+}
+
+.teacherInfoText {
+  margin-left: 16px;
+}
+
+.contentCard, .ratingCard, .imagesCard, .metaCard {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.overallRating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.overallRatingLabel {
+  font-weight: 600;
+  margin-right: 12px;
+  color: #333;
+  width: 80px;
+}
+
+.ratingValue {
+  margin-left: 8px;
+  color: #f5a623;
+  font-weight: 600;
+}
+
+.detailedRatingsDetail {
+  display: flex;
+  flex-direction: column;
+}
+
+.ratingItemDetail {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ratingLabelDetail {
+  width: 80px;
+  font-weight: 500;
+  color: #333;
+}
+
+.ratingValueDetail {
+  margin-left: 8px;
+  color: #f5a623;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.imageItem {
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.imageItem:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.metaIcon {
+  color: #1a73e8;
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.metaLabel {
+  width: 80px;
+  font-weight: 500;
+  color: #333;
+  margin-right: 8px;
+}
+
+.metaValue {
+  color: #666;
+  flex: 1;
+}
+
+.footer {
+  text-align: center;
+  padding: 20px;
+  background: #f0f2f5;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+  .statsContainer {
+    margin-bottom: 20px;
+  }
+
+  .toolbarContainer {
+    padding: 12px;
+  }
+
+  .teacherInfoDetail {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .teacherInfoText {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+
+  .imageGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .imageItem {
+    height: 100px;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.statsContainer, .toolbarContainer, .evaluationListContainer {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 高级视觉效果 */
+.statCard::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  z-index: -1;
+  background: linear-gradient(135deg, rgba(26, 115, 232, 0.1), rgba(26, 115, 232, 0.05));
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.statCard:hover::before {
+  opacity: 1;
+}
