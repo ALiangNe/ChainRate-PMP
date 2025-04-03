@@ -239,6 +239,30 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
+.exportButton, .exportPdfButton {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.exportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(52, 168, 83, 0.2);
+}
+
+.exportPdfButton {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.exportPdfButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2);
+  background-color: #c0392b;
+  border-color: #c0392b;
+}
+
 .filterSummary {
   margin-top: 8px;
   color: #666;

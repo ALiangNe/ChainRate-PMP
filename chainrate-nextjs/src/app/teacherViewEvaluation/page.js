@@ -29,7 +29,9 @@ import {
   EnvironmentOutlined,
   ExperimentOutlined,
   LikeOutlined,
-  InteractionOutlined
+  InteractionOutlined,
+  DownloadOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -582,6 +584,193 @@ export default function TeacherViewEvaluationPage() {
       }
   ];
 
+  // 在组件内，添加导出到Excel的函数
+  const handleExportToExcel = () => {
+    if (!selectedCourse || filteredEvaluations.length === 0) return;
+    
+    try {
+      // 动态导入xlsx库
+      import('xlsx').then(XLSX => {
+        // 准备数据
+        const data = filteredEvaluations.map(evaluation => ({
+          '学生': evaluation.studentName,
+          '是否匿名': evaluation.isAnonymous ? '是' : '否',
+          '评价时间': formatDateTime(evaluation.timestamp),
+          '评价内容': evaluation.content,
+          '总体评分': evaluation.rating,
+          '教学质量评分': evaluation.teachingRating,
+          '内容设计评分': evaluation.contentRating,
+          '师生互动评分': evaluation.interactionRating,
+          '图片数量': evaluation.imageHashes.length
+        }));
+        
+        // 创建工作表
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        
+        // 设置列宽
+        const columnWidths = [
+          { wch: 15 }, // 学生
+          { wch: 8 }, // 是否匿名
+          { wch: 20 }, // 评价时间
+          { wch: 50 }, // 评价内容
+          { wch: 10 }, // 总体评分
+          { wch: 12 }, // 教学质量评分
+          { wch: 12 }, // 内容设计评分
+          { wch: 12 }, // 师生互动评分
+          { wch: 8 } // 图片数量
+        ];
+        worksheet['!cols'] = columnWidths;
+        
+        // 创建工作簿
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, selectedCourse.name);
+        
+        // 生成文件名
+        const fileName = `${selectedCourse.name}_评价数据_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+        
+        // 使用指定编码写入文件以确保中文正确显示
+        const excelBinary = XLSX.write(workbook, { type: 'binary', bookType: 'xlsx' });
+        
+        // 转换为Blob并设置正确的编码
+        const excelBlob = new Blob([s2ab(excelBinary)], {
+          type: 'application/octet-stream'
+        });
+        
+        // 创建下载链接
+        const url = URL.createObjectURL(excelBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        
+        // 清理
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 0);
+      });
+    } catch (error) {
+      console.error('导出Excel失败:', error);
+      setError('导出数据失败: ' + (error.message || error));
+    }
+  };
+
+  // 添加辅助函数：将字符串转换为ArrayBuffer（用于Excel导出）
+  function s2ab(s) {
+    const buf = new ArrayBuffer(s.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < s.length; i++) {
+      view[i] = s.charCodeAt(i) & 0xFF;
+    }
+    return buf;
+  }
+
+  // 修改PDF导出函数
+  const handleExportToPdf = () => {
+    if (!selectedCourse || filteredEvaluations.length === 0) return;
+    
+    try {
+      // 使用html2canvas和jspdf配合导出，这样可以正确显示中文
+      import('html2canvas').then(html2canvasModule => {
+        const html2canvas = html2canvasModule.default;
+        
+        import('jspdf').then(jsPDFModule => {
+          const jsPDF = jsPDFModule.default;
+          
+          // 创建一个临时的HTML表格来存放数据
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'absolute';
+          tempDiv.style.top = '-9999px';
+          tempDiv.style.left = '-9999px';
+          tempDiv.style.width = '1024px'; // 设置较大宽度以确保内容不会折行
+          document.body.appendChild(tempDiv);
+          
+          // 创建PDF标题和信息
+          tempDiv.innerHTML = `
+            <div style="font-family: Arial, 'Microsoft YaHei', sans-serif; padding: 20px; background: white;">
+              <h1 style="color: #34a853; margin-bottom: 10px;">${selectedCourse.name} - 课程评价数据</h1>
+              <p>导出时间: ${new Date().toLocaleString()}</p>
+              <p>总评价数: ${filteredEvaluations.length}</p>
+              
+              <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px;">
+                <thead>
+                  <tr style="background-color: #34a853; color: white;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">学生</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">是否匿名</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">评价时间</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">评价内容</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">总评分</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">教学质量</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">内容设计</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">师生互动</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">图片数量</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filteredEvaluations.map((evaluation, index) => `
+                    <tr style="background-color: ${index % 2 === 0 ? '#f9f9f9' : 'white'};">
+                      <td style="padding: 8px; border: 1px solid #ddd;">${evaluation.studentName}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${evaluation.isAnonymous ? '是' : '否'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${formatDateTime(evaluation.timestamp)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                        ${evaluation.content.length > 30 ? evaluation.content.substring(0, 30) + '...' : evaluation.content}
+                      </td>
+                      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${evaluation.rating.toFixed(1)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${evaluation.teachingRating.toFixed(1)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${evaluation.contentRating.toFixed(1)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${evaluation.interactionRating.toFixed(1)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${evaluation.imageHashes.length}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+              
+              <div style="margin-top: 20px; text-align: right; font-size: 12px;">
+                第 1 页，共 1 页
+              </div>
+            </div>
+          `;
+          
+          // 使用html2canvas将HTML转换为canvas
+          html2canvas(tempDiv).then(canvas => {
+            // 删除临时元素
+            document.body.removeChild(tempDiv);
+            
+            // 获取canvas的数据
+            const imgData = canvas.toDataURL('image/png');
+            
+            // 根据图像尺寸确定PDF页面大小和方向
+            const imgWidth = 210; // A4宽度 (mm)
+            const pageHeight = 297; // A4高度 (mm)
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+            
+            // 创建PDF文档
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // 设置文档属性
+            pdf.setProperties({
+              title: `${selectedCourse.name} - 评价数据`,
+              subject: '课程评价',
+              author: userData.name,
+              creator: 'ChainRate系统'
+            });
+            
+            // 添加图像到PDF
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            
+            // 生成文件名并下载
+            const fileName = `${selectedCourse.name}_评价数据_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+            pdf.save(fileName);
+          });
+        });
+      });
+    } catch (error) {
+      console.error('导出PDF失败:', error);
+      setError('导出PDF数据失败: ' + (error.message || error));
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -870,6 +1059,26 @@ export default function TeacherViewEvaluationPage() {
                       <Option value="highest">评分从高到低</Option>
                       <Option value="lowest">评分从低到高</Option>
                     </Select>
+                    
+                    <Button
+                      type="primary"
+                      icon={<DownloadOutlined />}
+                      className={styles.exportButton}
+                      onClick={handleExportToExcel}
+                      disabled={loadingEvaluations || filteredEvaluations.length === 0}
+                    >
+                      导出Excel
+                    </Button>
+
+                    <Button
+                      type="primary"
+                      icon={<FilePdfOutlined />}
+                      className={styles.exportPdfButton}
+                      onClick={handleExportToPdf}
+                      disabled={loadingEvaluations || filteredEvaluations.length === 0}
+                    >
+                      导出PDF
+                    </Button>
                   </div>
                   
                   <div className={styles.filterSummary}>
