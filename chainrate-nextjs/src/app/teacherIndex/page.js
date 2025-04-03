@@ -66,6 +66,10 @@ export default function TeacherIndexPage() {
   const [coursesCount, setCoursesCount] = useState(0);
   const [studentsCount, setStudentsCount] = useState(0);
   const [evaluationsCount, setEvaluationsCount] = useState(0);
+  
+  // 添加公告数据状态
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
 
   useEffect(() => {
     // 确保代码仅在客户端执行
@@ -177,9 +181,48 @@ export default function TeacherIndexPage() {
       }
     };
 
+    // 添加获取公告数据的函数
+    const fetchAnnouncements = async () => {
+      try {
+        setAnnouncementsLoading(true);
+        console.log('开始获取系统公告...');
+        
+        const response = await fetch('/api/announcements?limit=2');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('获取到公告数据:', data);
+        
+        if (data.success && data.data) {
+          setAnnouncements(data.data);
+        } else {
+          console.error('获取公告数据失败:', data.message);
+          // 如果API请求失败，尝试从localStorage获取临时数据
+          const tempAnnouncements = localStorage.getItem('tempAnnouncements')
+            ? JSON.parse(localStorage.getItem('tempAnnouncements'))
+            : [];
+          setAnnouncements(tempAnnouncements);
+        }
+      } catch (error) {
+        console.error('获取公告数据错误:', error);
+        // 设置为空数组，避免显示加载状态
+        setAnnouncements([]);
+        // 如果API请求失败，尝试从localStorage获取临时数据
+        const tempAnnouncements = localStorage.getItem('tempAnnouncements')
+          ? JSON.parse(localStorage.getItem('tempAnnouncements'))
+          : [];
+        setAnnouncements(tempAnnouncements);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    };
+
     // 添加延迟执行验证，避免客户端渲染问题
     const timer = setTimeout(() => {
-    checkUserAuth();
+      checkUserAuth();
+      fetchAnnouncements(); // 调用获取公告的函数
     }, 100);
 
     return () => clearTimeout(timer);
@@ -277,6 +320,16 @@ export default function TeacherIndexPage() {
       </div>
     );
   }
+
+  // 格式化日期函数
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
 
   return (
     <ConfigProvider
@@ -520,23 +573,33 @@ export default function TeacherIndexPage() {
                 style={{ marginTop: 24 }}
                 variant="outlined"
               >
-                <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
-                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>教师评价分析功能上线</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-15</p>
-                    <p>链评系统已上线教师评价分析功能，可视化展示学生评价数据，帮助您更好地改进教学。</p>
+                {announcementsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <Spin tip="加载公告中..." />
                   </div>
-                </div>
-                <Divider style={{ margin: '12px 0' }} />
-                <div style={{ display: 'flex', alignItems: 'start' }}>
-                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>评价活动通知</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-10</p>
-                    <p>本学期课程评价将于6月15日截止，请及时提醒学生完成课程评价！</p>
+                ) : announcements.length > 0 ? (
+                  <>
+                    {announcements.map((announcement, index) => (
+                      <React.Fragment key={announcement.announcement_id}>
+                        <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
+                          <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                          <div>
+                            <p style={{ margin: 0, fontWeight: 'bold' }}>{announcement.title}</p>
+                            <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>
+                              {formatDate(announcement.created_at)}
+                            </p>
+                            <p>{announcement.content}</p>
+                          </div>
+                        </div>
+                        {index < announcements.length - 1 && <Divider style={{ margin: '12px 0' }} />}
+                      </React.Fragment>
+                    ))}
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#8c8c8c' }}>
+                    暂无公告
                   </div>
-                </div>
+                )}
               </Card>
             </Content>
           </Layout>
