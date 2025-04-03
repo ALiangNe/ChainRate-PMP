@@ -1,4 +1,4 @@
-import { getAnnouncements, getRecentAnnouncements } from '../../../utils/db';
+import { getAnnouncements, getRecentAnnouncements, addAnnouncement } from '../../../utils/db';
 import { NextResponse } from 'next/server';
 
 // 获取所有公告
@@ -31,6 +31,47 @@ export async function GET(request) {
       { 
         success: false, 
         message: '获取公告失败', 
+        error: error.message 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 添加新公告
+export async function POST(request) {
+  try {
+    // 解析请求体中的JSON数据
+    const data = await request.json();
+    
+    // 验证请求数据
+    if (!data.title || !data.content) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: '标题和内容不能为空' 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // 添加新公告到数据库
+    const announcementId = await addAnnouncement(data.title, data.content);
+    
+    // 返回成功响应
+    return NextResponse.json({ 
+      success: true, 
+      message: '公告添加成功',
+      data: { id: announcementId }
+    });
+  } catch (error) {
+    console.error('添加公告失败:', error);
+    
+    // 返回错误响应
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: '添加公告失败', 
         error: error.message 
       },
       { status: 500 }

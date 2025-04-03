@@ -76,6 +76,41 @@ export default function AdminIndexPage() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalCourses, setTotalCourses] = useState(0);
   const [totalEvaluations, setTotalEvaluations] = useState(0);
+  
+  // 添加公告数据状态
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [showAddAnnouncementForm, setShowAddAnnouncementForm] = useState(false);
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '' });
+  const [addingAnnouncement, setAddingAnnouncement] = useState(false);
+
+  // 添加获取公告数据的函数，将其移到useEffect外部
+  const fetchAnnouncements = async () => {
+    try {
+      setAnnouncementsLoading(true);
+      console.log('开始获取系统公告...');
+      
+      const response = await fetch('/api/announcements?limit=3');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('获取到公告数据:', data);
+      
+      if (data.success && data.data) {
+        setAnnouncements(data.data);
+      } else {
+        console.error('获取公告数据失败:', data.message);
+      }
+    } catch (error) {
+      console.error('获取公告数据错误:', error);
+      // 设置为空数组，避免显示加载状态
+      setAnnouncements([]);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  };
 
   useEffect(() => {
     // 确保代码仅在客户端执行
@@ -194,6 +229,7 @@ export default function AdminIndexPage() {
     // 添加延迟执行验证，避免客户端渲染问题
     const timer = setTimeout(() => {
       checkUserAuth();
+      fetchAnnouncements(); // 调用获取公告的函数
     }, 100);
 
     return () => clearTimeout(timer);
@@ -224,6 +260,47 @@ export default function AdminIndexPage() {
     localStorage.removeItem('userGrade');
     localStorage.removeItem('userAvatar');
     router.push('/login');
+  };
+
+  // 添加发布公告的函数
+  const handleAddAnnouncement = async () => {
+    // 验证表单
+    if (!newAnnouncement.title || !newAnnouncement.content) {
+      alert('公告标题和内容不能为空！');
+      return;
+    }
+    
+    try {
+      setAddingAnnouncement(true);
+      
+      // 发送请求添加公告
+      const response = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAnnouncement),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // 添加成功，刷新公告列表
+        alert('公告发布成功！');
+        setNewAnnouncement({ title: '', content: '' });
+        setShowAddAnnouncementForm(false);
+        
+        // 重新获取公告
+        await fetchAnnouncements();
+      } else {
+        alert(`发布失败: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('发布公告错误:', error);
+      alert('发布公告失败，请稍后再试！');
+    } finally {
+      setAddingAnnouncement(false);
+    }
   };
 
   // 侧边栏菜单项
@@ -318,6 +395,16 @@ export default function AdminIndexPage() {
       </div>
     );
   }
+
+  // 格式化日期函数
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
 
   return (
     <ConfigProvider
@@ -553,31 +640,95 @@ export default function AdminIndexPage() {
               {/* 系统公告与状态 */}
               <Card
                 title={
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <SafetyCertificateOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-                    <span>系统状态与通知</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <SafetyCertificateOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                      <span>系统状态与通知</span>
+                    </div>
+                    <Button 
+                      type="primary" 
+                      size="small" 
+                      onClick={() => setShowAddAnnouncementForm(!showAddAnnouncementForm)}
+                    >
+                      {showAddAnnouncementForm ? '取消' : '发布新公告'}
+                    </Button>
                   </div>
                 }
                 style={{ marginTop: 24 }}
                 variant="outlined"
               >
-                <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
-                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>系统升级通知</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-10</p>
-                    <p>链评系统将于本周日凌晨2:00-4:00进行系统升级维护，期间系统可能暂时无法访问，请安排好相关工作。</p>
+                {showAddAnnouncementForm && (
+                  <div style={{ marginBottom: 20, padding: 16, background: '#f9f9f9', borderRadius: 8 }}>
+                    <h4 style={{ marginTop: 0, marginBottom: 12 }}>发布新公告</h4>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: 'block', marginBottom: 6 }}>公告标题：</label>
+                      <input 
+                        type="text" 
+                        value={newAnnouncement.title} 
+                        onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px 12px', 
+                          borderRadius: 4, 
+                          border: '1px solid #d9d9d9' 
+                        }}
+                        placeholder="请输入公告标题" 
+                      />
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: 'block', marginBottom: 6 }}>公告内容：</label>
+                      <textarea 
+                        value={newAnnouncement.content} 
+                        onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '8px 12px', 
+                          borderRadius: 4, 
+                          border: '1px solid #d9d9d9',
+                          minHeight: 100 
+                        }}
+                        placeholder="请输入公告内容" 
+                      />
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <Button 
+                        type="primary" 
+                        onClick={handleAddAnnouncement}
+                        loading={addingAnnouncement}
+                      >
+                        发布公告
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <Divider style={{ margin: '12px 0' }} />
-                <div style={{ display: 'flex', alignItems: 'start' }}>
-                  <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>管理员审核提醒</p>
-                    <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-06-08</p>
-                    <p>目前有5条新评价和3条疑似违规内容需要管理员审核，请及时处理！</p>
+                )}
+                
+                {announcementsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <Spin tip="加载系统通知中..." />
                   </div>
-                </div>
+                ) : announcements.length > 0 ? (
+                  <>
+                    {announcements.map((announcement, index) => (
+                      <React.Fragment key={announcement.announcement_id}>
+                        <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
+                          <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                          <div>
+                            <p style={{ margin: 0, fontWeight: 'bold' }}>{announcement.title}</p>
+                            <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>
+                              {formatDate(announcement.created_at)}
+                            </p>
+                            <p>{announcement.content}</p>
+                          </div>
+                        </div>
+                        {index < announcements.length - 1 && <Divider style={{ margin: '12px 0' }} />}
+                      </React.Fragment>
+                    ))}
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#8c8c8c' }}>
+                    暂无系统通知
+                  </div>
+                )}
               </Card>
 
               {/* 系统活动记录 */}
