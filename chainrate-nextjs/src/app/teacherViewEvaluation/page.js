@@ -25,7 +25,11 @@ import {
   SortAscendingOutlined,
   SortDescendingOutlined,
   LoadingOutlined,
-  LinkOutlined
+  LinkOutlined,
+  EnvironmentOutlined,
+  ExperimentOutlined,
+  LikeOutlined,
+  InteractionOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -54,7 +58,8 @@ import {
   List,
   Pagination,
   Image as AntImage,
-  Modal
+  Modal,
+  Progress
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -62,6 +67,39 @@ const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { Search } = Input;
+
+// 评分展示组件 - 使用进度条和评分星星的组合
+const RatingDisplay = ({ title, value, color, icon }) => (
+  <div className={styles.ratingDisplayContainer}>
+    <div className={styles.ratingTitle}>
+      {icon} <span>{title}</span>
+    </div>
+    <div className={styles.ratingContent}>
+      <div className={styles.ratingStars}>
+        <Rate allowHalf disabled value={value} style={{ fontSize: 16 }} />
+        <span className={styles.ratingValue}>{value.toFixed(1)}</span>
+      </div>
+      <Progress 
+        percent={value * 20} 
+        showInfo={false} 
+        strokeColor={color} 
+        trailColor="#f5f5f5" 
+        strokeWidth={8} 
+        className={styles.ratingProgress}
+      />
+    </div>
+  </div>
+);
+
+// 评价项目组件 - 美化单个评分项展示
+const RatingItem = ({ label, value }) => (
+  <div className={styles.ratingItemContainer}>
+    <Text type="secondary" className={styles.ratingItemLabel}>{label}</Text>
+    <div className={styles.ratingItemStars}>
+      <Rate disabled value={value} style={{ fontSize: 14 }} />
+    </div>
+  </div>
+);
 
 export default function TeacherViewEvaluationPage() {
   const router = useRouter();
@@ -458,6 +496,13 @@ export default function TeacherViewEvaluationPage() {
     return '#f5222d'; // 红色 - 差评
   };
   
+  // 获取评分背景色（淡化版本）
+  const getRatingBgColor = (rating) => {
+    if (rating >= 4) return '#f6ffed'; // 淡绿色背景 - 好评
+    if (rating >= 3) return '#fffbe6'; // 淡黄色背景 - 中评
+    return '#fff1f0'; // 淡红色背景 - 差评
+  };
+  
   // 获取评分标签
   const getRatingTag = (rating) => {
     if (rating >= 4) return '好评';
@@ -554,7 +599,19 @@ export default function TeacherViewEvaluationPage() {
       theme={{
         token: {
           colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          borderRadius: 8,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.09)',
         },
+        components: {
+          Card: {
+            headerBg: '#fafafa',
+            headerFontSize: 16,
+            headerHeight: 48
+          },
+          Rate: {
+            starSize: 16
+          }
+        }
       }}
     >
       <Layout style={{ minHeight: '100vh' }}>
@@ -619,10 +676,17 @@ export default function TeacherViewEvaluationPage() {
               )}
               
               {/* 课程选择器 */}
-              <Card title="选择课程" className={styles.filterCard}>
+              <Card 
+                title={
+                  <span className={styles.cardTitle}>
+                    <BookOutlined className={styles.cardTitleIcon} /> 选择课程
+                  </span>
+                } 
+                className={styles.selectorCard}
+              >
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={12}>
-                    <div style={{ marginBottom: '16px' }}>
+                    <div className={styles.selectLabel}>
                       <Text strong>请选择要查看评价的课程：</Text>
                     </div>
                     <Select
@@ -632,6 +696,7 @@ export default function TeacherViewEvaluationPage() {
                       onChange={handleCourseSelect}
                       loading={loadingCourses}
                       disabled={loadingCourses || courses.length === 0}
+                      className={styles.courseSelect}
                     >
                       {courses.map(course => (
                         <Option key={course.id} value={course.id}>
@@ -650,69 +715,109 @@ export default function TeacherViewEvaluationPage() {
               {selectedCourse && courseStatistics && (
                 <Card 
                   title={
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <BookOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                    <span className={styles.cardTitle}>
+                      <BookOutlined className={styles.cardTitleIcon} />
                       <span className={styles.courseTitle}>{selectedCourse.name}</span>
-                    </div>
+                    </span>
                   } 
                   className={styles.courseInfoCard}
                 >
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={6}>
-                      <Statistic 
-                        title="评价总数" 
-                        value={courseStatistics.totalEvaluations} 
-                        prefix={<CommentOutlined />}
-                      />
-                    </Col>
-                    <Col xs={24} md={6}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div>总体评分</div>
-                        <Rate allowHalf disabled value={courseStatistics.averageRating} style={{ fontSize: 16 }} />
-                        <div>{courseStatistics.averageRating.toFixed(1)}</div>
+                  {/* 课程基本统计信息 */}
+                  <Row gutter={[24, 24]}>
+                    <Col xs={24} sm={12} md={6}>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <CommentOutlined style={{ color: '#34a853' }} />
+                        </div>
+                        <div className={styles.statContent}>
+                          <div className={styles.statValue}>{courseStatistics.totalEvaluations}</div>
+                          <div className={styles.statLabel}>评价总数</div>
+                        </div>
                       </div>
                     </Col>
-                    <Col xs={24} md={6}>
-                      <Statistic 
-                        title="匿名评价" 
-                        value={courseStatistics.anonymousCount} 
-                        suffix={`/ ${courseStatistics.totalEvaluations}`}
-                      />
+                    
+                    <Col xs={24} sm={12} md={6}>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <StarFilled style={{ color: '#faad14' }} />
+                        </div>
+                        <div className={styles.statContent}>
+                          <div className={styles.statValue}>
+                            {courseStatistics.averageRating.toFixed(1)}
+                            <span className={styles.statUnit}>/5</span>
+                          </div>
+                          <div className={styles.statLabel}>平均评分</div>
+                        </div>
+                      </div>
                     </Col>
-                    <Col xs={24} md={6}>
-                      <div>
-                        <div>评价期间</div>
-                        <div>
-                          <CalendarOutlined style={{ marginRight: 4 }} />
-                          {formatDateTime(selectedCourse.startTime)} 至 {formatDateTime(selectedCourse.endTime)}
+                    
+                    <Col xs={24} sm={12} md={6}>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <UserOutlined style={{ color: '#1677ff' }} />
+                        </div>
+                        <div className={styles.statContent}>
+                          <div className={styles.statValue}>
+                            {courseStatistics.anonymousCount}
+                            <span className={styles.statUnit}>/{courseStatistics.totalEvaluations}</span>
+                          </div>
+                          <div className={styles.statLabel}>匿名评价</div>
+                        </div>
+                      </div>
+                    </Col>
+                    
+                    <Col xs={24} sm={12} md={6}>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <CalendarOutlined style={{ color: '#722ed1' }} />
+                        </div>
+                        <div className={styles.statContent}>
+                          <div className={styles.dateRange}>
+                            {formatDateTime(selectedCourse.startTime)} 
+                            <span style={{ margin: '0 4px' }}>至</span> 
+                            {formatDateTime(selectedCourse.endTime)}
+                          </div>
+                          <div className={styles.statLabel}>评价期间</div>
                         </div>
                       </div>
                     </Col>
                   </Row>
                   
-                  <Divider />
+                  <Divider orientation="left">评分详情</Divider>
                   
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                      <div className={styles.statisticItem}>
-                        <div>教学质量</div>
-                        <Rate allowHalf disabled value={courseStatistics.averageTeachingRating} style={{ fontSize: 14 }} />
-                        <div>{courseStatistics.averageTeachingRating.toFixed(1)}</div>
-                      </div>
+                  {/* 改进的评分详情部分 */}
+                  <Row gutter={[24, 24]} className={styles.ratingDetailsContainer}>
+                    <Col xs={24} md={6}>
+                      <RatingDisplay 
+                        title="总体评分"
+                        value={courseStatistics.averageRating}
+                        color="#faad14"
+                        icon={<StarFilled />}
+                      />
                     </Col>
-                    <Col xs={24} md={8}>
-                      <div className={styles.statisticItem}>
-                        <div>内容设计</div>
-                        <Rate allowHalf disabled value={courseStatistics.averageContentRating} style={{ fontSize: 14 }} />
-                        <div>{courseStatistics.averageContentRating.toFixed(1)}</div>
-                      </div>
+                    <Col xs={24} md={6}>
+                      <RatingDisplay 
+                        title="教学质量"
+                        value={courseStatistics.averageTeachingRating}
+                        color="#34a853"
+                        icon={<ExperimentOutlined />}
+                      />
                     </Col>
-                    <Col xs={24} md={8}>
-                      <div className={styles.statisticItem}>
-                        <div>师生互动</div>
-                        <Rate allowHalf disabled value={courseStatistics.averageInteractionRating} style={{ fontSize: 14 }} />
-                        <div>{courseStatistics.averageInteractionRating.toFixed(1)}</div>
-                      </div>
+                    <Col xs={24} md={6}>
+                      <RatingDisplay 
+                        title="内容设计"
+                        value={courseStatistics.averageContentRating}
+                        color="#1677ff"
+                        icon={<FileTextOutlined />}
+                      />
+                    </Col>
+                    <Col xs={24} md={6}>
+                      <RatingDisplay 
+                        title="师生互动"
+                        value={courseStatistics.averageInteractionRating}
+                        color="#722ed1"
+                        icon={<InteractionOutlined />}
+                      />
                     </Col>
                   </Row>
                 </Card>
@@ -720,7 +825,14 @@ export default function TeacherViewEvaluationPage() {
               
               {/* 评价筛选 */}
               {selectedCourse && (
-                <Card title="筛选评价" className={styles.filterCard}>
+                <Card 
+                  title={
+                    <span className={styles.cardTitle}>
+                      <FilterOutlined className={styles.cardTitleIcon} /> 筛选评价
+                    </span>
+                  } 
+                  className={styles.filterCard}
+                >
                   <div className={styles.filterSection}>
                     <Search
                       placeholder="搜索评价内容或学生姓名"
@@ -728,13 +840,13 @@ export default function TeacherViewEvaluationPage() {
                       enterButton="搜索"
                       size="middle"
                       onSearch={handleSearch}
-                      style={{ width: 300 }}
+                      className={styles.searchInput}
                       disabled={loadingEvaluations}
                     />
                     
                     <Select
                       placeholder="筛选条件"
-                      style={{ width: 150 }}
+                      className={styles.filterSelect}
                       value={filter}
                       onChange={handleFilterChange}
                       disabled={loadingEvaluations}
@@ -748,7 +860,7 @@ export default function TeacherViewEvaluationPage() {
                     
                     <Select
                       placeholder="排序方式"
-                      style={{ width: 150 }}
+                      className={styles.sortSelect}
                       value={sortOrder}
                       onChange={handleSortChange}
                       disabled={loadingEvaluations}
@@ -760,7 +872,7 @@ export default function TeacherViewEvaluationPage() {
                     </Select>
                   </div>
                   
-                  <div>
+                  <div className={styles.filterSummary}>
                     <Text type="secondary">
                       找到 {filteredEvaluations.length} 条评价 
                       {searchTerm && <span>，包含关键词 "{searchTerm}"</span>}
@@ -794,84 +906,95 @@ export default function TeacherViewEvaluationPage() {
                     <>
                       <List
                         dataSource={filteredEvaluations.slice((page - 1) * pageSize, page * pageSize)}
-                        renderItem={evaluation => (
-                          <Card 
-                            className={styles.evaluationCard}
-                            key={evaluation.id}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar 
-                                  icon={<UserOutlined />} 
-                                  style={{ backgroundColor: evaluation.isAnonymous ? '#d9d9d9' : '#34a853' }}
-                                />
-                                <div style={{ marginLeft: 12 }}>
-                                  <Text strong>{evaluation.studentName}</Text>
-                                  {evaluation.isAnonymous && (
-                                    <Tag className={styles.anonymousTag} style={{ marginLeft: 8 }}>匿名</Tag>
-                                  )}
-                                  <div className={styles.evaluationMeta}>
-                                    <CalendarOutlined style={{ marginRight: 4 }} />
-                                    {formatDateTime(evaluation.timestamp)}
+                        renderItem={evaluation => {
+                          const ratingColor = getRatingColor(evaluation.rating);
+                          const ratingBgColor = getRatingBgColor(evaluation.rating);
+                          
+                          return (
+                            <Card 
+                              className={styles.evaluationCard}
+                              key={evaluation.id}
+                              style={{ backgroundColor: ratingBgColor }}
+                            >
+                              <div className={styles.evaluationHeader}>
+                                <div className={styles.evaluationUser}>
+                                  <Avatar 
+                                    icon={<UserOutlined />} 
+                                    style={{ 
+                                      backgroundColor: evaluation.isAnonymous ? '#d9d9d9' : '#34a853',
+                                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                                    }}
+                                    size={48}
+                                  />
+                                  <div className={styles.userInfo}>
+                                    <div className={styles.userName}>
+                                      <Text strong>{evaluation.studentName}</Text>
+                                      {evaluation.isAnonymous && (
+                                        <Tag className={styles.anonymousTag}>匿名</Tag>
+                                      )}
+                                    </div>
+                                    <div className={styles.evaluationTime}>
+                                      <CalendarOutlined className={styles.timeIcon} />
+                                      {formatDateTime(evaluation.timestamp)}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div>
-                                <Space>
+                                
+                                <div className={styles.evaluationScore}>
+                                  <div className={styles.scoreContainer}>
+                                    <div className={styles.scoreValue} style={{ color: ratingColor }}>
+                                      {evaluation.rating.toFixed(1)}
+                                    </div>
+                                    <div className={styles.scoreMax}>/5</div>
+                                  </div>
                                   <Tag 
                                     className={styles.ratingTag}
-                                    color={getRatingColor(evaluation.rating)}
+                                    color={ratingColor}
                                   >
                                     {getRatingTag(evaluation.rating)}
                                   </Tag>
-                                  <span className={styles.starRating}>
-                                    <Rate disabled value={evaluation.rating} />
-                                  </span>
-                                </Space>
+                                </div>
                               </div>
-                            </div>
-                            
-                            <Paragraph className={styles.evaluationContent}>
-                              {evaluation.content}
-                            </Paragraph>
-                            
-                            {evaluation.imageHashes.length > 0 && (
-                              <div className={styles.imageContainer}>
-                                {evaluation.imageHashes.map((hash, index) => (
-                                  <div key={index} className={styles.evaluationImage}>
-                                    <AntImage
-                                      width={120}
-                                      height={120}
-                                      src={`https://gateway.pinata.cloud/ipfs/${hash}`}
-                                      alt={`评价图片 ${index + 1}`}
-                                      fallback="/images/image-error.png"
-                                      preview={{
-                                        src: `https://gateway.pinata.cloud/ipfs/${hash}`
-                                      }}
-                                    />
-                                  </div>
-                                ))}
+                              
+                              <Paragraph className={styles.evaluationContent}>
+                                {evaluation.content}
+                              </Paragraph>
+                              
+                              {evaluation.imageHashes.length > 0 && (
+                                <div className={styles.imageContainer}>
+                                  {evaluation.imageHashes.map((hash, index) => (
+                                    <div key={index} className={styles.evaluationImage}>
+                                      <AntImage
+                                        width={120}
+                                        height={120}
+                                        src={`https://gateway.pinata.cloud/ipfs/${hash}`}
+                                        alt={`评价图片 ${index + 1}`}
+                                        fallback="/images/image-error.png"
+                                        preview={{
+                                          src: `https://gateway.pinata.cloud/ipfs/${hash}`
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div className={styles.detailedRatings}>
+                                <Row gutter={[24, 16]}>
+                                  <Col xs={24} md={8}>
+                                    <RatingItem label="教学质量" value={evaluation.teachingRating} />
+                                  </Col>
+                                  <Col xs={24} md={8}>
+                                    <RatingItem label="内容设计" value={evaluation.contentRating} />
+                                  </Col>
+                                  <Col xs={24} md={8}>
+                                    <RatingItem label="师生互动" value={evaluation.interactionRating} />
+                                  </Col>
+                                </Row>
                               </div>
-                            )}
-                            
-                            <div className={styles.detailedRatings}>
-                              <Row gutter={[16, 8]}>
-                                <Col span={8}>
-                                  <Text type="secondary">教学质量：</Text>
-                                  <Rate disabled value={evaluation.teachingRating} style={{ fontSize: 12 }} />
-                                </Col>
-                                <Col span={8}>
-                                  <Text type="secondary">内容设计：</Text>
-                                  <Rate disabled value={evaluation.contentRating} style={{ fontSize: 12 }} />
-                                </Col>
-                                <Col span={8}>
-                                  <Text type="secondary">师生互动：</Text>
-                                  <Rate disabled value={evaluation.interactionRating} style={{ fontSize: 12 }} />
-                                </Col>
-                              </Row>
-                            </div>
-                          </Card>
-                        )}
+                            </Card>
+                          );
+                        }}
                       />
                       
                       <div className={styles.paginationContainer}>
