@@ -14,7 +14,18 @@ import {
   CommentOutlined, 
   LogoutOutlined,
   ArrowLeftOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  CalendarOutlined,
+  EditOutlined,
+  InfoCircleOutlined,
+  ClockCircleOutlined,
+  SendOutlined,
+  BulbOutlined,
+  SafetyOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+  SmileOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -27,7 +38,14 @@ import {
   Button,
   Alert,
   Tooltip,
-  Space
+  Space,
+  Card,
+  Typography,
+  Divider,
+  Spin,
+  Badge,
+  Tag,
+  Avatar
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 
@@ -268,9 +286,15 @@ export default function CreateCoursePage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          正在加载...
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <Spin size="large" tip="加载中..." className={styles.loadingSpin} />
+          <Typography.Title level={4} className={styles.loadingTitle}>
+            正在连接区块链...
+          </Typography.Title>
+          <Typography.Text type="secondary" className={styles.loadingSubtitle}>
+            准备创建您的课程评价
+          </Typography.Text>
         </div>
       </div>
     );
@@ -330,85 +354,200 @@ export default function CreateCoursePage() {
                 margin: 0,
                 minHeight: 280,
                 background: 'white',
-                borderRadius: 8,
+                borderRadius: 12,
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
               }}
             >
-              <div className={styles.infoBox} style={{ marginBottom: '24px' }}>
-                <h2>创建课程须知</h2>
-                <p>1. 创建课程会调用智能合约，需要支付少量的Gas费用</p>
-                <p>2. 请设置合理的评价时间范围，学生只能在该时间范围内提交评价</p>
-                <p>3. 创建后的课程可以在"我的课程"中管理</p>
+              <div className={styles.pageHeader}>
+                <div className={styles.pageHeaderLeft}>
+                  <Badge color="#34a853" className={styles.pageHeaderBadge} />
+                  <Typography.Title level={2} className={styles.pageTitle}>
+                    创建新课程
+                  </Typography.Title>
+                </div>
+                <div className={styles.pageHeaderRight}>
+                  <Tag color="#34a853" icon={<BookOutlined />}>课程管理</Tag>
+                </div>
               </div>
+              
+              <Card 
+                className={styles.infoBoxCard}
+                title={
+                  <div className={styles.infoBoxTitle}>
+                    <BulbOutlined className={styles.infoBoxIcon} />
+                    <span>创建课程须知</span>
+                  </div>
+                }
+                bordered={false}
+              >
+                <div className={styles.infoBoxContent}>
+                  <div className={styles.infoItem}>
+                    <SafetyOutlined className={styles.infoItemIcon} />
+                    <Typography.Text>创建课程会调用智能合约，需要支付少量的Gas费用</Typography.Text>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <ClockCircleOutlined className={styles.infoItemIcon} />
+                    <Typography.Text>请设置合理的评价时间范围，学生只能在该时间范围内提交评价</Typography.Text>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <TeamOutlined className={styles.infoItemIcon} />
+                    <Typography.Text>创建后的课程可以在"我的课程"中管理</Typography.Text>
+                  </div>
+                </div>
+              </Card>
               
               {error && (
                 <Alert
-                  message="错误"
+                  message={<Typography.Text strong>错误提示</Typography.Text>}
                   description={error}
                   type="error"
                   showIcon
-                  style={{ marginBottom: '24px' }}
+                  className={styles.alertError}
+                  closable
+                  onClose={() => setError('')}
                 />
               )}
               
               {success && (
                 <Alert
-                  message="成功"
-                  description={success}
+                  message={<Typography.Text strong>操作成功</Typography.Text>}
+                  description={
+                    <div className={styles.successContent}>
+                      <div className={styles.successText}>{success}</div>
+                      <div className={styles.successActions}>
+                        <Button 
+                          type="primary" 
+                          size="small" 
+                          icon={<EditOutlined />}
+                          onClick={() => router.push(`/teacherManageCourse/${success.match(/课程ID: (\d+)/)?.[1]}`)}
+                        >
+                          管理课程
+                        </Button>
+                      </div>
+                    </div>
+                  }
                   type="success"
                   showIcon
-                  style={{ marginBottom: '24px' }}
+                  icon={<CheckCircleOutlined />}
+                  className={styles.alertSuccess}
+                  closable
+                  onClose={() => setSuccess('')}
                 />
               )}
               
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSubmit}
-                disabled={submitting}
+              <Card 
+                className={styles.formCard}
+                title={
+                  <div className={styles.formCardTitle}>
+                    <div className={styles.formCardIcon}>
+                      <EditOutlined className={styles.formCardIconInner} />
+                    </div>
+                    <Typography.Title level={4} style={{ margin: 0 }}>
+                      课程信息
+                    </Typography.Title>
+                  </div>
+                }
+                bordered={false}
               >
-                <Form.Item
-                  name="courseName"
-                  label="课程名称"
-                  rules={[{ required: true, message: '请输入课程名称' }]}
+                <Form
+                  form={form}
+                  layout="vertical"
+                  onFinish={handleSubmit}
+                  disabled={submitting}
+                  className={styles.modernForm}
                 >
-                  <Input placeholder="请输入课程名称" />
-                </Form.Item>
-                
-                <Form.Item
-                  name="timeRange"
-                  label="评价时间范围"
-                  rules={[{ required: true, message: '请选择评价时间范围' }]}
-                >
-                  <RangePicker 
-                    showTime 
-                    format="YYYY-MM-DD HH:mm:ss" 
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-                
-                <Form.Item>
-                  <Space>
-                    <Button 
-                      type="primary"
-                      htmlType="submit"
-                      loading={submitting}
-                    >
-                      创建课程
-                    </Button>
-                    <Button 
-                      onClick={() => router.push('/teacherIndex')}
-                      disabled={submitting}
-                    >
-                      返回首页
-                    </Button>
-                  </Space>
-                </Form.Item>
-              </Form>
+                  <Form.Item
+                    name="courseName"
+                    label={
+                      <span className={styles.formLabel}>
+                        <BookOutlined /> 课程名称
+                      </span>
+                    }
+                    rules={[{ required: true, message: '请输入课程名称' }]}
+                  >
+                    <Input 
+                      placeholder="请输入课程名称" 
+                      prefix={<BookOutlined style={{ color: '#bfbfbf' }} />}
+                      size="large"
+                      className={styles.modernInput}
+                    />
+                  </Form.Item>
+                  
+                  <Form.Item
+                    name="timeRange"
+                    label={
+                      <span className={styles.formLabel}>
+                        <CalendarOutlined /> 评价时间范围
+                      </span>
+                    }
+                    tooltip={{ 
+                      title: '学生只能在设定的时间范围内提交课程评价', 
+                      icon: <InfoCircleOutlined style={{ color: '#34a853' }} /> 
+                    }}
+                    rules={[{ required: true, message: '请选择评价时间范围' }]}
+                  >
+                    <RangePicker 
+                      showTime 
+                      format="YYYY-MM-DD HH:mm:ss" 
+                      style={{ width: '100%' }}
+                      size="large"
+                      className={styles.modernDatePicker}
+                      placeholder={['开始时间', '结束时间']}
+                      suffixIcon={<ClockCircleOutlined style={{ color: '#34a853' }} />}
+                    />
+                  </Form.Item>
+                  
+                  <Divider dashed className={styles.formDivider} />
+                  
+                  <Form.Item>
+                    <div className={styles.formActions}>
+                      <Button 
+                        type="primary"
+                        htmlType="submit"
+                        loading={submitting}
+                        icon={<SendOutlined />}
+                        size="large"
+                        className={styles.submitButton}
+                      >
+                        创建课程
+                      </Button>
+                      <Button 
+                        onClick={() => router.push('/teacherIndex')}
+                        disabled={submitting}
+                        icon={<HomeOutlined />}
+                        size="large"
+                        className={styles.cancelButton}
+                      >
+                        返回首页
+                      </Button>
+                    </div>
+                  </Form.Item>
+                </Form>
+              </Card>
             </Content>
           </Layout>
         </Layout>
         <div className={styles.footer}>
-          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+          <div className={styles.footerContent}>
+            <div className={styles.footerLogo}>
+              <Avatar 
+                src="/images/logo1.png" 
+                size={32} 
+                style={{ marginRight: 8 }} 
+              />
+              <Typography.Text strong>链评系统</Typography.Text>
+            </div>
+            <div className={styles.footerText}>
+              <Typography.Text type="secondary">
+                © 2023 链评系统 - 基于区块链的教学评价系统
+              </Typography.Text>
+            </div>
+            <div className={styles.footerLinks}>
+              <Button type="link" size="small">平台简介</Button>
+              <Button type="link" size="small">使用帮助</Button>
+              <Button type="link" size="small">联系我们</Button>
+            </div>
+          </div>
         </div>
       </Layout>
     </ConfigProvider>

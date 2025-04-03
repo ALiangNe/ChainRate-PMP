@@ -5,6 +5,361 @@
   background-color: #f8f9fa;
 }
 
+/* 加载页面样式 */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4eaef 100%);
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.8s ease-out;
+}
+
+.loadingSpin {
+  margin-bottom: 24px;
+  transform: scale(1.2);
+}
+
+.loadingTitle {
+  color: #34a853 !important;
+  margin-bottom: 8px !important;
+  animation: pulse 2s infinite;
+}
+
+.loadingSubtitle {
+  color: #8c8c8c;
+  font-size: 16px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* 页面标题部分 */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  align-items: center;
+}
+
+.pageHeaderBadge {
+  margin-right: 12px;
+  transform: scale(1.5);
+}
+
+.pageTitle {
+  margin-bottom: 0 !important;
+  font-size: 28px !important;
+  color: #262626;
+  position: relative;
+  animation: slideInFromLeft 0.5s ease-out;
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* 信息提示卡片 */
+.infoBoxCard {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(to right, #e8f5e9, #f9f9f9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.infoBoxCard:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.infoBoxTitle {
+  display: flex;
+  align-items: center;
+  color: #34a853;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.infoBoxIcon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.infoBoxContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.infoItem:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transform: translateX(4px);
+}
+
+.infoItemIcon {
+  font-size: 18px;
+  color: #34a853;
+  margin-right: 12px;
+}
+
+/* 警告框样式 */
+.alertError, .alertSuccess {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: slideInFromRight 0.5s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.alertError {
+  border-left: 4px solid #f5222d;
+}
+
+.alertSuccess {
+  border-left: 4px solid #52c41a;
+}
+
+.successContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.successText {
+  flex: 1;
+  min-width: 200px;
+}
+
+.successActions {
+  margin-top: 8px;
+}
+
+/* 表单卡片样式 */
+.formCard {
+  border-radius: 12px;
+  margin-top: 24px;
+  background: white;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  animation: slideUp 0.5s ease-out;
+}
+
+.formCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.formCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.formCardIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #34a853, #2b9348);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(52, 168, 83, 0.25);
+}
+
+.formCardIconInner {
+  color: white;
+  font-size: 16px;
+}
+
+.modernForm {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px 8px;
+}
+
+.formLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #262626;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.modernInput, .modernDatePicker {
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.modernInput:hover, .modernDatePicker:hover {
+  border-color: #34a853;
+  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.1);
+}
+
+.modernInput:focus, .modernDatePicker:focus {
+  border-color: #34a853;
+  box-shadow: 0 0 0 2px rgba(52, 168, 83, 0.2);
+  outline: none;
+}
+
+.formDivider {
+  margin: 24px 0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.submitButton {
+  min-width: 140px;
+  height: 46px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(90deg, #2b9348 0%, #34a853 100%);
+  box-shadow: 0 4px 12px rgba(52, 168, 83, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(52, 168, 83, 0.3);
+  background: linear-gradient(90deg, #34a853 0%, #2b9348 100%);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.2);
+}
+
+.cancelButton {
+  min-width: 140px;
+  height: 46px;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.cancelButton:hover {
+  background: #f9f9f9;
+  border-color: #bfbfbf;
+  transform: translateY(-2px);
+}
+
+/* 页脚样式 */
+.footer {
+  background: linear-gradient(to right, #f0f2f5, #f5f7fa);
+  padding: 24px;
+  border-top: 1px solid #e8e8e8;
+  text-align: center;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.footerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+}
+
+.footerText {
+  flex: 1;
+  text-align: center;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 8px;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .logo {
   width: 40px;
   height: 40px;
@@ -89,91 +444,4 @@
   border-radius: 8px;
   border-left: 4px solid #4caf50;
   color: #2e7d32;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.formGroup label {
-  font-weight: 500;
-  color: #37474f;
-}
-
-.formGroup input {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-}
-
-.formGroup input:focus {
-  border-color: #34a853;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(52, 168, 83, 0.2);
-}
-
-.formGroup input:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.formActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.cancelButton {
-  padding: 0.75rem 1.5rem;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  color: #616161;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background-color: #e0e0e0;
-}
-
-.submitButton {
-  padding: 0.75rem 1.5rem;
-  background-color: #34a853;
-  border: none;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-}
-
-.submitButton:hover:not(:disabled) {
-  background-color: #2e7d32;
-}
-
-.cancelButton:disabled,
-.submitButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.footer {
-  background-color: #f0f2f5;
-  padding: 16px;
-  text-align: center;
-  color: #555;
-  font-size: 14px;
 } 
