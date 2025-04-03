@@ -309,38 +309,13 @@
   transform: translateY(-2px);
 }
 
-/* 页脚样式 */
+/* 替换页脚样式为简单样式 */
 .footer {
-  background: linear-gradient(to right, #f0f2f5, #f5f7fa);
-  padding: 24px;
-  border-top: 1px solid #e8e8e8;
+  background-color: #f1f3f4;
+  padding: 1rem 2rem;
   text-align: center;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.03);
-}
-
-.footerContent {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.footerLogo {
-  display: flex;
-  align-items: center;
-}
-
-.footerText {
-  flex: 1;
-  text-align: center;
-}
-
-.footerLinks {
-  display: flex;
-  gap: 8px;
+  color: #5f6368;
+  font-size: 0.9rem;
 }
 
 /* 动画效果 */

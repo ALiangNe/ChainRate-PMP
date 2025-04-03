@@ -25,7 +25,13 @@ import {
   TeamOutlined,
   CheckCircleOutlined,
   SmileOutlined,
-  HomeOutlined
+  HomeOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  CopyrightOutlined,
+  GithubOutlined,
+  WechatOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -528,28 +534,14 @@ export default function CreateCoursePage() {
           </Layout>
         </Layout>
         <div className={styles.footer}>
-          <div className={styles.footerContent}>
-            <div className={styles.footerLogo}>
-              <Avatar 
-                src="/images/logo1.png" 
-                size={32} 
-                style={{ marginRight: 8 }} 
-              />
-              <Typography.Text strong>链评系统</Typography.Text>
-            </div>
-            <div className={styles.footerText}>
-              <Typography.Text type="secondary">
-                © 2023 链评系统 - 基于区块链的教学评价系统
-              </Typography.Text>
-            </div>
-            <div className={styles.footerLinks}>
-              <Button type="link" size="small">平台简介</Button>
-              <Button type="link" size="small">使用帮助</Button>
-              <Button type="link" size="small">联系我们</Button>
-            </div>
-          </div>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
         </div>
       </Layout>
     </ConfigProvider>
   );
+}
+
+// 删除复杂的页脚组件，改为简单样式
+function Footer() {
+  return null; // 移除后不需要该组件
 } 
