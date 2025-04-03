@@ -626,10 +626,10 @@ if (search) {
                         gutter: 16,
                         xs: 1,
                         sm: 1,
-                        md: 2,
+                        md: 1,
                         lg: 2,
-                        xl: 3,
-                        xxl: 3,
+                        xl: 2,
+                        xxl: 2,
                       }}
                       dataSource={filteredEvaluations}
                       renderItem={(evaluation) => (
@@ -669,7 +669,12 @@ if (search) {
                                     {evaluation.teacherCollege}
                                   </div>
                                   <div className={styles.evaluationRating}>
-                                    <Rate disabled value={evaluation.overallRating} />
+                                    <Rate 
+                                      disabled 
+                                      value={evaluation.overallRating} 
+                                      size="small"
+                                      style={{ fontSize: '14px' }}
+                                    />
                                     <span className={styles.ratingText}>
                                       {evaluation.overallRating}.0
                                     </span>
@@ -750,7 +755,12 @@ if (search) {
                     <Card title="评分详情" className={styles.ratingCard}>
                       <div className={styles.overallRating}>
                         <span className={styles.overallRatingLabel}>总体评分:</span>
-                        <Rate disabled value={selectedEvaluation.overallRating} />
+                        <Rate 
+                          disabled 
+                          value={selectedEvaluation.overallRating}
+                          size="small"
+                          style={{ fontSize: '16px' }}
+                        />
                         <span className={styles.ratingValue}>{selectedEvaluation.overallRating}.0</span>
                       </div>
                       <div className={styles.detailedRatingsDetail}>
@@ -759,7 +769,9 @@ if (search) {
                             <span className={styles.ratingLabelDetail}>{label}:</span>
                             <Rate 
                               disabled 
-                              value={selectedEvaluation[`${key}Rating`]} 
+                              value={selectedEvaluation[`${key}Rating`]}
+                              size="small"
+                              style={{ fontSize: '14px' }}
                             />
                             <span className={styles.ratingValueDetail}>
                               {selectedEvaluation[`${key}Rating`]}.0

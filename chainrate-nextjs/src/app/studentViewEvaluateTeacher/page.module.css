@@ -93,6 +93,7 @@
   margin-bottom: 8px;
   display: flex;
   align-items: center;
+  min-width: 180px;
 }
 
 .ratingText {
@@ -114,12 +115,20 @@
   display: flex;
   align-items: center;
   margin-bottom: 6px;
+  min-width: 200px;
 }
 
 .ratingLabel {
   width: 70px;
   font-size: 12px;
   color: #666;
+  white-space: nowrap;
+}
+
+.ratingInfo {
+  display: flex;
+  align-items: center;
+  min-width: 180px;
 }
 
 /* 评价详情抽屉 */
@@ -176,12 +185,14 @@
   display: flex;
   align-items: center;
   margin-bottom: 12px;
+  min-width: 280px;
 }
 
 .ratingLabelDetail {
   width: 80px;
   font-weight: 500;
   color: #333;
+  white-space: nowrap;
 }
 
 .ratingValueDetail {
@@ -309,4 +320,19 @@
 
 .statCard:hover::before {
   opacity: 1;
+}
+
+/* 调整List组件的布局，减少卡片数量增加宽度 */
+@media (min-width: 992px) {
+  .evaluationListContainer :global(.ant-list-grid.ant-list-grid-lg) :global(.ant-list-item) {
+    max-width: 50%;
+  }
+}
+
+/* 调整Rate组件样式 */
+.evaluationRating :global(.ant-rate),
+.ratingItem :global(.ant-rate),
+.ratingItemDetail :global(.ant-rate) {
+  min-width: 120px;
+  display: inline-flex;
 }
