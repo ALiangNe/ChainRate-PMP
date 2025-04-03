@@ -68,6 +68,10 @@ export default function StudentIndexPage() {
   const [unevaluatedCoursesCount, setUnevaluatedCoursesCount] = useState(0);
   const [totalEvaluationsCount, setTotalEvaluationsCount] = useState(0);
   
+  // 添加公告数据状态
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  
   useEffect(() => {
     // 确保代码仅在客户端执行
     if (typeof window === 'undefined') return;
@@ -218,9 +222,38 @@ export default function StudentIndexPage() {
       }
     };
 
+    // 添加获取公告数据的函数
+    const fetchAnnouncements = async () => {
+      try {
+        setAnnouncementsLoading(true);
+        console.log('开始获取系统公告...');
+        
+        const response = await fetch('/api/announcements?limit=2');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('获取到公告数据:', data);
+        
+        if (data.success && data.data) {
+          setAnnouncements(data.data);
+        } else {
+          console.error('获取公告数据失败:', data.message);
+        }
+      } catch (error) {
+        console.error('获取公告数据错误:', error);
+        // 设置为空数组，避免显示加载状态
+        setAnnouncements([]);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    };
+
     // 添加延迟执行验证，避免客户端渲染问题
     const timer = setTimeout(() => {
       checkUserAuth();
+      fetchAnnouncements(); // 调用获取公告的函数
     }, 100);
 
     return () => clearTimeout(timer);
@@ -333,6 +366,8 @@ export default function StudentIndexPage() {
         unevaluatedCoursesCount={unevaluatedCoursesCount}
         totalEvaluationsCount={totalEvaluationsCount}
         refreshStats={refreshStudentStatistics}
+        announcements={announcements}
+        announcementsLoading={announcementsLoading}
       />
     </ConfigProvider>
   );
@@ -349,7 +384,9 @@ function AntDesignContent({
   evaluatedCoursesCount,
   unevaluatedCoursesCount,
   totalEvaluationsCount,
-  refreshStats
+  refreshStats,
+  announcements,
+  announcementsLoading
 }) {
   const {
     token: { colorBgContainer, borderRadiusLG, colorPrimary },
@@ -373,6 +410,16 @@ function AntDesignContent({
       icon: <CommentOutlined /> 
     },
   ];
+  
+  // 格式化日期函数
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
   
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -573,23 +620,33 @@ function AntDesignContent({
               style={{ marginTop: 24 }}
               variant="outlined"
             >
-              <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
-                <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                <div>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>课程评价入口开放</p>
-                  <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-15</p>
-                  <p>本学期课程评价系统已开放，请同学们及时完成课程评价，您的反馈对我们非常重要！</p>
+              {announcementsLoading ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <Spin tip="加载公告中..." />
                 </div>
-              </div>
-              <Divider style={{ margin: '12px 0' }} />
-              <div style={{ display: 'flex', alignItems: 'start' }}>
-                <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
-                <div>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>评价活动通知</p>
-                  <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>2023-05-10</p>
-                  <p>本学期课程评价将于6月15日截止，请及时完成所有课程的评价工作！</p>
+              ) : announcements.length > 0 ? (
+                <>
+                  {announcements.map((announcement, index) => (
+                    <React.Fragment key={announcement.announcement_id}>
+                      <div style={{ display: 'flex', alignItems: 'start', marginBottom: 12 }}>
+                        <ClockCircleOutlined style={{ marginRight: 8, marginTop: 4, color: '#8c8c8c' }} />
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 'bold' }}>{announcement.title}</p>
+                          <p style={{ margin: '4px 0 0 0', color: '#8c8c8c' }}>
+                            {formatDate(announcement.created_at)}
+                          </p>
+                          <p>{announcement.content}</p>
+                        </div>
+                      </div>
+                      {index < announcements.length - 1 && <Divider style={{ margin: '12px 0' }} />}
+                    </React.Fragment>
+                  ))}
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: '#8c8c8c' }}>
+                  暂无公告
                 </div>
-              </div>
+              )}
             </Card>
           </Content>
         </Layout>
