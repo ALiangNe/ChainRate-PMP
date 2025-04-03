@@ -134,3 +134,106 @@ npx hardhat run ./ignition/deploy.js --network localhost
 ## Git指南
 - git reflog
 - git reset --hard "HEAD@{1}"
+
+# ChainRate-PMP 链评系统
+
+ChainRate是一个基于区块链的课程评价系统，支持学生对课程和教师进行多维度评价，让教学评价更透明、更公正。
+
+## 项目概述
+
+本项目由两个主要智能合约组成：
+- **ChainRate.sol**: 提供用户管理、课程管理和课程评价功能
+- **ChainRate02.sol**: 提供教师多维度评价功能
+
+## 功能列表
+
+### ChainRate.sol 核心功能
+1. **用户管理**
+   - 用户注册：学生、教师、管理员角色
+   - 用户登录：密码验证
+   - 用户信息查询
+
+2. **课程管理**
+   - 课程创建：教师可创建课程
+   - 课程更新：修改课程信息
+   - 课程查询：获取课程列表和详情
+
+3. **课程选修**
+   - 学生加入课程
+   - 学生退出课程
+   - 课程学生管理
+
+4. **课程评价**
+   - 提交课程评价：内容、评分等
+   - 查看评价：按课程、按学生查询
+   - 评价统计：平均评分、分布等
+
+### ChainRate02.sol 教师评价功能
+1. **教师多维度评价**
+   - 学生可以对教师进行多维度评价（仅限选修过该教师课程的学生）
+   - 评价维度包括：
+     - 教学能力：讲课清晰度、知识掌握程度等
+     - 教学态度：认真负责、关注学生
+     - 教学方法：教学手段多样性、互动性
+     - 学术水平：学术研究能力、前沿知识掌握
+     - 指导能力：指导学生解决问题的能力
+
+2. **教师评价查询**
+   - 查看单个教师的评价详情
+   - 获取评价统计数据
+   - 生成教师评价报告
+
+3. **评价权限管理**
+   - 验证学生是否有权限评价特定教师
+   - 防止重复评价
+
+## 如何使用
+
+### 评价教师
+1. 学生必须先选修该教师的至少一门课程
+2. 使用`submitTeacherEvaluation`函数提交评价，包括:
+   - 教师地址
+   - 评价内容
+   - 每个维度的评分(1-5分)
+   - 是否匿名
+
+### 查看教师评价
+1. 使用`getTeacherEvaluations`查看指定教师收到的所有评价
+2. 使用`getTeacherAverageRatings`查看教师各维度的平均评分
+3. 使用`generateTeacherReport`生成教师评价报告
+
+## 合约关联
+
+两个合约之间通过以下方式关联：
+1. ChainRate02合约通过`setMainContract`函数设置ChainRate主合约地址
+2. ChainRate02合约可以调用ChainRate合约的函数，如获取用户信息、验证用户角色等
+3. 教师评价时，会验证学生是否选修过该教师的课程
+
+## 数据结构
+
+### TeacherEvaluation 教师评价数据结构
+```
+struct TeacherEvaluation {
+    uint256 id;                      // 评价唯一标识符
+    address student;                 // 学生地址
+    address teacher;                 // 教师地址
+    uint256 timestamp;               // 评价时间戳
+    string contentHash;              // 评价内容哈希值
+    string[] imageHashes;            // 评价图片哈希数组
+    bool isAnonymous;                // 是否匿名评价
+    uint8 overallRating;             // 总体评分(1-5)
+    uint8 teachingAbilityRating;     // 教学能力评分(1-5)
+    uint8 teachingAttitudeRating;    // 教学态度评分(1-5)
+    uint8 teachingMethodRating;      // 教学方法评分(1-5)
+    uint8 academicLevelRating;       // 学术水平评分(1-5)
+    uint8 guidanceAbilityRating;     // 指导能力评分(1-5)
+    bool isActive;                   // 评价是否有效
+}
+```
+
+## 系统部署
+
+1. 先部署ChainRate.sol合约
+2. 部署ChainRate02.sol合约
+3. 调用ChainRate02合约的`setMainContract`函数，设置ChainRate合约地址
+4. 系统即可完整运行

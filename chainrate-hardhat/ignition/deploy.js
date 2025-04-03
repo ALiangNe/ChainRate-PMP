@@ -34,7 +34,37 @@ async function main() {
   // 保存ABI和地址到前端项目
   saveFrontendFiles(chainRate, chainRateAddress, "ChainRate");
 
-  return chainRateAddress;
+  // 部署 ChainRate02 合约
+  console.log(" ")
+  console.log("===========================================");
+  console.log("开始部署ChainRate02合约");
+  
+  const ChainRate02 = await ethers.getContractFactory("ChainRate02");
+  const chainRate02 = await ChainRate02.deploy();
+  
+  console.log("等待部署交易确认...");
+  await chainRate02.waitForDeployment();
+  
+  const chainRate02Address = await chainRate02.getAddress();
+  
+  console.log("===========================================");
+  console.log("ChainRate02合约已成功部署！");
+  console.log("合约地址:", chainRate02Address);
+  
+  // 设置主合约地址
+  console.log("设置ChainRate02的主合约地址...");
+  const setMainContractTx = await chainRate02.setMainContract(chainRateAddress);
+  await setMainContractTx.wait();
+  console.log("ChainRate02的主合约地址已设置为:", chainRateAddress);
+  console.log("===========================================");
+
+  // 保存ABI和地址到前端项目
+  saveFrontendFiles(chainRate02, chainRate02Address, "ChainRate02");
+
+  return {
+    chainRateAddress,
+    chainRate02Address
+  };
 }
 
 function saveFrontendFiles(contract, address, name) {
@@ -66,8 +96,11 @@ function saveFrontendFiles(contract, address, name) {
 }
 
 main()
-  .then((address) => {
-    console.log(`部署流程完成，合约地址: ${address}`);
+  .then((addresses) => {
+    console.log(" ")
+    console.log(`部署流程完成:`);
+    console.log(`ChainRate合约地址: ${addresses.chainRateAddress}`);
+    console.log(`ChainRate02合约地址: ${addresses.chainRate02Address}`);
     process.exit(0);
   })
   .catch((error) => {

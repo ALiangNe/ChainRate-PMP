@@ -97,7 +97,8 @@ contract ChainRate {
         uint8 interactionRating;
         bool isActive;
     }
-    
+
+
     // 状态变量
     address public owner;  // 合约部署者地址
     mapping(address => User) public users;  // 用户地址到用户信息的映射
