@@ -239,8 +239,32 @@ export default function StudentViewEvaluateTeacherPage() {
           const evaluationId = evaluationIds[i];
           const evaluation = await teacherContract.teacherEvaluations(evaluationId);
           
-          // 获取教师信息
+          console.log(`获取评价 ${evaluationId} 的教师信息:`, evaluation.teacher);
+          
+          // 获取教师信息 - 从ChainRate主合约中获取
           const teacherInfo = await mainContract.getUserInfo(evaluation.teacher);
+          console.log("教师信息:", teacherInfo);
+          
+          // 确保提取的头像哈希是有效的
+          const avatarHash = teacherInfo[6];
+          console.log("教师头像哈希:", avatarHash);
+          
+          // 检查头像哈希是否已经是完整URL
+          let avatarUrl = null;
+          if (avatarHash && avatarHash.trim() !== "") {
+            // 如果已经是完整URL，直接使用
+            if (avatarHash.startsWith('http')) {
+              avatarUrl = avatarHash;
+            } else {
+              // 否则拼接IPFS网关
+              avatarUrl = `https://gateway.pinata.cloud/ipfs/${avatarHash}`;
+            }
+          }
+          console.log("头像URL:", avatarUrl);
+          
+          // 检查图片哈希数组
+          const imageHashes = evaluation.imageHashes || [];
+          console.log("图片哈希数组:", imageHashes);
           
           // 格式化时间戳
           const timestamp = new Date(Number(evaluation.timestamp) * 1000);
@@ -256,9 +280,9 @@ export default function StudentViewEvaluateTeacherPage() {
             teacherAddress: evaluation.teacher,
             teacherName: teacherInfo[0],
             teacherCollege: teacherInfo[3],
-            teacherAvatar: teacherInfo[6],
+            teacherAvatar: avatarUrl,
             contentHash: evaluation.contentHash,
-            imageHashes: evaluation.imageHashes,
+            imageHashes: imageHashes,
             overallRating: Number(evaluation.overallRating),
             teachingAbilityRating: Number(evaluation.teachingAbilityRating),
             teachingAttitudeRating: Number(evaluation.teachingAttitudeRating),
@@ -307,7 +331,8 @@ export default function StudentViewEvaluateTeacherPage() {
   const loadEvaluationContent = async (contentHash) => {
     try {
       setEvaluationContentLoading(true);
-      const response = await fetch(`https://ipfs.io/ipfs/${contentHash}`);
+      console.log("加载评价内容:", contentHash);
+      const response = await fetch(`https://gateway.pinata.cloud/ipfs/${contentHash}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -651,9 +676,9 @@ if (search) {
                               <Col xs={24} md={8}>
                                 <div className={styles.teacherAvatar}>
                                   <Avatar 
-                                    size={80} 
-                                    src={evaluation.teacherAvatar ? `https://ipfs.io/ipfs/${evaluation.teacherAvatar}` : null}
-                                    icon={!evaluation.teacherAvatar && <UserOutlined />} 
+                                    size={120} 
+                                    src={evaluation.teacherAvatar || null}
+                                    icon={!evaluation.teacherAvatar ? <UserOutlined /> : null} 
                                   />
                                 </div>
                               </Col>
@@ -730,8 +755,9 @@ if (search) {
                     <div className={styles.teacherInfoDetail}>
                       <Avatar 
                         size={64}
-                        src={selectedEvaluation.teacherAvatar ? `https://ipfs.io/ipfs/${selectedEvaluation.teacherAvatar}` : null}
-                        icon={!selectedEvaluation.teacherAvatar && <UserOutlined />}
+                        src={selectedEvaluation.teacherAvatar && selectedEvaluation.teacherAvatar.trim() !== "" ? 
+                          selectedEvaluation.teacherAvatar : null}
+                        icon={!selectedEvaluation.teacherAvatar || selectedEvaluation.teacherAvatar.trim() === "" ? <UserOutlined /> : null}
                       />
                       <div className={styles.teacherInfoText}>
                         <Title level={4}>{selectedEvaluation.teacherName}</Title>
@@ -789,10 +815,10 @@ if (search) {
                             <div 
                               key={index} 
                               className={styles.imageItem}
-                              onClick={() => handlePreview(`https://ipfs.io/ipfs/${hash}`)}
+                              onClick={() => handlePreview(`https://gateway.pinata.cloud/ipfs/${hash}`)}
                             >
                               <img 
-                                src={`https://ipfs.io/ipfs/${hash}`} 
+                                src={`https://gateway.pinata.cloud/ipfs/${hash}`} 
                                 alt={`评价图片 ${index + 1}`}
                                 className={styles.thumbnail}
                               />
