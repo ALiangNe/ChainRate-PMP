@@ -10,6 +10,7 @@ import Image from 'next/image';
 import React from 'react';
 import axios from 'axios'; // 引入axios用于API请求
 import UserAvatar from '../../components/UserAvatar';
+import StudentSidebar from '../../components/StudentSidebar';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -490,51 +491,6 @@ export default function SubmitEvaluationPage({ params }) {
     router.push(`/studentCourseDetail/${courseId}`);
   };
 
-  // 侧边栏菜单项
-  const siderItems = [
-    {
-      key: 'sub1',
-      icon: React.createElement(UserOutlined),
-      label: '个人中心',
-      children: [
-        {
-          key: '1',
-          label: '个人信息',
-          onClick: () => router.push('/studentIndex')
-        }
-      ],
-    },
-    {
-      key: 'sub2',
-      icon: React.createElement(BookOutlined),
-      label: '课程管理',
-      children: [
-        {
-          key: '2',
-          label: '查看课程',
-          onClick: () => router.push('/studentViewCourses')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: React.createElement(CommentOutlined),
-      label: '评价管理',
-      children: [
-        {
-          key: '3',
-          label: '我的评价',
-          onClick: () => router.push('/studentMyEvaluation')
-        },
-        {
-          key: '4',
-          label: '提交评价',
-          onClick: () => router.push('/submit-evaluation')
-        }
-      ],
-    }
-  ];
-
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userAddress');
@@ -548,6 +504,51 @@ export default function SubmitEvaluationPage({ params }) {
     localStorage.removeItem('userAvatar');
     router.push('/login');
   };
+
+  // 侧边栏菜单项
+  // const siderItems = [
+  //   {
+  //     key: 'sub1',
+  //     icon: React.createElement(UserOutlined),
+  //     label: '个人中心',
+  //     children: [
+  //       {
+  //         key: '1',
+  //         label: '个人信息',
+  //         onClick: () => router.push('/studentIndex')
+  //       }
+  //     ],
+  //   },
+  //   {
+  //     key: 'sub2',
+  //     icon: React.createElement(BookOutlined),
+  //     label: '课程管理',
+  //     children: [
+  //       {
+  //         key: '2',
+  //         label: '查看课程',
+  //         onClick: () => router.push('/studentViewCourses')
+  //       }
+  //     ],
+  //   },
+  //   {
+  //     key: 'sub3',
+  //     icon: React.createElement(CommentOutlined),
+  //     label: '评价管理',
+  //     children: [
+  //       {
+  //         key: '3',
+  //         label: '我的评价',
+  //         onClick: () => router.push('/studentMyEvaluation')
+  //       },
+  //       {
+  //         key: '4',
+  //         label: '提交评价',
+  //         onClick: () => router.push('/submit-evaluation')
+  //       }
+  //     ],
+  //   }
+  // ];
 
   // 上传组件的配置
   const uploadProps = {
@@ -623,13 +624,7 @@ export default function SubmitEvaluationPage({ params }) {
         </Header>
         <Layout>
           <Sider width={200} style={{ background: colorBgContainer }}>
-            <Menu
-              mode="inline"
-              defaultSelectedKeys={['4']}
-              defaultOpenKeys={['sub3']}
-              style={{ height: '100%', borderRight: 0 }}
-              items={siderItems}
-            />
+            <StudentSidebar defaultSelectedKey="4" defaultOpenKey="sub3" />
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>
             <Breadcrumb

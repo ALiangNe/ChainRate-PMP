@@ -42,6 +42,7 @@ import {
   Spin
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
+import StudentSidebar from '../components/StudentSidebar';
 
 const { Header, Content, Sider } = Layout;
 const { Meta } = Card;
@@ -250,26 +251,18 @@ export default function StudentIndexPage() {
       }
     };
 
-    // 添加延迟执行验证，避免客户端渲染问题
-    const timer = setTimeout(() => {
-      checkUserAuth();
-      fetchAnnouncements(); // 调用获取公告的函数
-    }, 100);
-
-    return () => clearTimeout(timer);
+    checkUserAuth();
+    fetchAnnouncements();
   }, [router]);
-
-  // 刷新学生统计数据
+  
+  // 刷新学生统计数据的函数
   const refreshStudentStatistics = async () => {
-    if (!contract) return;
-    
-    try {
+    if (contract) {
       await loadStudentStatistics(contract);
-    } catch (err) {
-      console.error("刷新学生统计数据失败:", err);
     }
   };
-
+  
+  // 处理登出
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userAddress');
@@ -283,56 +276,14 @@ export default function StudentIndexPage() {
     localStorage.removeItem('userAvatar');
     router.push('/login');
   };
-
-  // 顶部菜单项
+  
+  // 头部菜单项
   const headerItems = [
     {
-      key: '1',
-      label: '链评系统（ChainRate）',
-    }
-  ];
-
-  // 侧边栏菜单项
-  const siderItems = [
-    {
-      key: 'sub1',
-      icon: React.createElement(UserOutlined),
-      label: '个人中心',
-      children: [
-        {
-          key: '1',
-          label: '个人信息',
-        }
-      ],
-    },
-    {
-      key: 'sub2',
-      icon: React.createElement(BookOutlined),
-      label: '课程管理',
-      children: [
-        {
-          key: '2',
-          label: '查看课程',
-          onClick: () => router.push('/studentViewCourses')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: React.createElement(CommentOutlined),
-      label: '评价管理',
-      children: [
-        {
-          key: '3',
-          label: '我的评价',
-          onClick: () => router.push('/studentMyEvaluation')
-        },
-        {
-          key: '4',
-          label: '提交评价',
-          onClick: () => router.push('/submit-evaluation')
-        }
-      ],
+      key: 'logout',
+      icon: React.createElement(LogoutOutlined),
+      label: '退出登录',
+      onClick: handleLogout,
     }
   ];
 
@@ -358,8 +309,7 @@ export default function StudentIndexPage() {
       <AntDesignContent 
         userData={userData} 
         handleLogout={handleLogout} 
-        headerItems={headerItems} 
-        siderItems={siderItems} 
+        headerItems={headerItems}
         router={router}
         statsLoading={statsLoading}
         evaluatedCoursesCount={evaluatedCoursesCount}
@@ -378,7 +328,6 @@ function AntDesignContent({
   userData, 
   handleLogout, 
   headerItems, 
-  siderItems, 
   router,
   statsLoading,
   evaluatedCoursesCount,
@@ -445,13 +394,7 @@ function AntDesignContent({
       </Header>
       <Layout>
         <Sider width={200} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            defaultSelectedKeys={['1']}
-            defaultOpenKeys={['sub1']}
-            style={{ height: '100%', borderRight: 0 }}
-            items={siderItems}
-          />
+          <StudentSidebar defaultSelectedKey="1" defaultOpenKey="sub1" />
         </Sider>
         <Layout style={{ padding: '0 24px 24px' }}>
           <Breadcrumb

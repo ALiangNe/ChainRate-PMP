@@ -9,6 +9,7 @@ import styles from './page.module.css';
 import React from 'react';
 import Image from 'next/image';
 import UserAvatar from '../../components/UserAvatar';
+import StudentSidebar from '../../components/StudentSidebar';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -355,61 +356,21 @@ export default function CourseDetailPage({ params }) {
   // 获取课程状态
   const getCourseStatus = () => {
     if (!course) return { status: '未知', color: 'default' };
+    
     const now = new Date();
-    if (now < course.startTime) return { status: '即将开始', color: 'blue' };
-    if (now >= course.startTime && now <= course.endTime) return { status: '进行中', color: 'green' };
-    return { status: '已结束', color: 'default' };
+    if (now < course.startTime) {
+      return { status: '未开始', color: 'default' };
+    } else if (now >= course.startTime && now <= course.endTime) {
+      return { status: '评价中', color: 'processing' };
+    } else {
+      return { status: '已结束', color: 'default' };
+    }
   };
   
-  // 返回
+  // 返回上一页
   const goBack = () => {
     router.push('/studentViewCourses');
   };
-
-  // 侧边栏菜单项
-  const siderItems = [
-    {
-      key: 'sub1',
-      icon: React.createElement(UserOutlined),
-      label: '个人中心',
-      children: [
-        {
-          key: '1',
-          label: '个人信息',
-          onClick: () => router.push('/studentIndex')
-        }
-      ],
-    },
-    {
-      key: 'sub2',
-      icon: React.createElement(BookOutlined),
-      label: '课程管理',
-      children: [
-        {
-          key: '2',
-          label: '查看课程',
-          onClick: () => router.push('/studentViewCourses')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: React.createElement(CommentOutlined),
-      label: '评价管理',
-      children: [
-        {
-          key: '3',
-          label: '我的评价',
-          onClick: () => router.push('/studentMyEvaluation')
-        },
-        {
-          key: '4',
-          label: '提交评价',
-          onClick: () => router.push('/submit-evaluation')
-        }
-      ],
-    }
-  ];
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -466,13 +427,7 @@ export default function CourseDetailPage({ params }) {
         </Header>
         <Layout>
           <Sider width={200} style={{ background: colorBgContainer }}>
-            <Menu
-              mode="inline"
-              defaultSelectedKeys={['2']}
-              defaultOpenKeys={['sub2']}
-              style={{ height: '100%', borderRight: 0 }}
-              items={siderItems}
-            />
+            <StudentSidebar defaultSelectedKey="2" defaultOpenKey="sub2" />
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>
             <Breadcrumb

@@ -58,7 +58,7 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
       children: [
         {
           key: '4',
-          label: '查看评价',
+          label: '课程评价',
           onClick: () => router.push('/teacherViewEvaluation')
         }
       ],

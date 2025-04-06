@@ -52,7 +52,7 @@ export default function StudentSidebar({ defaultSelectedKey = '1', defaultOpenKe
       children: [
         {
           key: '3',
-          label: '查看我的评价',
+          label: '查看课程评价',
           onClick: () => router.push('/studentMyEvaluation')
         },
         // {
