@@ -1,0 +1,254 @@
+/* 基本布局样式 */
+.logo {
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* 统计卡片样式 */
+.statsContainer {
+  margin-bottom: 24px;
+}
+
+.statCard {
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+
+.statIcon {
+  color: #34a853;
+  font-size: 1.2em;
+}
+
+/* 评分展示样式 */
+.ratingDisplayContainer {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ratingTitle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.ratingTitle span {
+  margin-left: 8px;
+}
+
+.ratingContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ratingStars {
+  display: flex;
+  align-items: center;
+  width: 120px;
+}
+
+.ratingValue {
+  margin-left: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+.ratingProgress {
+  flex: 1;
+  margin-left: 12px;
+}
+
+/* 工具栏样式 */
+.toolbarContainer {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+/* 评价列表样式 */
+.evaluationListContainer {
+  margin-top: 16px;
+}
+
+.evaluationCard {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.evaluationCard:hover {
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.evaluationHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+}
+
+.evaluationMeta {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.studentName {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.evaluationTime {
+  color: #999;
+  font-size: 12px;
+}
+
+.ratingsContainer {
+  padding: 8px 16px;
+}
+
+.overallRating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.overallRating > div {
+  margin-right: 12px;
+  font-weight: bold;
+}
+
+.ratingText {
+  margin-left: 8px;
+  font-weight: bold;
+  color: #34a853;
+}
+
+.dimensionRating {
+  margin-bottom: 8px;
+}
+
+.dimensionRating > div {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* 详情抽屉样式 */
+.evaluationDetail {
+  padding: 0 8px;
+}
+
+.studentInfoDetail {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.studentDetailInfo {
+  margin-left: 16px;
+}
+
+.ratingDetails {
+  margin-bottom: 16px;
+}
+
+.overallRatingDetail {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.starRating {
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.dimensionRatings {
+  margin-top: 16px;
+}
+
+.dimensionRatings .dimensionRating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dimensionRatings .dimensionRating > span:first-child {
+  width: 80px;
+  margin-right: 8px;
+}
+
+.contentDetail {
+  margin-bottom: 16px;
+}
+
+.imageGallery {
+  margin-top: 16px;
+}
+
+.images {
+  margin-top: 16px;
+}
+
+.imageCard {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.imageCard:hover {
+  transform: scale(1.02);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .ratingContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ratingStars {
+    margin-bottom: 8px;
+  }
+  
+  .ratingProgress {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .overallRating {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .overallRating > div {
+    margin-bottom: 8px;
+  }
+  
+  .dimensionRatings .dimensionRating {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dimensionRatings .dimensionRating > span:first-child {
+    margin-bottom: 4px;
+  }
+} 
