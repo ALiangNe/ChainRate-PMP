@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import styles from './page.module.css';
-import React from 'react';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -54,6 +53,7 @@ import {
   Avatar
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
+import TeacherSidebar from '../components/TeacherSidebar';
 
 const { Header, Content, Sider } = Layout;
 const { RangePicker } = DatePicker;
@@ -233,63 +233,6 @@ export default function CreateCoursePage() {
     }
   };
 
-  // 侧边栏菜单项
-  const siderItems = [
-    {
-      key: 'sub1',
-      icon: <UserOutlined />,
-      label: '个人中心',
-      children: [
-        {
-          key: '1',
-          label: '个人信息',
-          onClick: () => router.push('/teacherIndex')
-        }
-      ],
-    },
-    {
-      key: 'sub2',
-      icon: <BookOutlined />,
-      label: '课程管理',
-      children: [
-        {
-          key: '2',
-          label: '创建课程',
-          onClick: () => router.push('/teacherCreateCourse')
-        },
-        {
-          key: '3',
-          label: '我的课程',
-          onClick: () => router.push('/teacherViewCourse')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: <CommentOutlined />,
-      label: '评价管理',
-      children: [
-        {
-          key: '4',
-          label: '查看评价',
-          onClick: () => router.push('/teacherViewEvaluation')
-        }
-      ],
-    },
-    {
-      key: 'sub4',
-      icon: <BarChartOutlined />,
-      label: '数据分析',
-      children: [
-        {
-          key: '5',
-          label: '统计分析',
-          onClick: () => router.push('/statistics')
-        }
-      ],
-    }
-  ];
-
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -337,13 +280,7 @@ export default function CreateCoursePage() {
         </Header>
         <Layout>
           <Sider width={200} style={{ background: 'white' }}>
-            <Menu
-              mode="inline"
-              defaultSelectedKeys={['2']}
-              defaultOpenKeys={['sub2']}
-              style={{ height: '100%', borderRight: 0 }}
-              items={siderItems}
-            />
+            <TeacherSidebar defaultSelectedKey="2" defaultOpenKey="sub2" />
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>
             <Breadcrumb

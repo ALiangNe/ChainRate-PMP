@@ -12,6 +12,7 @@ import styles from './page.module.css';
 import React from 'react';
 import axios from 'axios'; 
 import UserAvatar from '../components/UserAvatar';
+import StudentSidebar from '../components/StudentSidebar';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -34,7 +35,8 @@ import {
   ReadOutlined,
   NumberOutlined,
   BarChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  PictureOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -410,61 +412,6 @@ if (search) {
     setFilteredEvaluations(filtered);
   };
   
-  // 侧边栏菜单项
-  const siderItems = [
-    {
-      key: 'sub1',
-      icon: React.createElement(UserOutlined),
-      label: '个人中心',
-      children: [
-        {
-          key: '1',
-          label: '个人信息',
-          onClick: () => router.push('/studentIndex')
-        }
-      ],
-    },
-    {
-      key: 'sub2',
-      icon: React.createElement(BookOutlined),
-      label: '课程管理',
-      children: [
-        {
-          key: '2',
-          label: '查看课程',
-          onClick: () => router.push('/studentViewCourses')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: React.createElement(CommentOutlined),
-      label: '评价管理',
-      children: [
-        {
-          key: '3',
-          label: '我的评价',
-          onClick: () => router.push('/studentMyEvaluation')
-        },
-        {
-          key: '4',
-          label: '提交评价',
-          onClick: () => router.push('/submit-evaluation')
-        },
-        {
-          key: '5',
-          label: '教师评价',
-          onClick: () => router.push('/studentEvaluateTeacher')
-        },
-        {
-          key: '6',
-          label: '查看教师评价',
-          onClick: () => router.push('/studentViewEvaluateTeacher')
-        }
-      ],
-    }
-  ];
-
   // 获取主题变量
   const {
     token: { colorBgContainer, borderRadiusLG, colorPrimary },
@@ -510,13 +457,7 @@ if (search) {
         </Header>
         <Layout>
           <Sider width={200} style={{ background: colorBgContainer }}>
-            <Menu
-              mode="inline"
-              defaultSelectedKeys={['6']}
-              defaultOpenKeys={['sub3']}
-              style={{ height: '100%', borderRight: 0 }}
-              items={siderItems}
-            />
+            <StudentSidebar defaultSelectedKey="6" defaultOpenKey="sub3" />
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>
             <Breadcrumb
