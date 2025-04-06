@@ -279,11 +279,14 @@ export default function TeacherViewEvaluateTeacherPage() {
           // 如果学生不是匿名评价，获取学生信息
           let studentName = "匿名学生";
           let studentInfo = null;
+          let studentAvatar = null;
           
           if (!evaluation.isAnonymous) {
             try {
               studentInfo = await mainContract.getUserInfo(evaluation.student);
               studentName = studentInfo[0]; // 学生姓名
+              studentAvatar = studentInfo[6]; // 学生头像
+              console.log("获取学生头像:", studentAvatar);
             } catch (error) {
               console.warn(`获取学生信息失败: ${error.message}`);
             }
@@ -307,6 +310,18 @@ export default function TeacherViewEvaluateTeacherPage() {
           if (evaluation.isAnonymous) anonymousCount++;
           if (Number(evaluation.overallRating) >= 4) highRatingCount++;
           
+          // 处理头像URL
+          let avatarUrl = null;
+          if (studentAvatar && studentAvatar.trim() !== "" && !evaluation.isAnonymous) {
+            // 如果已经是完整URL，直接使用
+            if (studentAvatar.startsWith('http')) {
+              avatarUrl = studentAvatar;
+            } else {
+              // 否则拼接IPFS网关
+              avatarUrl = `https://gateway.pinata.cloud/ipfs/${studentAvatar}`;
+            }
+          }
+          
           evaluationsList.push({
             id: evaluationId.toString(),
             studentAddress: evaluation.student,
@@ -328,7 +343,8 @@ export default function TeacherViewEvaluateTeacherPage() {
               day: '2-digit',
               hour: '2-digit',
               minute: '2-digit'
-            })
+            }),
+            avatarUrl: avatarUrl
           });
         } catch (error) {
           console.error(`获取评价详情失败 ${evaluationIds[i]}:`, error);
@@ -688,6 +704,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                                   <Avatar 
                                     size={64} 
                                     icon={<UserOutlined />} 
+                                    src={evaluation.avatarUrl}
                                     style={{ backgroundColor: evaluation.isAnonymous ? '#87d068' : '#1a73e8' }}
                                   />
                                   <div className={styles.evaluationMeta}>
@@ -811,6 +828,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                       <Avatar 
                         size={64}
                         icon={<UserOutlined />}
+                        src={selectedEvaluation.avatarUrl}
                         style={{ backgroundColor: selectedEvaluation.isAnonymous ? '#87d068' : '#1a73e8' }}
                       />
                       <div className={styles.studentDetailInfo}>
