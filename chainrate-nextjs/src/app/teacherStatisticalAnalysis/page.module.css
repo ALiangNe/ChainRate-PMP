@@ -1,0 +1,279 @@
+/* 基础布局样式 */
+.logo {
+  margin-right: 16px;
+}
+
+/* 卡片标题样式 */
+.cardTitle {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+/* 统计模块样式 */
+.statisticsContainer {
+  margin-top: 16px;
+}
+
+.statCard {
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s;
+}
+
+.statCard:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 评分展示组件样式 */
+.ratingDisplayContainer {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ratingTitle {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.ratingTitle span {
+  margin-left: 6px;
+}
+
+.ratingContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.ratingStars {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ratingValue {
+  margin-left: 8px;
+  font-weight: bold;
+  color: #faad14;
+}
+
+.ratingProgress {
+  margin-top: 4px;
+}
+
+/* 趋势指标样式 */
+.trendIndicator {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.trendTitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 4px;
+}
+
+.trendValue {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 2px;
+}
+
+.trendChange {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.trendChange.up {
+  color: #52c41a;
+}
+
+.trendChange.down {
+  color: #f5222d;
+}
+
+.trendChange.neutral {
+  color: #8c8c8c;
+}
+
+.trendChange span {
+  margin-left: 4px;
+}
+
+/* 筛选器样式 */
+.filterItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.filterLabel {
+  margin-right: 8px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+/* 评分分布样式 */
+.distributionContainer {
+  padding: 16px 0;
+}
+
+.distributionItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.distributionLabel {
+  width: 40px;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+}
+
+.distributionBar {
+  flex: 1;
+  height: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+
+.distributionBarInner {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.distributionValue {
+  width: 80px;
+  text-align: right;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.distributionPercent {
+  margin-left: 4px;
+  font-weight: normal;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* 时间分布样式 */
+.timeDistributionContainer {
+  padding: 8px 0;
+}
+
+.timeDistributionContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeDistributionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.timeDistributionDate {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+}
+
+.timeDistributionRating {
+  display: flex;
+  align-items: center;
+}
+
+.timeDistributionRatingValue {
+  margin-left: 8px;
+  font-weight: 500;
+  color: #faad14;
+}
+
+/* 月度统计样式 */
+.monthlyStats {
+  margin-top: 24px;
+}
+
+.monthlyStatsHeader {
+  margin-bottom: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.monthlyStatsContent {
+  padding: 16px 0;
+}
+
+.monthlyChart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 160px;
+}
+
+.monthlyChartBar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding: 0 4px;
+}
+
+.monthlyChartBarInner {
+  width: 100%;
+  max-width: 20px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.monthlyChartBarInner:hover {
+  opacity: 0.8;
+}
+
+.monthlyChartBarValue {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.monthlyChartBarLabel {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .distributionBar {
+    margin: 0 8px;
+  }
+  
+  .distributionLabel {
+    width: 32px;
+  }
+  
+  .distributionValue {
+    width: 60px;
+  }
+  
+  .monthlyChart {
+    height: 120px;
+  }
+} 

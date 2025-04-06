@@ -87,6 +87,17 @@
   border-radius: 8px;
 }
 
+/* 导出按钮样式 */
+.exportButton {
+  background-color: #34a853;
+  border-color: #34a853;
+}
+
+.exportButton:hover {
+  background-color: #2d8e47;
+  border-color: #2d8e47;
+}
+
 /* 评价列表样式 */
 .evaluationListContainer {
   margin-top: 16px;

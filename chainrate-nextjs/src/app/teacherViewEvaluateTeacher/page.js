@@ -28,6 +28,7 @@ import {
   LoadingOutlined,
   EyeOutlined,
   ClockCircleOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -482,6 +483,122 @@ export default function TeacherViewEvaluateTeacherPage() {
     router.push('/login');
   };
 
+  // 添加辅助函数：将字符串转换为ArrayBuffer（用于Excel导出）
+  function s2ab(s) {
+    const buf = new ArrayBuffer(s.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < s.length; i++) {
+      view[i] = s.charCodeAt(i) & 0xFF;
+    }
+    return buf;
+  }
+
+  // 导出评价到Excel文件
+  const handleExportToExcel = () => {
+    if (filteredEvaluations.length === 0) return;
+    
+    try {
+      // 动态导入xlsx库
+      import('xlsx').then(XLSX => {
+        // 第一步：为每个评价获取内容
+        const prepareDataAndExport = async () => {
+          try {
+            // 准备数据
+            const evaluationsWithContent = await Promise.all(
+              filteredEvaluations.map(async (evaluation) => {
+                // 获取评价内容
+                let content = "";
+                try {
+                  const response = await fetch(`https://gateway.pinata.cloud/ipfs/${evaluation.contentHash}`);
+                  if (response.ok) {
+                    const data = await response.json();
+                    content = data.content;
+                  } else {
+                    content = "无法加载评价内容";
+                  }
+                } catch (err) {
+                  console.error("获取评价内容失败:", err);
+                  content = "获取评价内容失败";
+                }
+                
+                return {
+                  '学生': evaluation.studentName,
+                  '是否匿名': evaluation.isAnonymous ? '是' : '否',
+                  '评价时间': evaluation.formattedDate,
+                  '评价内容': content,
+                  '总体评分': evaluation.overallRating,
+                  '教学能力': evaluation.teachingAbilityRating,
+                  '教学态度': evaluation.teachingAttitudeRating,
+                  '教学方法': evaluation.teachingMethodRating,
+                  '学术水平': evaluation.academicLevelRating,
+                  '指导能力': evaluation.guidanceAbilityRating,
+                  '图片数量': evaluation.imageHashes.length
+                };
+              })
+            );
+            
+            // 创建工作表
+            const worksheet = XLSX.utils.json_to_sheet(evaluationsWithContent);
+            
+            // 设置列宽
+            const columnWidths = [
+              { wch: 15 }, // 学生
+              { wch: 8 }, // 是否匿名
+              { wch: 20 }, // 评价时间
+              { wch: 50 }, // 评价内容
+              { wch: 10 }, // 总体评分
+              { wch: 10 }, // 教学能力
+              { wch: 10 }, // 教学态度
+              { wch: 10 }, // 教学方法
+              { wch: 10 }, // 学术水平
+              { wch: 10 }, // 指导能力
+              { wch: 8 } // 图片数量
+            ];
+            worksheet['!cols'] = columnWidths;
+            
+            // 创建工作簿
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "教师评价数据");
+            
+            // 生成文件名
+            const fileName = `教师评价数据_${userData.name}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+            
+            // 使用指定编码写入文件以确保中文正确显示
+            const excelBinary = XLSX.write(workbook, { type: 'binary', bookType: 'xlsx' });
+            
+            // 转换为Blob并设置正确的编码
+            const excelBlob = new Blob([s2ab(excelBinary)], {
+              type: 'application/octet-stream'
+            });
+            
+            // 创建下载链接
+            const url = URL.createObjectURL(excelBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }, 0);
+          } catch (err) {
+            console.error("准备导出数据失败:", err);
+            setError('导出数据失败: ' + (err.message || err));
+          }
+        };
+        
+        // 开始处理数据并导出
+        prepareDataAndExport();
+      });
+    } catch (error) {
+      console.error('导出Excel失败:', error);
+      setError('导出数据失败: ' + (error.message || error));
+    }
+  };
+
   return (
     <ConfigProvider
       theme={{
@@ -665,7 +782,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                   {/* 搜索和筛选 */}
                   <div className={styles.toolbarContainer}>
                     <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={12} md={14} lg={16}>
+                      <Col xs={24} sm={12} md={10} lg={12}>
                         <Search
                           placeholder="搜索学生姓名（仅限非匿名评价）"
                           allowClear
@@ -675,7 +792,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                           style={{ width: '100%' }}
                         />
                       </Col>
-                      <Col xs={24} sm={12} md={10} lg={8}>
+                      <Col xs={24} sm={8} md={8} lg={8}>
                         <Select
                           style={{ width: '100%' }}
                           placeholder="筛选评价类型"
@@ -687,6 +804,18 @@ export default function TeacherViewEvaluateTeacherPage() {
                           <Option value="high-rating">高分评价 (≥4)</Option>
                           <Option value="recent">最近评价</Option>
                         </Select>
+                      </Col>
+                      <Col xs={24} sm={4} md={6} lg={4}>
+                        <Button
+                          type="primary"
+                          icon={<DownloadOutlined />}
+                          onClick={handleExportToExcel}
+                          disabled={filteredEvaluations.length === 0}
+                          style={{ width: '100%' }}
+                          className={styles.exportButton}
+                        >
+                          导出Excel
+                        </Button>
                       </Col>
                     </Row>
                   </div>

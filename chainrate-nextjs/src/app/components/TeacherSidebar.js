@@ -76,7 +76,7 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
         {
           key: '5',
           label: '统计分析',
-          onClick: () => router.push('/statistics')
+          onClick: () => router.push('/teacherStatisticalAnalysis')
         }
       ],
     }
