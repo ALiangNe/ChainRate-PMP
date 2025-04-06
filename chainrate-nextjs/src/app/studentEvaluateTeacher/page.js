@@ -715,7 +715,7 @@ export default function StudentEvaluateTeacherPage() {
                           <div style={{ textAlign: 'center' }}>
                             <Avatar 
                               size={80} 
-                              src={selectedTeacher.avatar ? `https://ipfs.io/ipfs/${selectedTeacher.avatar}` : null}
+                              src={selectedTeacher.avatar ? `${selectedTeacher.avatar}` : null}
                               icon={!selectedTeacher.avatar && <UserOutlined />} 
                             />
                             <div style={{ marginTop: 16 }}>
