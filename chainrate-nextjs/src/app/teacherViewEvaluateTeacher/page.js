@@ -587,7 +587,11 @@ export default function TeacherViewEvaluateTeacherPage() {
                             <Col span={12}>
                               <Statistic 
                                 title="最近30天" 
-                                value={Math.floor(evaluationStats.total * 0.4)} 
+                                value={evaluations.filter(e => {
+                                  const thirtyDaysAgo = new Date();
+                                  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                  return e.timestamp > thirtyDaysAgo;
+                                }).length} 
                                 prefix={<CalendarOutlined className={styles.statIcon} style={{ color: '#52c41a' }} />} 
                                 suffix="条"
                               />
