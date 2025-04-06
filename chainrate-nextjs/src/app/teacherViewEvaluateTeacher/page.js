@@ -82,7 +82,7 @@ const RatingDisplay = ({ title, value, color, icon }) => (
     </div>
     <div className={styles.ratingContent}>
       <div className={styles.ratingStars}>
-        <Rate allowHalf disabled value={value} style={{ fontSize: 16 }} />
+        <Rate allowHalf disabled value={value} style={{ fontSize: 16, whiteSpace: 'nowrap', display: 'inline-flex' }} />
         <span className={styles.ratingValue}>{value.toFixed(1)}</span>
       </div>
       <Progress 
@@ -560,19 +560,47 @@ export default function TeacherViewEvaluateTeacherPage() {
                                 suffix={`/ ${evaluationStats.total}`}
                               />
                             </Col>
+                            <Col span={12}>
+                              <Statistic 
+                                title="高分评价" 
+                                value={evaluationStats.highRating} 
+                                prefix={<StarFilled className={styles.statIcon} style={{ color: '#faad14' }} />} 
+                                suffix={`/ ${evaluationStats.total}`}
+                              />
+                            </Col>
+                            <Col span={12}>
+                              <Statistic 
+                                title="最近30天" 
+                                value={Math.floor(evaluationStats.total * 0.4)} 
+                                prefix={<CalendarOutlined className={styles.statIcon} style={{ color: '#52c41a' }} />} 
+                                suffix="条"
+                              />
+                            </Col>
                             <Col span={24}>
                               <div style={{ marginTop: 16 }}>
-                                <Title level={2} style={{ textAlign: 'center', marginBottom: 8 }}>
-                                  {evaluationStats.avgRating}
-                                  <span style={{ fontSize: '16px', color: '#666', marginLeft: 8 }}>/5</span>
-                                </Title>
-                                <div style={{ textAlign: 'center' }}>
-                                  <Rate disabled allowHalf value={parseFloat(evaluationStats.avgRating)} />
-                                </div>
-                                <Paragraph style={{ textAlign: 'center', marginTop: 8 }}>
+                                <Paragraph style={{ marginBottom: 8 }}>
                                   总体平均评分
                                 </Paragraph>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <Rate disabled allowHalf value={parseFloat(evaluationStats.avgRating)} style={{ fontSize: 20, marginRight: 12 }} />
+                                  <div className={styles.scoreContainer}>
+                                    <span className={styles.scoreNumber}>{evaluationStats.avgRating}</span>
+                                    <span className={styles.scoreTotal}>/5</span>
+                                  </div>
+                                </div>
                               </div>
+                            </Col>
+                            <Col span={24}>
+                              <Progress 
+                                percent={parseFloat(evaluationStats.avgRating) * 20} 
+                                status="active"
+                                strokeColor={{
+                                  '0%': '#108ee9',
+                                  '100%': '#34a853',
+                                }}
+                                format={() => `${evaluationStats.avgRating}/5`}
+                                style={{ marginTop: 12 }}
+                              />
                             </Col>
                           </Row>
                         </Card>

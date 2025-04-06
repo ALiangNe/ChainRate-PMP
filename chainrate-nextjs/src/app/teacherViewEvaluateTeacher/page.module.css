@@ -53,7 +53,19 @@
 .ratingStars {
   display: flex;
   align-items: center;
-  width: 120px;
+  width: 150px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.ratingStars :global(.ant-rate) {
+  white-space: nowrap;
+  display: inline-flex !important;
+}
+
+.ratingStars :global(.ant-rate-star) {
+  margin-right: 2px;
 }
 
 .ratingValue {
@@ -251,4 +263,25 @@
   .dimensionRatings .dimensionRating > span:first-child {
     margin-bottom: 4px;
   }
+}
+
+/* 评分数字样式 */
+.scoreContainer {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  align-items: baseline;
+  line-height: 1;
+}
+
+.scoreNumber {
+  font-size: 28px;
+  font-weight: 600;
+  color: #34a853;
+}
+
+.scoreTotal {
+  font-size: 28px;
+  color: #666;
+  margin-left: 2px;
+  font-weight: 400;
 } 
