@@ -35,7 +35,8 @@ import {
   BulbOutlined,
   HeartOutlined,
   ExperimentOutlined,
-  ReadOutlined
+  ReadOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -234,15 +235,48 @@ export default function StudentEvaluateTeacherPage() {
       
       // 获取所有教师地址集合
       const teacherAddresses = new Set();
+      const teacherAllCourses = new Map(); // 教师地址 -> 所有课程ID数组
+      const teacherActiveCourses = new Map(); // 教师地址 -> 未结束的课程ID数组
+
+      // 获取当前时间戳
+      const currentTime = Math.floor(Date.now() / 1000);
+      
       for (let i = 0; i < studentCourses.length; i++) {
         const courseId = studentCourses[i];
         // 获取课程详情
         const course = await mainContract.courses(courseId);
         const teacherAddress = course.teacher;
+        const endTime = Number(course.endTime);
+        
+        // 添加所有教师
         teacherAddresses.add(teacherAddress);
+        
+        // 记录教师的所有课程
+        if (!teacherAllCourses.has(teacherAddress)) {
+          teacherAllCourses.set(teacherAddress, []);
+        }
+        teacherAllCourses.get(teacherAddress).push({
+          id: courseId,
+          name: course.name,
+          endTime: endTime
+        });
+        
+        // 记录教师的未结束课程
+        if (endTime > currentTime) {
+          if (!teacherActiveCourses.has(teacherAddress)) {
+            teacherActiveCourses.set(teacherAddress, []);
+          }
+          teacherActiveCourses.get(teacherAddress).push({
+            id: courseId,
+            name: course.name,
+            endTime: endTime
+          });
+        }
       }
       
-      console.log("教师地址:", Array.from(teacherAddresses));
+      console.log("所有教师地址:", Array.from(teacherAddresses));
+      console.log("教师的所有课程:", teacherAllCourses);
+      console.log("教师的未结束课程:", teacherActiveCourses);
       
       // 获取已评价的教师
       const evaluatedTeacherList = [];
@@ -262,18 +296,12 @@ export default function StudentEvaluateTeacherPage() {
           // 获取教师用户信息
           const teacherInfo = await mainContract.getUserInfo(teacherAddress);
           
-          // 获取教师教授的课程
-          const teacherCourseIds = [];
-          for (let i = 0; i < studentCourses.length; i++) {
-            const courseId = studentCourses[i];
-            const course = await mainContract.courses(courseId);
-            if (course.teacher === teacherAddress) {
-              teacherCourseIds.push({
-                id: courseId,
-                name: course.name
-              });
-            }
-          }
+          // 获取教师所有课程和未结束课程
+          const allCourses = teacherAllCourses.get(teacherAddress) || [];
+          const activeCourses = teacherActiveCourses.get(teacherAddress) || [];
+          
+          // 判断教师是否有可评价的课程
+          const hasActiveCourses = activeCourses.length > 0;
           
           teacherList.push({
             address: teacherAddress,
@@ -282,7 +310,9 @@ export default function StudentEvaluateTeacherPage() {
             email: teacherInfo[2],
             college: teacherInfo[3],
             avatar: teacherInfo[6],
-            courses: teacherCourseIds,
+            courses: allCourses, // 所有课程
+            activeCourses: activeCourses, // 未结束的课程
+            hasActiveCourses: hasActiveCourses, // 是否有未结束的课程
             hasEvaluated: evaluatedTeacherList.includes(teacherAddress)
           });
         } catch (error) {
@@ -292,6 +322,10 @@ export default function StudentEvaluateTeacherPage() {
       
       console.log("教师列表:", teacherList);
       setTeachers(teacherList);
+      
+      if (teacherList.filter(teacher => teacher.hasActiveCourses).length === 0) {
+        message.info('没有可评价的教师，所有课程已结束评价期');
+      }
       
     } catch (err) {
       console.error("加载教师列表失败:", err);
@@ -316,6 +350,13 @@ export default function StudentEvaluateTeacherPage() {
       message.warning('您已经评价过这位教师了');
       return;
     }
+    
+    // 检查教师是否有未结束的课程
+    if (!teacher.hasActiveCourses) {
+      message.warning('该教师的所有课程已经结束评价期，无法提交评价');
+      return;
+    }
+    
     setSelectedTeacher(teacher);
     // 重置评价表单
     setEvaluationContent('');
@@ -419,6 +460,15 @@ export default function StudentEvaluateTeacherPage() {
     
     if (!evaluationContent.trim()) {
       message.error('请输入评价内容');
+      return;
+    }
+    
+    // 再次验证课程是否已结束
+    const currentTime = Math.floor(Date.now() / 1000);
+    const activeCourses = selectedTeacher.activeCourses.filter(course => Number(course.endTime) > currentTime);
+    
+    if (activeCourses.length === 0) {
+      message.error('该教师的所有课程已经结束评价期，无法提交评价');
       return;
     }
     
@@ -957,45 +1007,78 @@ export default function StudentEvaluateTeacherPage() {
                   </Paragraph>
                   
                   <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-                    {teachers.map(teacher => (
-                      <Col xs={24} sm={12} md={8} lg={6} key={teacher.address}>
+                    {teachers.map((teacher) => (
+                      <Col xs={24} sm={12} md={8} key={teacher.address}>
                         <Card
                           hoverable
-                          style={{ height: '100%' }}
+                          className={`${styles.teacherCard} ${!teacher.hasActiveCourses && !teacher.hasEvaluated ? styles.expiredCard : ''}`}
                           cover={
-                            <div style={{ 
-                              padding: '24px 0 16px', 
-                              textAlign: 'center',
-                              background: '#f5f5f5'
-                            }}>
+                            <div className={styles.teacherCardCover}>
                               <Avatar 
-                                size={80} 
-                                src={teacher.avatar ? `https://ipfs.io/ipfs/${teacher.avatar}` : null}
+                                size={64} 
+                                src={teacher.avatar || null}
                                 icon={!teacher.avatar && <UserOutlined />} 
+                                className={styles.teacherAvatar}
                               />
+                              <div className={styles.teacherInfo}>
+                                <div className={styles.teacherName}>
+                                  {teacher.name}
+                                  {teacher.hasEvaluated && (
+                                    <Tag color="success" style={{ marginLeft: 8 }}>已评价</Tag>
+                                  )}
+                                  {!teacher.hasActiveCourses && !teacher.hasEvaluated && (
+                                    <Tag color="default" style={{ marginLeft: 8 }}>已截止</Tag>
+                                  )}
+                                </div>
+                                <div className={styles.teacherCollege}>{teacher.college}</div>
+                              </div>
                             </div>
                           }
-                          onClick={() => selectTeacher(teacher)}
-                          className={teacher.hasEvaluated ? styles.evaluatedCard : ''}
+                          actions={[
+                            teacher.hasEvaluated ? (
+                              <Tooltip title="已评价">
+                                <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                              </Tooltip>
+                            ) : teacher.hasActiveCourses ? (
+                              <Button 
+                                type="primary" 
+                                onClick={() => selectTeacher(teacher)}
+                              >
+                                评价教师
+                              </Button>
+                            ) : (
+                              <Tooltip title="课程评价期已结束，无法评价">
+                                <Button 
+                                  disabled
+                                  onClick={() => message.warning('该教师的所有课程已经结束评价期，无法提交评价')}
+                                >
+                                  已结束评价
+                                </Button>
+                              </Tooltip>
+                            )
+                          ]}
                         >
-                          <Card.Meta
-                            title={
-                              <div style={{ textAlign: 'center' }}>
-                                {teacher.name}
-                                {teacher.hasEvaluated && (
-                                  <Tag color="green" style={{ marginLeft: 8 }}>
-                                    已评价
-                                  </Tag>
-                                )}
-                              </div>
-                            }
-                            description={
-                              <div style={{ textAlign: 'center' }}>
-                                <div>{teacher.college}</div>
-                                <div style={{ marginTop: 8 }}>教授 {teacher.courses.length} 门课程</div>
-                              </div>
-                            }
-                          />
+                          <div className={styles.courseList}>
+                            <h4>教授课程：</h4>
+                            <ul>
+                              {teacher.courses.map((course) => {
+                                // 检查课程是否已过评价期
+                                const currentTime = Math.floor(Date.now() / 1000);
+                                const isExpired = Number(course.endTime) <= currentTime;
+                                
+                                return (
+                                  <li key={course.id}>
+                                    {course.name}
+                                    <div className={isExpired ? styles.courseEndTimeExpired : styles.courseEndTime}>
+                                      <ClockCircleOutlined style={{ marginRight: 4 }} />
+                                      {isExpired ? '评价已截止: ' : '评价截止时间: '}
+                                      {new Date(Number(course.endTime) * 1000).toLocaleString()}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
                         </Card>
                       </Col>
                     ))}
