@@ -332,12 +332,15 @@ export default function TeacherViewEvaluationPage() {
             try {
               const details = await contractInstance.getEvaluationDetails(id);
               
-              // 获取学生名称（如果评价不是匿名的）
+              // 如果学生不是匿名评价，获取学生名称和头像
               let studentName = "匿名学生";
+              let studentAvatar = null;
               if (!details.isAnonymous) {
                 try {
                   const studentInfo = await contractInstance.getUserInfo(details.student);
                   studentName = studentInfo[0]; // 学生姓名
+                  studentAvatar = studentInfo[6]; // 学生头像
+                  console.log(`获取学生 ${details.student} 的头像:`, studentAvatar);
                 } catch (studentErr) {
                   console.warn(`获取学生信息失败: ${studentErr.message}`);
                 }
@@ -348,6 +351,7 @@ export default function TeacherViewEvaluationPage() {
                 id: Number(id),
                 student: details.student,
                 studentName: details.isAnonymous ? "匿名学生" : studentName,
+                studentAvatar: studentAvatar, // 添加学生头像字段
                 courseId: Number(details.courseId),
                 timestamp: new Date(Number(details.timestamp) * 1000),
                 content: details.contentHash,
@@ -1069,6 +1073,8 @@ export default function TeacherViewEvaluationPage() {
                                 <div className={styles.evaluationUser}>
                                   <Avatar 
                                     icon={<UserOutlined />} 
+                                    src={!evaluation.isAnonymous && evaluation.studentAvatar ? 
+                                      `${evaluation.studentAvatar}` : null}
                                     style={{ 
                                       backgroundColor: evaluation.isAnonymous ? '#d9d9d9' : '#34a853',
                                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
