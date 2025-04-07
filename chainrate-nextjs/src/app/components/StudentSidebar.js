@@ -55,11 +55,11 @@ export default function StudentSidebar({ defaultSelectedKey = '1', defaultOpenKe
           label: '查看课程评价',
           onClick: () => router.push('/studentMyEvaluation')
         },
-        // {
-        //   key: '4',
-        //   label: '提交评价',
-        //   onClick: () => router.push('/submit-evaluation')
-        // },
+        {
+          key: '7',
+          label: '提交课程反馈',
+          onClick: () => router.push('/studentSubmitFeedback')
+        },
         {
           key: '5',
           label: '进行教师评价',

@@ -1,0 +1,165 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+}
+
+.pageHeader {
+  padding: 24px;
+  background-color: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+}
+
+.backButton {
+  margin-right: 16px;
+}
+
+.pageTitle {
+  margin-bottom: 0 !important;
+}
+
+.contentContainer {
+  padding: 24px;
+}
+
+/* 课程选择页面样式 */
+.courseGrid {
+  margin-top: 24px;
+}
+
+.courseCard {
+  height: 100%;
+  transition: all 0.3s;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.courseCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.courseCardTitle {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.courseCardInfo {
+  margin-bottom: 24px;
+}
+
+.selectButton {
+  width: 100%;
+}
+
+.emptyCourses {
+  text-align: center;
+  padding: 48px 0;
+}
+
+/* 反馈表单页面样式 */
+.courseInfoCard {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selectedCourseInfo {
+  padding: 8px 0;
+}
+
+.courseTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.courseStatusTag {
+  margin-left: 16px;
+}
+
+.alertInfo {
+  margin-bottom: 24px;
+}
+
+.feedbackCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.infoItem {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: baseline;
+}
+
+.infoItem strong {
+  margin-right: 8px;
+  min-width: 80px;
+  display: inline-block;
+}
+
+.formButtons {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 成功页面样式 */
+.successContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0;
+  text-align: center;
+}
+
+.successIcon {
+  margin-bottom: 24px;
+}
+
+.bigSuccessIcon {
+  font-size: 72px;
+  color: #52c41a;
+}
+
+.feedbackIdText {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.successMessage {
+  margin-bottom: 32px;
+  max-width: 600px;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .backButton {
+    margin-bottom: 16px;
+  }
+  
+  .infoItem strong {
+    min-width: 60px;
+  }
+  
+  .courseCardTitle {
+    flex-direction: column;
+  }
+  
+  .courseCardTitle h4 {
+    margin-bottom: 8px;
+  }
+} 
