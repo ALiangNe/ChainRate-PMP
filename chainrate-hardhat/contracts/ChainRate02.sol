@@ -580,4 +580,471 @@ contract ChainRate02 {
         weaknessDimension = TeacherEvaluationDimension(minIndex);
         recentEvaluationCount = recentCount;
     }
+    
+    /**
+     * @dev 课程反馈状态枚举
+     */
+    enum FeedbackStatus {
+        Submitted,   // 已提交
+        Replied,     // 已回复
+        Modified,    // 已修改
+        Deleted      // 已删除
+    }
+    
+    /**
+     * @dev 课程内容反馈数据结构
+     * @param id 反馈唯一标识符
+     * @param courseId 课程ID
+     * @param student 学生地址
+     * @param timestamp 反馈时间戳
+     * @param contentHash 反馈文字内容哈希值
+     * @param documentHashes 文档哈希数组
+     * @param imageHashes 图片哈希数组
+     * @param versions 反馈历史版本总数
+     * @param status 反馈状态
+     */
+    struct CourseFeedback {
+        uint256 id;
+        uint256 courseId;
+        address student;
+        uint256 timestamp;
+        string contentHash;
+        string[] documentHashes;
+        string[] imageHashes;
+        uint256 versions;
+        FeedbackStatus status;
+    }
+    
+    /**
+     * @dev 反馈版本数据结构
+     * @param id 版本标识符
+     * @param feedbackId 反馈ID
+     * @param timestamp 版本时间戳
+     * @param contentHash 内容哈希值
+     * @param documentHashes 文档哈希数组
+     * @param imageHashes 图片哈希数组
+     */
+    struct FeedbackVersion {
+        uint256 id;
+        uint256 feedbackId;
+        uint256 timestamp;
+        string contentHash;
+        string[] documentHashes;
+        string[] imageHashes;
+    }
+    
+    /**
+     * @dev 教师回复数据结构
+     * @param id 回复唯一标识符
+     * @param feedbackId 反馈ID
+     * @param teacher 教师地址
+     * @param timestamp 回复时间戳
+     * @param contentHash 回复内容哈希值
+     * @param documentHashes 文档哈希数组
+     * @param imageHashes 图片哈希数组
+     */
+    struct TeacherReply {
+        uint256 id;
+        uint256 feedbackId;
+        address teacher;
+        uint256 timestamp;
+        string contentHash;
+        string[] documentHashes;
+        string[] imageHashes;
+    }
+    
+    // 新增状态变量
+    mapping(uint256 => CourseFeedback) public courseFeedbacks;  // 反馈ID到反馈信息的映射
+    mapping(uint256 => mapping(uint256 => FeedbackVersion)) public feedbackVersions;  // 反馈ID和版本ID到版本信息的映射
+    mapping(uint256 => TeacherReply) public teacherReplies;  // 反馈ID到教师回复的映射
+    
+    mapping(address => uint256[]) public studentFeedbacks;  // 学生地址到其反馈ID列表的映射
+    mapping(uint256 => uint256[]) public courseFeedbacksList;  // 课程ID到其反馈ID列表的映射
+    
+    uint256 public feedbackCount;  // 反馈总数
+    uint256 public replyCount;  // 回复总数
+    
+    // 新增事件
+    event FeedbackSubmitted(uint256 indexed feedbackId, address indexed student, uint256 indexed courseId);  // 反馈提交事件
+    event FeedbackUpdated(uint256 indexed feedbackId, address indexed student, uint256 version);  // 反馈更新事件
+    event FeedbackDeleted(uint256 indexed feedbackId, address indexed student);  // 反馈删除事件
+    event TeacherReplied(uint256 indexed feedbackId, address indexed teacher);  // 教师回复事件
+    
+    /**
+     * @dev 确保学生已加入课程
+     */
+    modifier hasJoinedCourse(uint256 courseId) {
+        require(address(mainContract) != address(0), "ChainRate02: main contract not set");
+        require(mainContract.hasJoinedCourse(courseId, msg.sender), "ChainRate02: student has not joined this course");
+        _;
+    }
+    
+    /**
+     * @dev 确保反馈存在
+     */
+    modifier feedbackExists(uint256 feedbackId) {
+        require(courseFeedbacks[feedbackId].id == feedbackId, "ChainRate02: feedback does not exist");
+        _;
+    }
+    
+    /**
+     * @dev 确保反馈状态不是已删除
+     */
+    modifier feedbackNotDeleted(uint256 feedbackId) {
+        require(courseFeedbacks[feedbackId].status != FeedbackStatus.Deleted, "ChainRate02: feedback is deleted");
+        _;
+    }
+    
+    /**
+     * @dev 确保是反馈的学生
+     */
+    modifier onlyFeedbackStudent(uint256 feedbackId) {
+        require(courseFeedbacks[feedbackId].student == msg.sender, "ChainRate02: caller is not the feedback student");
+        _;
+    }
+    
+    /**
+     * @dev 确保是课程的教师
+     */
+    modifier onlyCourseTeacher(uint256 courseId) {
+        require(address(mainContract) != address(0), "ChainRate02: main contract not set");
+        
+        (uint256 id, address teacher, , , , , ) = mainContract.courses(courseId);
+        require(id == courseId && teacher == msg.sender, "ChainRate02: caller is not the course teacher");
+        _;
+    }
+    
+    /**
+     * @dev 提交课程内容反馈
+     * @param courseId 课程ID
+     * @param contentHash 反馈内容哈希值
+     * @param documentHashes 文档哈希数组
+     * @param imageHashes 图片哈希数组
+     * @return 新创建的反馈ID
+     */
+    function submitCourseFeedback(
+        uint256 courseId,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes
+    ) external onlyStudent hasJoinedCourse(courseId) returns (uint256) {
+        // 检查课程是否存在
+        (uint256 id, , , , , bool isActive, ) = mainContract.courses(courseId);
+        require(id == courseId && isActive, "ChainRate02: course does not exist or is inactive");
+        
+        uint256 feedbackId = feedbackCount++;
+        courseFeedbacks[feedbackId] = CourseFeedback({
+            id: feedbackId,
+            courseId: courseId,
+            student: msg.sender,
+            timestamp: block.timestamp,
+            contentHash: contentHash,
+            documentHashes: documentHashes,
+            imageHashes: imageHashes,
+            versions: 1,
+            status: FeedbackStatus.Submitted
+        });
+        
+        // 存储初始版本
+        feedbackVersions[feedbackId][0] = FeedbackVersion({
+            id: 0,
+            feedbackId: feedbackId,
+            timestamp: block.timestamp,
+            contentHash: contentHash,
+            documentHashes: documentHashes,
+            imageHashes: imageHashes
+        });
+        
+        studentFeedbacks[msg.sender].push(feedbackId);
+        courseFeedbacksList[courseId].push(feedbackId);
+        
+        emit FeedbackSubmitted(feedbackId, msg.sender, courseId);
+        return feedbackId;
+    }
+    
+    /**
+     * @dev 修改课程内容反馈
+     * @param feedbackId 反馈ID
+     * @param contentHash 新的反馈内容哈希值
+     * @param documentHashes 新的文档哈希数组
+     * @param imageHashes 新的图片哈希数组
+     * @return 新的版本号
+     */
+    function updateCourseFeedback(
+        uint256 feedbackId,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes
+    ) external onlyStudent feedbackExists(feedbackId) feedbackNotDeleted(feedbackId) onlyFeedbackStudent(feedbackId) returns (uint256) {
+        CourseFeedback storage feedback = courseFeedbacks[feedbackId];
+        
+        // 创建新版本
+        uint256 newVersion = feedback.versions;
+        feedbackVersions[feedbackId][newVersion] = FeedbackVersion({
+            id: newVersion,
+            feedbackId: feedbackId,
+            timestamp: block.timestamp,
+            contentHash: contentHash,
+            documentHashes: documentHashes,
+            imageHashes: imageHashes
+        });
+        
+        // 更新反馈内容
+        feedback.contentHash = contentHash;
+        feedback.documentHashes = documentHashes;
+        feedback.imageHashes = imageHashes;
+        feedback.timestamp = block.timestamp;
+        feedback.versions++;
+        feedback.status = FeedbackStatus.Modified;
+        
+        emit FeedbackUpdated(feedbackId, msg.sender, newVersion);
+        return newVersion;
+    }
+    
+    /**
+     * @dev 删除课程内容反馈
+     * @param feedbackId 反馈ID
+     */
+    function deleteCourseFeedback(
+        uint256 feedbackId
+    ) external onlyStudent feedbackExists(feedbackId) feedbackNotDeleted(feedbackId) onlyFeedbackStudent(feedbackId) {
+        CourseFeedback storage feedback = courseFeedbacks[feedbackId];
+        feedback.status = FeedbackStatus.Deleted;
+        
+        emit FeedbackDeleted(feedbackId, msg.sender);
+    }
+    
+    /**
+     * @dev 教师回复课程反馈
+     * @param feedbackId 反馈ID
+     * @param contentHash 回复内容哈希值
+     * @param documentHashes 文档哈希数组
+     * @param imageHashes 图片哈希数组
+     * @return replyId 回复ID
+     */
+    function replyToFeedback(
+        uint256 feedbackId,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes
+    ) external feedbackExists(feedbackId) feedbackNotDeleted(feedbackId) returns (uint256) {
+        CourseFeedback storage feedback = courseFeedbacks[feedbackId];
+        
+        // 检查是否为课程教师
+        (uint256 id, address teacher, , , , , ) = mainContract.courses(feedback.courseId);
+        require(id == feedback.courseId && teacher == msg.sender, "ChainRate02: caller is not the course teacher");
+        
+        uint256 replyId = replyCount++;
+        teacherReplies[feedbackId] = TeacherReply({
+            id: replyId,
+            feedbackId: feedbackId,
+            teacher: msg.sender,
+            timestamp: block.timestamp,
+            contentHash: contentHash,
+            documentHashes: documentHashes,
+            imageHashes: imageHashes
+        });
+        
+        // 更新反馈状态
+        feedback.status = FeedbackStatus.Replied;
+        
+        emit TeacherReplied(feedbackId, msg.sender);
+        return replyId;
+    }
+    
+    /**
+     * @dev 获取课程反馈详情
+     * @param feedbackId 反馈ID
+     * @return id 反馈ID
+     * @return courseId 课程ID
+     * @return student 学生地址
+     * @return timestamp 反馈时间戳
+     * @return contentHash 反馈内容哈希值
+     * @return documentHashes 文档哈希数组
+     * @return imageHashes 图片哈希数组
+     * @return versions 版本数量
+     * @return status 反馈状态
+     */
+    function getCourseFeedbackDetails(uint256 feedbackId) external view feedbackExists(feedbackId) returns (
+        uint256 id,
+        uint256 courseId,
+        address student,
+        uint256 timestamp,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes,
+        uint256 versions,
+        FeedbackStatus status
+    ) {
+        CourseFeedback memory feedback = courseFeedbacks[feedbackId];
+        return (
+            feedback.id,
+            feedback.courseId,
+            feedback.student,
+            feedback.timestamp,
+            feedback.contentHash,
+            feedback.documentHashes,
+            feedback.imageHashes,
+            feedback.versions,
+            feedback.status
+        );
+    }
+    
+    /**
+     * @dev 获取反馈历史版本
+     * @param feedbackId 反馈ID
+     * @param versionId 版本ID
+     * @return id 版本ID
+     * @return fbId 反馈ID
+     * @return timestamp 版本时间戳
+     * @return contentHash 内容哈希值
+     * @return documentHashes 文档哈希数组
+     * @return imageHashes 图片哈希数组
+     */
+    function getFeedbackVersion(uint256 feedbackId, uint256 versionId) external view feedbackExists(feedbackId) returns (
+        uint256 id,
+        uint256 fbId,
+        uint256 timestamp,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes
+    ) {
+        require(feedbackVersions[feedbackId][versionId].feedbackId == feedbackId, "ChainRate02: version does not exist");
+        
+        FeedbackVersion memory version = feedbackVersions[feedbackId][versionId];
+        return (
+            version.id,
+            version.feedbackId,
+            version.timestamp,
+            version.contentHash,
+            version.documentHashes,
+            version.imageHashes
+        );
+    }
+    
+    /**
+     * @dev 获取教师回复详情
+     * @param feedbackId 反馈ID
+     * @return id 回复ID
+     * @return fbId 反馈ID
+     * @return teacher 教师地址
+     * @return timestamp 回复时间戳
+     * @return contentHash 回复内容哈希值
+     * @return documentHashes 文档哈希数组
+     * @return imageHashes 图片哈希数组
+     */
+    function getTeacherReplyDetails(uint256 feedbackId) external view feedbackExists(feedbackId) returns (
+        uint256 id,
+        uint256 fbId,
+        address teacher,
+        uint256 timestamp,
+        string memory contentHash,
+        string[] memory documentHashes,
+        string[] memory imageHashes
+    ) {
+        require(teacherReplies[feedbackId].feedbackId == feedbackId, "ChainRate02: reply does not exist");
+        
+        TeacherReply memory reply = teacherReplies[feedbackId];
+        return (
+            reply.id,
+            reply.feedbackId,
+            reply.teacher,
+            reply.timestamp,
+            reply.contentHash,
+            reply.documentHashes,
+            reply.imageHashes
+        );
+    }
+    
+    /**
+     * @dev 获取学生提交的所有反馈ID
+     * @param studentAddress 学生地址
+     * @return 反馈ID数组
+     */
+    function getStudentFeedbacks(address studentAddress) external view returns (uint256[] memory) {
+        return studentFeedbacks[studentAddress];
+    }
+    
+    /**
+     * @dev 获取课程的所有反馈ID
+     * @param courseId 课程ID
+     * @return 反馈ID数组
+     */
+    function getCourseFeedbacks(uint256 courseId) external view returns (uint256[] memory) {
+        return courseFeedbacksList[courseId];
+    }
+    
+    /**
+     * @dev 批量获取课程反馈数据（用于导出）
+     * @param courseId 课程ID
+     * @param offset 起始位置
+     * @param limit 获取数量
+     * @return ids 反馈ID数组
+     * @return studentAddresses 学生地址数组
+     * @return studentNames 学生姓名数组
+     * @return timestamps 时间戳数组
+     * @return contentHashes 内容哈希数组
+     * @return statuses 状态数组
+     * @return hasReplies 是否有回复数组
+     */
+    function getBatchCourseFeedbacks(uint256 courseId, uint256 offset, uint256 limit) external view returns (
+        uint256[] memory ids,
+        address[] memory studentAddresses,
+        string[] memory studentNames,
+        uint256[] memory timestamps,
+        string[] memory contentHashes,
+        FeedbackStatus[] memory statuses,
+        bool[] memory hasReplies
+    ) {
+        uint256[] memory allFeedbackIds = courseFeedbacksList[courseId];
+        uint256 totalFeedbacks = allFeedbackIds.length;
+        
+        // 检查边界条件
+        if (offset >= totalFeedbacks) {
+            return (
+                new uint256[](0), 
+                new address[](0), 
+                new string[](0), 
+                new uint256[](0), 
+                new string[](0),
+                new FeedbackStatus[](0),
+                new bool[](0)
+            );
+        }
+        
+        // 计算实际要返回的数量
+        uint256 count = totalFeedbacks - offset;
+        if (count > limit) {
+            count = limit;
+        }
+        
+        // 初始化返回数组
+        ids = new uint256[](count);
+        studentAddresses = new address[](count);
+        studentNames = new string[](count);
+        timestamps = new uint256[](count);
+        contentHashes = new string[](count);
+        statuses = new FeedbackStatus[](count);
+        hasReplies = new bool[](count);
+        
+        // 填充数据
+        for (uint256 i = 0; i < count; i++) {
+            uint256 feedbackId = allFeedbackIds[offset + i];
+            CourseFeedback memory feedback = courseFeedbacks[feedbackId];
+            
+            ids[i] = feedback.id;
+            studentAddresses[i] = feedback.student;
+            
+            // 获取学生姓名
+            (string memory studentName, , , , , , , , ) = mainContract.getUserInfo(feedback.student);
+            studentNames[i] = studentName;
+            
+            timestamps[i] = feedback.timestamp;
+            contentHashes[i] = feedback.contentHash;
+            statuses[i] = feedback.status;
+            
+            // 检查是否有教师回复
+            hasReplies[i] = teacherReplies[feedbackId].feedbackId == feedbackId;
+        }
+    }
 } 
