@@ -11,7 +11,7 @@ import {
 
 const { Sider } = Layout;
 
-export default function StudentSidebar({ defaultSelectedKey = '1', defaultOpenKey = 'sub1' }) {
+export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'sub1' }) {
   const router = useRouter();
   
   // 获取主题变量
@@ -61,6 +61,11 @@ export default function StudentSidebar({ defaultSelectedKey = '1', defaultOpenKe
           onClick: () => router.push('/studentSubmitFeedback')
         },
         {
+          key: '8',
+          label: '查看课程反馈',
+          onClick: () => router.push('/studentViewFeedback')
+        },
+        {
           key: '5',
           label: '进行教师评价',
           onClick: () => router.push('/studentEvaluateTeacher')
@@ -78,7 +83,7 @@ export default function StudentSidebar({ defaultSelectedKey = '1', defaultOpenKe
     <Sider width={200} style={{ background: colorBgContainer }}>
       <Menu
         mode="inline"
-        defaultSelectedKeys={[defaultSelectedKey]}
+        selectedKeys={[selectedKey]}
         defaultOpenKeys={[defaultOpenKey]}
         style={{ height: '100%', borderRight: 0 }}
         items={siderItems}
