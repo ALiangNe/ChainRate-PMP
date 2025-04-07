@@ -23,7 +23,8 @@ import {
   Select,
   Space,
   Upload,
-  Spin
+  Spin,
+  Tag
 } from 'antd';
 import { 
   LockOutlined, 
@@ -40,7 +41,11 @@ import {
   NumberOutlined,
   PictureOutlined,
   UploadOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  BlockOutlined,
+  SafetyOutlined,
+  GlobalOutlined,
+  SafetyCertificateOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -306,13 +311,15 @@ export default function RegisterPage() {
         <Alert
           type="success"
           showIcon
-          icon={<CheckCircleOutlined />}
+          icon={<CheckCircleOutlined className={styles.statusIcon} />}
           message={
-            <div>
-              <div className="font-bold">钱包已连接</div>
-              <div className="text-xs mt-1 break-all">{account}</div>
+            <div className={styles.statusMessage}>
+              <div className={styles.statusTitle}>钱包已连接</div>
+              <div className={styles.statusAddress}>{account}</div>
+              <Tag color="green" icon={<SafetyOutlined />} className={styles.secureTag}>安全连接</Tag>
             </div>
           }
+          className={styles.walletAlert}
         />
       );
     } else {
@@ -320,13 +327,15 @@ export default function RegisterPage() {
         <Alert
           type="warning"
           showIcon
-          icon={<ExclamationCircleOutlined />}
+          icon={<ExclamationCircleOutlined className={styles.statusIcon} />}
           message={
-            <div>
-              <div className="font-bold">钱包未连接</div>
-              <div className="text-xs mt-1">请通过MetaMask连接钱包以完成注册</div>
+            <div className={styles.statusMessage}>
+              <div className={styles.statusTitle}>钱包未连接</div>
+              <div className={styles.statusWelcome}>请通过MetaMask连接钱包以完成注册</div>
+              <Tag color="blue" icon={<BlockOutlined />} className={styles.connectTag}>点击连接</Tag>
             </div>
           }
+          className={styles.walletAlert}
         />
       );
     }
@@ -337,269 +346,361 @@ export default function RegisterPage() {
       theme={{
         token: {
           colorPrimary: '#1677ff',
+          borderRadius: 8,
         },
       }}
     >
       <div className={styles.registerContainer}>
-        <Row className={styles.registerRow}>
-          <Col xs={0} sm={0} md={12} className={styles.leftSide}>
-            <div className={styles.imageWrapper}>
-              <Image
-                src="/images/logo1.png"
-                alt="Blockchain Technology"
-                width={600}
-                height={600}
-                priority
-                className={styles.registerImage}
-              />
-              <div className={styles.overlayText}>
-                <Title level={2} style={{ color: 'white', marginBottom: 16 }}>链评系统 ChainRate</Title>
-                <Text style={{ color: 'white', fontSize: 16 }}>加入我们的区块链教学评价平台，提升教学质量与透明度</Text>
+        <div className={styles.blockchainBg}></div>
+        
+        <div className={styles.blockchainCubes}>
+          {[...Array(12)].map((_, i) => {
+            const size = 20 + Math.random() * 40;
+            return (
+              <div 
+                key={`cube-${i}`} 
+                className={styles.cube}
+                style={{
+                  top: `${5 + Math.random() * 90}%`,
+                  left: `${5 + Math.random() * 90}%`,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  '--size': `${size}px`,
+                  '--translate-x': `${(Math.random() - 0.5) * 300}px`,
+                  '--translate-y': `${(Math.random() - 0.5) * 300}px`,
+                  '--translate-x2': `${(Math.random() - 0.5) * 200}px`,
+                  '--translate-y2': `${(Math.random() - 0.5) * 200}px`,
+                  animationDuration: `${20 + Math.random() * 30}s`,
+                  animationDelay: `${Math.random() * -20}s`
+                }}
+              >
+                <div className={`${styles.cubeFace} ${styles.cubeFace1}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace2}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace3}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace4}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace5}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace6}`}></div>
               </div>
-            </div>
-          </Col>
-          <Col xs={24} sm={24} md={12} className={styles.rightSide}>
-            <Card className={styles.registerCard} bordered={false}>
-              <div className={styles.logoContainer}>
+            );
+          })}
+        </div>
+        
+        <div className={styles.blockchainNodes}>
+          <div className={styles.node1}></div>
+          <div className={styles.node2}></div>
+          <div className={styles.node3}></div>
+          <div className={styles.node4}></div>
+          <div className={styles.node5}></div>
+          <div className={styles.node6}></div>
+          <div className={styles.node7}></div>
+          <div className={styles.node8}></div>
+          <div className={styles.node9}></div>
+          <div className={styles.node10}></div>
+          <div className={styles.node11}></div>
+          <div className={styles.node12}></div>
+          
+          {[...Array(35)].map((_, i) => (
+            <div 
+              key={`dot-${i}`} 
+              className={styles.nodeDot}
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.5 + 0.3
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className={styles.blockchainParticles}>
+          {[...Array(30)].map((_, i) => (
+            <div 
+              key={`particle-${i}`} 
+              className={styles.particle} 
+              style={{
+                top: `${Math.random() * 100}%`, 
+                left: `${Math.random() * 100}%`,
+                '--translate-x': `${(Math.random() - 0.5) * 200}px`,
+                '--translate-y': `${(Math.random() - 0.5) * 200}px`,
+                animationDelay: `${Math.random() * 15}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className={styles.blockchainLines}>
+          <div className={styles.line1}></div>
+          <div className={styles.line2}></div>
+          <div className={styles.line3}></div>
+          <div className={styles.line4}></div>
+          <div className={styles.line5}></div>
+          <div className={styles.line6}></div>
+        </div>
+        
+        <div className={styles.registerBox}>
+          <Card className={styles.registerCard} bordered={false}>
+            <div className={styles.logoContainer}>
+              <div className={styles.logoWrapper}>
                 <Image 
                   src="/images/logo1.png" 
                   alt="ChainRate Logo" 
                   width={60} 
                   height={60}
-                  style={{ borderRadius: '8px' }}
+                  className={styles.logo}
                 />
-                <Title level={2} className={styles.registerTitle}>创建新账户</Title>
               </div>
+              <Title level={2} className={styles.registerTitle}>创建新账户</Title>
+              <Text className={styles.registerSubtitle}>加入我们的区块链教学评价平台</Text>
+              
+              <Space className={styles.tagContainer}>
+                <Tag icon={<BlockOutlined />} color="blue">区块链</Tag>
+                <Tag icon={<SafetyOutlined />} color="green">安全</Tag>
+                <Tag icon={<GlobalOutlined />} color="purple">透明</Tag>
+                <Tag icon={<SafetyCertificateOutlined />} color="cyan">可信</Tag>
+              </Space>
+            </div>
 
-              <div className={styles.walletStatusContainer}>
-                {getWalletStatusComponent()}
-              </div>
+            <div className={styles.walletStatusContainer}>
+              {getWalletStatusComponent()}
+            </div>
 
-              <Paragraph className={styles.registerInfo}>
-                注册过程将在区块链上创建您的账户信息，需要在MetaMask钱包中确认交易。
-              </Paragraph>
+            <Paragraph className={styles.registerInfo}>
+              注册过程将在区块链上创建您的账户信息，需要在MetaMask钱包中确认交易。
+            </Paragraph>
 
-              {error && (
-                <Alert
-                  message="注册失败"
-                  description={error}
-                  type="error"
-                  showIcon
-                  className={styles.errorAlert}
-                />
-              )}
+            {error && (
+              <Alert
+                message="注册失败"
+                description={error}
+                type="error"
+                showIcon
+                className={styles.errorAlert}
+              />
+            )}
 
-              <Form
-                form={form}
-                name="register"
-                layout="vertical"
-                initialValues={formData}
-                onFinish={handleSubmit}
-                autoComplete="off"
-                className={styles.registerForm}
+            <Form
+              form={form}
+              name="register"
+              layout="vertical"
+              initialValues={formData}
+              onFinish={handleSubmit}
+              autoComplete="off"
+              className={styles.registerForm}
+            >
+              <Form.Item
+                name="username"
+                rules={[{ required: true, message: '请输入用户名' }]}
               >
-                <Form.Item
-                  name="username"
-                  rules={[{ required: true, message: '请输入用户名' }]}
-                >
-                  <Input 
-                    prefix={<UserOutlined />} 
-                    placeholder="请输入用户名" 
-                    size="large"
-                  />
-                </Form.Item>
+                <Input 
+                  prefix={<UserOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入用户名" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="phone"
-                  rules={[{ required: true, message: '请输入手机号码' }]}
-                >
-                  <Input 
-                    prefix={<PhoneOutlined />} 
-                    placeholder="请输入手机号码" 
-                    size="large"
-                  />
-                </Form.Item>
+              <Form.Item
+                name="phone"
+                rules={[{ required: true, message: '请输入手机号码' }]}
+              >
+                <Input 
+                  prefix={<PhoneOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入手机号码" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="email"
-                  rules={[
-                    { required: true, message: '请输入邮箱' },
-                    { type: 'email', message: '请输入有效的邮箱地址' }
-                  ]}
-                >
-                  <Input 
-                    prefix={<MailOutlined />} 
-                    placeholder="请输入邮箱" 
-                    size="large"
-                  />
-                </Form.Item>
+              <Form.Item
+                name="email"
+                rules={[
+                  { required: true, message: '请输入邮箱' },
+                  { type: 'email', message: '请输入有效的邮箱地址' }
+                ]}
+              >
+                <Input 
+                  prefix={<MailOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入邮箱" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="college"
-                  rules={[{ required: true, message: '请输入所属学院' }]}
-                >
-                  <Input 
-                    prefix={<BankOutlined />} 
-                    placeholder="请输入所属学院" 
-                    size="large"
-                  />
-                </Form.Item>
+              <Form.Item
+                name="college"
+                rules={[{ required: true, message: '请输入所属学院' }]}
+              >
+                <Input 
+                  prefix={<BankOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入所属学院" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="major"
-                  rules={[{ required: true, message: '请输入所学专业' }]}
-                >
-                  <Input 
-                    prefix={<BookOutlined />} 
-                    placeholder="请输入所学专业" 
-                    size="large"
-                  />
-                </Form.Item>
+              <Form.Item
+                name="major"
+                rules={[{ required: true, message: '请输入所学专业' }]}
+              >
+                <Input 
+                  prefix={<BookOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入所学专业" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  name="grade"
-                  rules={[{ required: true, message: '请输入年级' }]}
-                >
-                  <Input 
-                    prefix={<NumberOutlined />} 
-                    placeholder="请输入年级，如：大一、大二" 
-                    size="large"
+              <Form.Item
+                name="grade"
+                rules={[{ required: true, message: '请输入年级' }]}
+              >
+                <Input 
+                  prefix={<NumberOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入年级，如：大一、大二" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
+
+              {/* 头像上传 */}
+              <Form.Item
+                name="avatar"
+                rules={[{ required: true, message: '请上传头像' }]}
+                style={{ marginBottom: 24 }}
+              >
+                <div className={styles.avatarUploadContainer}>
+                  <div 
+                    className={styles.avatarPreview}
+                    onClick={handlePreviewClick}
                   >
-                  </Input>
-                </Form.Item>
-
-                {/* 头像上传 */}
-                <Form.Item
-                  name="avatar"
-                  rules={[{ required: true, message: '请上传头像' }]}
-                  style={{ marginBottom: 24 }}
-                >
-                  <div className={styles.avatarUploadContainer}>
-                    <div 
-                      className={styles.avatarPreview}
-                      onClick={handlePreviewClick}
-                    >
-                      {avatarPreview ? (
-                        <img 
-                          src={avatarPreview} 
-                          alt="Avatar Preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                        />
-                      ) : (
-                        <div className={styles.avatarPlaceholder}>
-                          <PictureOutlined style={{ fontSize: 40, color: '#ccc' }} />
-                          <div style={{ marginTop: 8, color: '#999' }}>点击上传头像</div>
-                        </div>
-                      )}
-                      {uploading && (
-                        <div className={styles.uploadingOverlay}>
-                          <Spin tip="上传中..." />
-                        </div>
-                      )}
-                    </div>
-                    <div className={styles.avatarUploadActions}>
-                      <Upload {...uploadProps} id="avatar-upload">
-                        <Button 
-                          icon={<UploadOutlined />}
-                          type="primary"
-                          size="large"
-                          id="avatar-upload-input"
-                          loading={uploading}
-                        >
-                          {avatarPreview ? '更换头像' : '选择头像'}
-                        </Button>
-                      </Upload>
-                    </div>
-                    {avatarIpfsHash && (
-                      <div className={styles.ipfsInfo}>
-                        <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-                        <span>头像已上传到IPFS</span>
+                    {avatarPreview ? (
+                      <img 
+                        src={avatarPreview} 
+                        alt="Avatar Preview" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+                      />
+                    ) : (
+                      <div className={styles.avatarPlaceholder}>
+                        <PictureOutlined style={{ fontSize: 40, color: '#ccc' }} />
+                        <div style={{ marginTop: 8, color: '#999' }}>点击上传头像</div>
+                      </div>
+                    )}
+                    {uploading && (
+                      <div className={styles.uploadingOverlay}>
+                        <Spin tip="上传中..." />
                       </div>
                     )}
                   </div>
-                </Form.Item>
+                  <div className={styles.avatarUploadActions}>
+                    <Upload {...uploadProps} id="avatar-upload">
+                      <Button 
+                        icon={<UploadOutlined />}
+                        type="primary"
+                        size="large"
+                        id="avatar-upload-input"
+                        loading={uploading}
+                      >
+                        {avatarPreview ? '更换头像' : '选择头像'}
+                      </Button>
+                    </Upload>
+                  </div>
+                  {avatarIpfsHash && (
+                    <div className={styles.ipfsInfo}>
+                      <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                      <span>头像已上传到IPFS</span>
+                    </div>
+                  )}
+                </div>
+              </Form.Item>
 
-                <Form.Item
-                  name="password"
-                  rules={[
-                    { required: true, message: '请输入密码' },
-                    { min: 6, message: '密码长度至少为6位' }
-                  ]}
-                >
-                  <Input.Password 
-                    prefix={<LockOutlined />} 
-                    placeholder="请输入密码" 
-                    size="large"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="confirmPassword"
-                  rules={[
-                    { required: true, message: '请确认密码' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('password') === value) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error('两次输入的密码不一致'));
-                      },
-                    }),
-                  ]}
-                >
-                  <Input.Password 
-                    prefix={<LockOutlined />} 
-                    placeholder="请确认密码" 
-                    size="large"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="role"
-                  rules={[{ required: true, message: '请选择角色' }]}
-                  initialValue="STUDENT_ROLE"
-                >
-                  <Select
-                    size="large"
-                    placeholder="请选择角色"
-                    suffixIcon={<TeamOutlined />}
-                  >
-                    <Option value="STUDENT_ROLE">学生</Option>
-                    <Option value="TEACHER_ROLE">教师</Option>
-                    <Option value="ADMIN_ROLE">管理员</Option>
-                  </Select>
-                </Form.Item>
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    block
-                    icon={<SolutionOutlined />}
-                    loading={loading}
-                    disabled={!walletConnected || !avatarIpfsHash}
-                    className={styles.registerButton}
-                  >
-                    {loading ? '注册中...' : '注册'}
-                  </Button>
-                </Form.Item>
-              </Form>
-
-              <Divider plain>已有账户?</Divider>
-              
-              <Button 
-                block 
-                size="large" 
-                onClick={() => router.push('/login')}
-                icon={<LoginOutlined />}
-                className={styles.loginButton}
+              <Form.Item
+                name="password"
+                rules={[
+                  { required: true, message: '请输入密码' },
+                  { min: 6, message: '密码长度至少为6位' }
+                ]}
               >
-                登录
-              </Button>
-            </Card>
-          </Col>
-        </Row>
+                <Input.Password 
+                  prefix={<LockOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入密码" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="confirmPassword"
+                rules={[
+                  { required: true, message: '请确认密码' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('password') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('两次输入的密码不一致'));
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password 
+                  prefix={<LockOutlined className={styles.inputIcon} />} 
+                  placeholder="请确认密码" 
+                  size="large"
+                  className={styles.formInput}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="role"
+                rules={[{ required: true, message: '请选择角色' }]}
+                initialValue="STUDENT_ROLE"
+              >
+                <Select
+                  size="large"
+                  placeholder="请选择角色"
+                  suffixIcon={<TeamOutlined />}
+                  className={styles.formSelect}
+                >
+                  <Option value="STUDENT_ROLE">学生</Option>
+                  <Option value="TEACHER_ROLE">教师</Option>
+                  <Option value="ADMIN_ROLE">管理员</Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  icon={<SolutionOutlined />}
+                  loading={loading}
+                  disabled={!walletConnected || !avatarIpfsHash}
+                  className={styles.registerButton}
+                >
+                  {loading ? '注册中...' : '注册'}
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Divider plain className={styles.divider}>已有账户?</Divider>
+            
+            <Button 
+              block 
+              size="large" 
+              onClick={() => router.push('/login')}
+              icon={<LoginOutlined />}
+              className={styles.loginButton}
+            >
+              登录
+            </Button>
+            
+            <div className={styles.footerText}>
+              <BlockOutlined className={styles.footerIcon} />
+              <Text className={styles.footerContent}>ChainRate - 区块链教学评价系统</Text>
+            </div>
+          </Card>
+        </div>
       </div>
     </ConfigProvider>
   );

@@ -1,65 +1,274 @@
 .registerContainer {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px 0;
-  background: #f0f2f5;
-}
-
-.registerRow {
-  width: 100%;
-  max-width: 1200px;
-  height: 600px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  background-color: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.leftSide {
-  height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: #001529;
+  background: linear-gradient(135deg, #040d21 0%, #0f2647 100%);
 }
 
-.imageWrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.registerImage {
-  object-fit: cover;
-  width: 100%;
-  height: 100%;
-  opacity: 0.7;
-}
-
-.overlayText {
+.blockchainBg {
   position: absolute;
-  bottom: 60px;
-  left: 40px;
-  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(32, 84, 192, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(32, 84, 192, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(32, 84, 192, 0.07) 0%, transparent 60%);
+  opacity: 0.9;
+  z-index: 0;
 }
 
-.rightSide {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 24px;
+.blockchainNodes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.node1, .node2, .node3, .node4, .node5, .node6, .node7, .node8, .node9, .node10, .node11, .node12 {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(65, 132, 240, 0.4);
+  box-shadow: 0 0 20px rgba(65, 132, 240, 0.3);
+  z-index: 1;
+}
+
+.node1 {
+  width: 18px;
+  height: 18px;
+  top: 20%;
+  left: 15%;
+  animation: pulse 3s infinite alternate;
+}
+
+.node2 {
+  width: 25px;
+  height: 25px;
+  top: 70%;
+  left: 25%;
+  animation: pulse 4s infinite alternate-reverse;
+}
+
+.node3 {
+  width: 16px;
+  height: 16px;
+  top: 30%;
+  right: 20%;
+  animation: pulse 5s infinite alternate;
+}
+
+.node4 {
+  width: 22px;
+  height: 22px;
+  bottom: 20%;
+  right: 28%;
+  animation: pulse 3.5s infinite alternate-reverse;
+}
+
+.node5 {
+  width: 28px;
+  height: 28px;
+  top: 50%;
+  left: 10%;
+  animation: pulse 4.5s infinite alternate;
+}
+
+.node6 {
+  width: 20px;
+  height: 20px;
+  top: 15%;
+  right: 10%;
+  animation: pulse 3.8s infinite alternate-reverse;
+}
+
+.node7 {
+  width: 24px;
+  height: 24px;
+  top: 80%;
+  right: 15%;
+  animation: pulse 3.2s infinite alternate;
+}
+
+.node8 {
+  width: 16px;
+  height: 16px;
+  bottom: 15%;
+  left: 40%;
+  animation: pulse 4.2s infinite alternate-reverse;
+}
+
+.node9 {
+  width: 21px;
+  height: 21px;
+  top: 45%;
+  right: 35%;
+  animation: pulse 3.7s infinite alternate;
+}
+
+.node10 {
+  width: 19px;
+  height: 19px;
+  top: 25%;
+  left: 38%;
+  animation: pulse 4.8s infinite alternate-reverse;
+}
+
+.node11 {
+  width: 26px;
+  height: 26px;
+  top: 62%;
+  right: 8%;
+  animation: pulse 5.2s infinite alternate;
+}
+
+.node12 {
+  width: 17px;
+  height: 17px;
+  bottom: 30%;
+  left: 18%;
+  animation: pulse 3.3s infinite alternate-reverse;
+}
+
+.nodeDot {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: rgba(65, 132, 240, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(65, 132, 240, 0.3);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(65, 132, 240, 0.2);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 25px rgba(65, 132, 240, 0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(65, 132, 240, 0.3);
+    opacity: 0.8;
+  }
+}
+
+.blockchainParticles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: rgba(65, 132, 240, 0.3);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(65, 132, 240, 0.2);
+  animation: floatParticle 15s infinite linear;
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--translate-x, 100px), var(--translate-y, 100px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.blockchainLines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.line1, .line2, .line3, .line4, .line5, .line6 {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(65, 132, 240, 0.15), transparent);
+  height: 1px;
+  width: 100%;
+  opacity: 0.6;
+}
+
+.line1 {
+  top: 18%;
+  animation: moveLine 15s linear infinite;
+}
+
+.line2 {
+  top: 38%;
+  animation: moveLine 18s linear infinite reverse;
+}
+
+.line3 {
+  top: 58%;
+  animation: moveLine 20s linear infinite;
+}
+
+.line4 {
+  top: 78%;
+  animation: moveLine 17s linear infinite reverse;
+}
+
+.line5 {
+  top: 28%;
+  animation: moveLine 22s linear infinite;
+}
+
+.line6 {
+  top: 68%;
+  animation: moveLine 19s linear infinite reverse;
+}
+
+@keyframes moveLine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.registerBox {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 500px;
+  margin: 20px;
 }
 
 .registerCard {
   width: 100%;
-  max-width: 500px;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background-color: white;
-  max-height: 85vh;
-  overflow-y: auto;
+  border: none;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  padding: 25px 20px !important;
 }
 
 .logoContainer {
@@ -67,89 +276,334 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
+.logoWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e1ecfd 100%);
+  border-radius: 15px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.15);
+}
+
+.logo {
+  border-radius: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 .registerTitle {
-  margin-top: 16px !important;
-  color: #1677ff;
+  margin-top: 5px !important;
+  margin-bottom: 8px !important;
+  color: #1677ff !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px;
+}
+
+.registerSubtitle {
+  color: #5c5c5c !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 8px !important;
+}
+
+.tagContainer {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .walletStatusContainer {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.walletAlert {
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  border: none !important;
+  padding: 16px !important;
+}
+
+.walletAlert:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.statusIcon {
+  font-size: 20px !important;
+  padding-top: 2px;
+}
+
+.statusMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statusTitle {
+  font-weight: 600;
+  font-size: 16px;
+  color: #262626;
+  margin-bottom: 2px;
+}
+
+.statusAddress {
+  font-size: 12px;
+  color: #595959;
+  word-break: break-all;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.statusWelcome {
+  font-size: 14px;
+  color: #434343;
+  margin-bottom: 6px;
+}
+
+.statusError {
+  font-size: 14px;
+  color: #ff4d4f;
+  margin-top: 8px;
+}
+
+.statusInfo {
+  margin-top: 8px;
+}
+
+.secureTag, .registerTag, .connectTag {
+  margin-right: 8px;
+  margin-top: 8px;
+  padding: 2px 8px;
+  font-size: 12px !important;
+  border-radius: 4px !important;
+  line-height: 18px !important;
+  height: auto !important;
+  display: inline-flex;
+  align-items: center;
 }
 
 .registerInfo {
   margin-bottom: 24px;
-  color: #8c8c8c;
+  color: #5c5c5c;
   text-align: center;
 }
 
 .errorAlert {
   margin-bottom: 24px;
+  border-radius: 12px;
 }
 
 .registerForm {
   margin-bottom: 16px;
 }
 
+.inputIcon {
+  color: #1677ff;
+  margin-right: 8px;
+}
+
+.formInput {
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  height: 48px;
+}
+
+.formSelect {
+  border-radius: 10px !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  height: 48px !important;
+}
+
 .registerButton {
-  height: 44px;
+  height: 48px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
+}
+
+.registerButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.3);
+}
+
+.divider {
+  margin: 24px 0;
+}
+
+.dividerText {
+  color: #8c8c8c;
+  font-size: 14px;
 }
 
 .loginButton {
-  height: 44px;
+  height: 48px;
   border-color: #1677ff;
   color: #1677ff;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .loginButton:hover {
   color: #4096ff;
   border-color: #4096ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.1);
+}
+
+.footerText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  color: #8c8c8c;
+}
+
+.footerIcon {
+  font-size: 16px;
+  margin-right: 8px;
+  color: #1677ff;
+}
+
+.footerContent {
+  font-size: 14px;
+  color: #8c8c8c;
 }
 
 /* 响应式调整 */
-@media (max-width: 768px) {
-  .registerRow {
-    height: auto;
-    max-width: 90%;
+@media (max-width: 576px) {
+  .registerBox {
+    max-width: 100%;
+    margin: 15px;
   }
   
-  .rightSide {
-    padding: 20px;
+  .tagContainer {
+    flex-wrap: wrap;
   }
 }
 
-/* 头像上传样式 - 优化 */
+.blockchainCubes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  perspective: 1200px;
+}
+
+.cube {
+  position: absolute;
+  transform-style: preserve-3d;
+  animation: rotateCube 30s infinite linear;
+  opacity: 0.35;
+  filter: blur(0.5px);
+}
+
+.cubeFace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(65, 132, 240, 0.6);
+  background-color: rgba(8, 36, 87, 0.15);
+  background-image: 
+    linear-gradient(45deg, rgba(65, 132, 240, 0.1) 25%, transparent 25%, transparent 75%, rgba(65, 132, 240, 0.1) 75%, rgba(65, 132, 240, 0.1)),
+    linear-gradient(45deg, rgba(65, 132, 240, 0.1) 25%, transparent 25%, transparent 75%, rgba(65, 132, 240, 0.1) 75%, rgba(65, 132, 240, 0.1));
+  background-size: 10px 10px;
+  background-position: 0 0, 5px 5px;
+  box-shadow: 0 0 10px rgba(65, 132, 240, 0.3) inset;
+  backface-visibility: visible;
+}
+
+.cubeFace1 {
+  transform: translateZ(calc(var(--size, 30px) / 2));
+}
+
+.cubeFace2 {
+  transform: rotateY(180deg) translateZ(calc(var(--size, 30px) / 2));
+}
+
+.cubeFace3 {
+  transform: rotateY(90deg) translateZ(calc(var(--size, 30px) / 2));
+}
+
+.cubeFace4 {
+  transform: rotateY(-90deg) translateZ(calc(var(--size, 30px) / 2));
+}
+
+.cubeFace5 {
+  transform: rotateX(90deg) translateZ(calc(var(--size, 30px) / 2));
+}
+
+.cubeFace6 {
+  transform: rotateX(-90deg) translateZ(calc(var(--size, 30px) / 2));
+}
+
+@keyframes rotateCube {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) translate3d(0, 0, 0);
+  }
+  25% {
+    transform: rotateX(90deg) rotateY(90deg) rotateZ(45deg) translate3d(var(--translate-x, 50px), var(--translate-y, 30px), 0);
+  }
+  50% {
+    transform: rotateX(180deg) rotateY(180deg) rotateZ(90deg) translate3d(var(--translate-x2, 20px), var(--translate-y2, -40px), 0);
+  }
+  75% {
+    transform: rotateX(270deg) rotateY(270deg) rotateZ(135deg) translate3d(var(--translate-x, 50px), var(--translate-y, 30px), 0);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg) translate3d(0, 0, 0);
+  }
+}
+
 .avatarUploadContainer {
   display: flex;
   flex-direction: column;
   gap: 16px;
   align-items: center;
   padding: 20px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 8px;
-  background: #fafafa;
+  border: 1px dashed rgba(22, 119, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(245, 250, 255, 0.5);
   transition: all 0.3s;
 }
 
 .avatarUploadContainer:hover {
   border-color: #1677ff;
+  background: rgba(245, 250, 255, 0.8);
+  transform: translateY(-2px);
 }
 
 .avatarPreview {
   width: 150px;
   height: 150px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #f0f0f0;
+  background: rgba(240, 240, 240, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   margin-bottom: 8px;
   cursor: pointer;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(224, 224, 224, 0.6);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.avatarPreview:hover {
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.15);
 }
 
 .avatarPlaceholder {
@@ -171,9 +625,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 8px;
+  border-radius: 12px;
   color: white;
   z-index: 10;
+  backdrop-filter: blur(4px);
 }
 
 .avatarUploadActions {
@@ -190,4 +645,8 @@
   color: #52c41a;
   font-size: 14px;
   margin-top: 8px;
+  padding: 6px 12px;
+  background: rgba(82, 196, 26, 0.1);
+  border-radius: 16px;
+  border: 1px solid rgba(82, 196, 26, 0.2);
 } 
