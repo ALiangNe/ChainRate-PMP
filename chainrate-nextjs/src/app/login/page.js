@@ -21,7 +21,8 @@ import {
   ConfigProvider,
   Spin,
   Space,
-  Tag
+  Tag,
+  Tooltip
 } from 'antd';
 import { 
   LockOutlined, 
@@ -29,7 +30,13 @@ import {
   LoginOutlined, 
   UserOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  SafetyOutlined,
+  BlockOutlined,
+  LinkOutlined,
+  GlobalOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -232,14 +239,16 @@ export default function LoginPage() {
           <Alert
             type="success"
             showIcon
-            icon={<CheckCircleOutlined />}
+            icon={<CheckCircleOutlined className={styles.statusIcon} />}
             message={
-              <div>
-                <div className="font-bold">钱包已连接</div>
-                <div className="text-xs mt-1 break-all">{account}</div>
-                <div className="text-sm mt-1">欢迎，{userInfo.name}</div>
+              <div className={styles.statusMessage}>
+                <div className={styles.statusTitle}>钱包已连接</div>
+                <div className={styles.statusAddress}>{account}</div>
+                <div className={styles.statusWelcome}>欢迎回来，{userInfo.name}</div>
+                <Tag color="green" icon={<SafetyOutlined />} className={styles.secureTag}>安全连接</Tag>
               </div>
             }
+            className={styles.walletAlert}
           />
         );
       } else {
@@ -247,13 +256,16 @@ export default function LoginPage() {
           <Alert
             type="warning"
             showIcon
+            icon={<ExclamationCircleOutlined className={styles.statusIcon} />}
             message={
-              <div>
-                <div className="font-bold">钱包已连接</div>
-                <div className="text-xs mt-1 break-all">{account}</div>
-                <div className="text-sm mt-1 text-red-500">此地址未注册，请先注册</div>
+              <div className={styles.statusMessage}>
+                <div className={styles.statusTitle}>钱包已连接</div>
+                <div className={styles.statusAddress}>{account}</div>
+                <div className={styles.statusError}>此地址未注册，请先注册</div>
+                <Tag color="orange" icon={<UserOutlined />} className={styles.registerTag}>需要注册</Tag>
               </div>
             }
+            className={styles.walletAlert}
           />
         );
       }
@@ -262,13 +274,15 @@ export default function LoginPage() {
         <Alert
           type="warning"
           showIcon
-          icon={<ExclamationCircleOutlined />}
+          icon={<ExclamationCircleOutlined className={styles.statusIcon} />}
           message={
-            <div>
-              <div className="font-bold">钱包未连接</div>
-              <div className="text-xs mt-1">请通过MetaMask连接钱包以登录</div>
+            <div className={styles.statusMessage}>
+              <div className={styles.statusTitle}>钱包未连接</div>
+              <div className={styles.statusInfo}>请通过MetaMask连接钱包以登录</div>
+              <Tag color="blue" icon={<WalletOutlined />} className={styles.connectTag}>点击连接</Tag>
             </div>
           }
+          className={styles.walletAlert}
         />
       );
     }
@@ -279,107 +293,136 @@ export default function LoginPage() {
       theme={{
         token: {
           colorPrimary: '#1677ff',
+          borderRadius: 8,
         },
       }}
     >
       <div className={styles.loginContainer}>
-        <Row className={styles.loginRow}>
-          <Col xs={0} sm={0} md={12} className={styles.leftSide}>
-            <div className={styles.imageWrapper}>
-              <Image
-                src="/images/logo1.png"
-                alt="Blockchain Technology"
-                width={600}
-                height={600}
-                priority
-                className={styles.loginImage}
-              />
-              <div className={styles.overlayText}>
-                <Title level={2} style={{ color: 'white', marginBottom: 16 }}>链评系统 ChainRate</Title>
-                <Text style={{ color: 'white', fontSize: 16 }}>基于区块链的教学评价系统，安全、透明、高效</Text>
-              </div>
-            </div>
-          </Col>
-          <Col xs={24} sm={24} md={12} className={styles.rightSide}>
-            <Card className={styles.loginCard} bordered={false}>
-              <div className={styles.logoContainer}>
+        <div className={styles.blockchainBg}></div>
+        <div className={styles.blockchainNodes}>
+          <div className={styles.node1}></div>
+          <div className={styles.node2}></div>
+          <div className={styles.node3}></div>
+          <div className={styles.node4}></div>
+          <div className={styles.node5}></div>
+          <div className={styles.node6}></div>
+        </div>
+        
+        <div className={styles.loginBox}>
+          <Card className={styles.loginCard} bordered={false}>
+            <div className={styles.logoContainer}>
+              <div className={styles.logoWrapper}>
                 <Image 
                   src="/images/logo1.png" 
                   alt="ChainRate Logo" 
                   width={60} 
                   height={60}
-                  style={{ borderRadius: '8px' }}
+                  className={styles.logo}
                 />
-                <Title level={2} className={styles.loginTitle}>用户登录</Title>
               </div>
-
-              <div className={styles.walletStatusContainer}>
-                {getWalletStatusComponent()}
-              </div>
-
-              <Paragraph className={styles.loginInfo}>
-                登录将通过验证您的密码和钱包地址来完成。登录过程需要在MetaMask钱包中确认，但不会产生手续费。
-              </Paragraph>
-
-              {error && (
-                <Alert
-                  message="登录失败"
-                  description={error}
-                  type="error"
-                  showIcon
-                  className={styles.errorAlert}
-                />
-              )}
-
-              <Form
-                form={form}
-                name="login"
-                layout="vertical"
-                onFinish={handleSubmit}
-                autoComplete="off"
-                className={styles.loginForm}
-              >
-                <Form.Item
-                  name="password"
-                  rules={[{ required: true, message: '请输入密码' }]}
-                >
-                  <Input.Password 
-                    prefix={<LockOutlined />} 
-                    placeholder="请输入密码" 
-                    size="large"
-                  />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    size="large"
-                    block
-                    icon={<LoginOutlined />}
-                    loading={loading}
-                    disabled={!walletConnected || !userInfo}
-                    className={styles.loginButton}
-                  >
-                    {loading ? '登录中...' : '登录'}
-                  </Button>
-                </Form.Item>
-              </Form>
-
-              <Divider plain>没有账户?</Divider>
+              <Title level={2} className={styles.loginTitle}>链评系统 ChainRate</Title>
+              <Text className={styles.loginSubtitle}>基于区块链的教学评价系统</Text>
               
-              <Button 
-                block 
-                size="large" 
-                onClick={() => router.push('/register')}
-                icon={<UserOutlined />}
-                className={styles.registerButton}
+              <Space className={styles.tagContainer}>
+                <Tag icon={<BlockOutlined />} color="blue">区块链</Tag>
+                <Tag icon={<SafetyOutlined />} color="green">安全</Tag>
+                <Tag icon={<GlobalOutlined />} color="purple">透明</Tag>
+                <Tag icon={<SafetyCertificateOutlined />} color="cyan">可信</Tag>
+              </Space>
+            </div>
+
+            <div className={styles.walletStatusContainer}>
+              {getWalletStatusComponent()}
+            </div>
+
+            {/* <Space direction="vertical" size="middle" className={styles.loginInfo}>
+              <div className={styles.infoCard}>
+                <Tooltip title="基于区块链技术，确保数据安全">
+                  <SafetyOutlined className={styles.infoIcon} />
+                </Tooltip>
+                <Text>登录将通过验证您的密码和钱包地址完成，保障账户安全</Text>
+              </div>
+              <div className={styles.infoCard}>
+                <Tooltip title="无需支付gas费">
+                  <WalletOutlined className={styles.infoIcon} />
+                </Tooltip>
+                <Text>需要在MetaMask中确认，但不会产生任何手续费</Text>
+              </div>
+            </Space> */}
+
+            {error && (
+              <Alert
+                message="登录失败"
+                description={error}
+                type="error"
+                showIcon
+                className={styles.errorAlert}
+              />
+            )}
+
+            <Form
+              form={form}
+              name="login"
+              layout="vertical"
+              onFinish={handleSubmit}
+              autoComplete="off"
+              className={styles.loginForm}
+            >
+              <Form.Item
+                name="password"
+                rules={[{ required: true, message: '请输入密码' }]}
               >
-                注册新账户
-              </Button>
-            </Card>
-          </Col>
-        </Row>
+                <Input.Password 
+                  prefix={<LockOutlined className={styles.inputIcon} />} 
+                  placeholder="请输入密码" 
+                  size="large"
+                  className={styles.passwordInput}
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  block
+                  icon={<LoginOutlined />}
+                  loading={loading}
+                  disabled={!walletConnected || !userInfo}
+                  className={styles.loginButton}
+                >
+                  {loading ? '登录中...' : '安全登录'}
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Divider className={styles.divider}>
+              <Text className={styles.dividerText}>没有账户?</Text>
+            </Divider>
+            
+            <Button 
+              block 
+              size="large" 
+              onClick={() => router.push('/register')}
+              icon={<UserOutlined />}
+              className={styles.registerButton}
+            >
+              注册新账户
+            </Button>
+            
+            <div className={styles.footerText}>
+              <BlockOutlined className={styles.footerIcon} />
+              <Text className={styles.footerContent}>ChainRate - 区块链教学评价系统</Text>
+            </div>
+          </Card>
+        </div>
+        
+        <div className={styles.blockchainLines}>
+          <div className={styles.line1}></div>
+          <div className={styles.line2}></div>
+          <div className={styles.line3}></div>
+          <div className={styles.line4}></div>
+        </div>
       </div>
     </ConfigProvider>
   );

@@ -1,61 +1,162 @@
 .loginContainer {
   min-height: 100vh;
-  background-color: #f0f2f5;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.loginRow {
-  width: 100%;
-  max-width: 1200px;
-  height: 600px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  background-color: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.leftSide {
-  height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: #001529;
+  background: linear-gradient(135deg, #040d21 0%, #0f2647 100%);
 }
 
-.imageWrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.loginImage {
-  object-fit: cover;
-  width: 100%;
-  height: 100%;
-  opacity: 0.7;
-}
-
-.overlayText {
+.blockchainBg {
   position: absolute;
-  bottom: 60px;
-  left: 40px;
-  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(32, 84, 192, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(32, 84, 192, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(32, 84, 192, 0.05) 0%, transparent 60%);
+  opacity: 0.8;
+  z-index: 0;
 }
 
-.rightSide {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.blockchainNodes {
+  position: absolute;
+  width: 100%;
   height: 100%;
-  padding: 40px;
+  z-index: 1;
+}
+
+.node1, .node2, .node3, .node4, .node5, .node6 {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(65, 132, 240, 0.3);
+  box-shadow: 0 0 15px rgba(65, 132, 240, 0.2);
+}
+
+.node1 {
+  width: 15px;
+  height: 15px;
+  top: 20%;
+  left: 15%;
+  animation: pulse 3s infinite alternate;
+}
+
+.node2 {
+  width: 20px;
+  height: 20px;
+  top: 70%;
+  left: 25%;
+  animation: pulse 4s infinite alternate-reverse;
+}
+
+.node3 {
+  width: 14px;
+  height: 14px;
+  top: 30%;
+  right: 20%;
+  animation: pulse 5s infinite alternate;
+}
+
+.node4 {
+  width: 17px;
+  height: 17px;
+  bottom: 20%;
+  right: 28%;
+  animation: pulse 3.5s infinite alternate-reverse;
+}
+
+.node5 {
+  width: 22px;
+  height: 22px;
+  top: 50%;
+  left: 10%;
+  animation: pulse 4.5s infinite alternate;
+}
+
+.node6 {
+  width: 16px;
+  height: 16px;
+  top: 15%;
+  right: 10%;
+  animation: pulse 3.8s infinite alternate-reverse;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(65, 132, 240, 0.2);
+  }
+  100% {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px rgba(65, 132, 240, 0.4);
+  }
+}
+
+.blockchainLines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.line1, .line2, .line3, .line4 {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(65, 132, 240, 0.1), transparent);
+  height: 1px;
+  width: 100%;
+  opacity: 0.5;
+}
+
+.line1 {
+  top: 25%;
+  animation: moveLine 15s linear infinite;
+}
+
+.line2 {
+  top: 45%;
+  animation: moveLine 18s linear infinite reverse;
+}
+
+.line3 {
+  top: 65%;
+  animation: moveLine 20s linear infinite;
+}
+
+.line4 {
+  top: 85%;
+  animation: moveLine 17s linear infinite reverse;
+}
+
+@keyframes moveLine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.loginBox {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 450px;
+  margin: 20px;
 }
 
 .loginCard {
   width: 100%;
-  max-width: 400px;
   border: none;
-  box-shadow: none;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 16px !important;
+  padding: 25px 20px !important;
 }
 
 .logoContainer {
@@ -63,56 +164,225 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
+.logoWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e1ecfd 100%);
+  border-radius: 15px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.15);
+}
+
+.logo {
+  border-radius: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
 .loginTitle {
-  margin-top: 16px !important;
-  color: #1677ff;
+  margin-top: 5px !important;
+  margin-bottom: 8px !important;
+  color: #1677ff !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px;
+}
+
+.loginSubtitle {
+  color: #5c5c5c !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 8px !important;
+}
+
+.tagContainer {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .walletStatusContainer {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.walletAlert {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.walletAlert:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statusIcon {
+  font-size: 20px;
+}
+
+.statusMessage {
+  display: flex;
+  flex-direction: column;
+}
+
+.statusTitle {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.statusAddress {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.statusWelcome {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.statusError {
+  font-size: 14px;
+  color: #ff4d4f;
+  margin-bottom: 8px;
+}
+
+.statusInfo {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.secureTag, .registerTag, .connectTag {
+  align-self: flex-start;
+  margin-top: 4px;
+  border-radius: 16px;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+  font-size: 12px;
 }
 
 .loginInfo {
   margin-bottom: 24px;
-  color: #8c8c8c;
-  text-align: center;
+  width: 100%;
+}
+
+.infoCard {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background-color: rgba(249, 250, 252, 0.8);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.infoCard:hover {
+  background-color: rgba(245, 248, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.infoIcon {
+  font-size: 18px;
+  color: #1677ff;
+  margin-right: 12px;
+  margin-top: 2px;
 }
 
 .errorAlert {
   margin-bottom: 24px;
+  border-radius: 12px;
 }
 
 .loginForm {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.inputIcon {
+  color: #8c8c8c;
+}
+
+.passwordInput {
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .loginButton {
-  height: 44px;
+  height: 48px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
+}
+
+.loginButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.3);
+}
+
+.divider {
+  margin: 24px 0;
+}
+
+.dividerText {
+  color: #8c8c8c;
+  font-size: 14px;
 }
 
 .registerButton {
-  height: 44px;
+  height: 48px;
   border-color: #1677ff;
   color: #1677ff;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .registerButton:hover {
   color: #4096ff;
   border-color: #4096ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.1);
+}
+
+.footerText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 30px;
+  color: #8c8c8c;
+}
+
+.footerIcon {
+  font-size: 16px;
+  margin-right: 8px;
+  color: #1677ff;
+}
+
+.footerContent {
+  font-size: 14px;
+  color: #8c8c8c;
 }
 
 /* 响应式调整 */
-@media (max-width: 768px) {
-  .loginRow {
-    height: auto;
-    max-width: 90%;
+@media (max-width: 576px) {
+  .loginBox {
+    max-width: 100%;
+    margin: 15px;
   }
   
-  .rightSide {
-    padding: 20px;
+  .infoCard {
+    padding: 10px;
+  }
+  
+  .tagContainer {
+    flex-wrap: wrap;
   }
 } 
