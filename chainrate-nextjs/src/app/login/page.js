@@ -299,6 +299,39 @@ export default function LoginPage() {
     >
       <div className={styles.loginContainer}>
         <div className={styles.blockchainBg}></div>
+        
+        <div className={styles.blockchainCubes}>
+          {[...Array(12)].map((_, i) => {
+            const size = 20 + Math.random() * 25;
+            return (
+              <div 
+                key={`cube-${i}`} 
+                className={styles.cube}
+                style={{
+                  top: `${5 + Math.random() * 90}%`,
+                  left: `${5 + Math.random() * 90}%`,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  '--size': `${size}px`,
+                  '--translate-x': `${(Math.random() - 0.5) * 250}px`,
+                  '--translate-y': `${(Math.random() - 0.5) * 250}px`,
+                  '--translate-x2': `${(Math.random() - 0.5) * 200}px`,
+                  '--translate-y2': `${(Math.random() - 0.5) * 200}px`,
+                  animationDuration: `${25 + Math.random() * 20}s`,
+                  animationDelay: `${Math.random() * -20}s`
+                }}
+              >
+                <div className={`${styles.cubeFace} ${styles.cubeFace1}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace2}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace3}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace4}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace5}`}></div>
+                <div className={`${styles.cubeFace} ${styles.cubeFace6}`}></div>
+              </div>
+            );
+          })}
+        </div>
+        
         <div className={styles.blockchainNodes}>
           <div className={styles.node1}></div>
           <div className={styles.node2}></div>
@@ -306,6 +339,37 @@ export default function LoginPage() {
           <div className={styles.node4}></div>
           <div className={styles.node5}></div>
           <div className={styles.node6}></div>
+          <div className={styles.node7}></div>
+          <div className={styles.node8}></div>
+          <div className={styles.node9}></div>
+          <div className={styles.node10}></div>
+          <div className={styles.node11}></div>
+          <div className={styles.node12}></div>
+        </div>
+        
+        <div className={styles.blockchainParticles}>
+          {[...Array(20)].map((_, i) => (
+            <div 
+              key={i} 
+              className={styles.particle} 
+              style={{
+                top: `${Math.random() * 100}%`, 
+                left: `${Math.random() * 100}%`,
+                '--translate-x': `${(Math.random() - 0.5) * 200}px`,
+                '--translate-y': `${(Math.random() - 0.5) * 200}px`,
+                animationDelay: `${Math.random() * 15}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className={styles.blockchainLines}>
+          <div className={styles.line1}></div>
+          <div className={styles.line2}></div>
+          <div className={styles.line3}></div>
+          <div className={styles.line4}></div>
+          <div className={styles.line5}></div>
+          <div className={styles.line6}></div>
         </div>
         
         <div className={styles.loginBox}>
@@ -415,13 +479,6 @@ export default function LoginPage() {
               <Text className={styles.footerContent}>ChainRate - 区块链教学评价系统</Text>
             </div>
           </Card>
-        </div>
-        
-        <div className={styles.blockchainLines}>
-          <div className={styles.line1}></div>
-          <div className={styles.line2}></div>
-          <div className={styles.line3}></div>
-          <div className={styles.line4}></div>
         </div>
       </div>
     </ConfigProvider>

@@ -64,11 +64,11 @@ export default function Home() {
           <ul className={styles.featureList}>
             <li className={styles.featureItem}>
               <div className={styles.featureIcon}>🔐</div>
-              <span>保障数据安全与隐私</span>
+              <span>保障数据安全</span>
             </li>
             <li className={styles.featureItem}>
               <div className={styles.featureIcon}>🔄</div>
-              <span>透明的评价流程</span>
+              <span>透明评价流程</span>
             </li>
             <li className={styles.featureItem}>
               <div className={styles.featureIcon}>📊</div>
