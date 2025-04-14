@@ -431,12 +431,21 @@ export default function SubmitEvaluationPage({ params }) {
         interactionRatingValue,
         isAnonymous
       );
+      
+      // 立即打印交易哈希作为存证凭证
+      console.log('评价提交成功! 交易哈希(存证凭证):', tx.hash);
+      message.success('评价提交成功，正在等待区块链确认...');
         
       // 等待交易确认
-      await tx.wait();
+      const receipt = await tx.wait();
+      
+      // 打印交易收据信息
+      console.log('交易已确认! 区块号:', receipt.blockNumber);
+      console.log('交易收据:', receipt);
+      console.log('Gas使用量:', receipt.gasUsed.toString());
         
       // 显示成功消息
-      setSuccessMessage('评价提交成功！');
+      setSuccessMessage('评价提交成功！交易已确认');
         
       // 3秒后重定向回课程详情页
       setTimeout(() => {
