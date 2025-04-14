@@ -23,7 +23,8 @@ import {
   ClockCircleOutlined,
   EyeOutlined,
   FileImageOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  FilterOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -44,7 +45,12 @@ import {
   Divider,
   Typography,
   Rate,
-  Image as AntImage
+  Image as AntImage,
+  Input,
+  DatePicker,
+  Select,
+  Form,
+  message
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import StudentSidebar from '../components/StudentSidebar';
@@ -83,6 +89,17 @@ export default function StudentMyEvaluationsPage() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
+
+  // 搜索相关状态
+  const [searchForm] = Form.useForm();
+  const [searchParams, setSearchParams] = useState({
+    keyword: '',
+    dateRange: null,
+    rating: null
+  });
+  const [searchResults, setSearchResults] = useState([]);
+  const [searched, setSearched] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     // 检查用户是否已登录并且是学生角色
@@ -310,6 +327,90 @@ export default function StudentMyEvaluationsPage() {
     router.push('/login');
   };
 
+  // 处理搜索提交
+  const handleSearch = (values) => {
+    setSearchError('');
+    setSearched(true);
+    
+    const { keyword, dateRange, rating } = values;
+    
+    // 检查日期范围是否超过6个月
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].valueOf();
+      const endDate = dateRange[1].valueOf();
+      const sixMonthsInMs = 6 * 30 * 24 * 60 * 60 * 1000; // 大约6个月的毫秒数
+      
+      if (endDate - startDate > sixMonthsInMs) {
+        setSearchError('查询时间范围不能超过6个月');
+        setSearchResults([]);
+        return;
+      }
+    }
+    
+    // 保存搜索参数
+    setSearchParams({
+      keyword: keyword || '',
+      dateRange: dateRange,
+      rating: rating
+    });
+    
+    // 根据条件筛选评价
+    let results = [...evaluations];
+    
+    // 关键词筛选
+    if (keyword) {
+      const lowerKeyword = keyword.toLowerCase();
+      results = results.filter(evaluation => 
+        evaluation.courseName.toLowerCase().includes(lowerKeyword) ||
+        evaluation.teacherName.toLowerCase().includes(lowerKeyword) ||
+        evaluation.content.toLowerCase().includes(lowerKeyword)
+      );
+    }
+    
+    // 日期范围筛选
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].startOf('day').valueOf();
+      const endDate = dateRange[1].endOf('day').valueOf();
+      
+      results = results.filter(evaluation => {
+        const evalDate = evaluation.timestamp.valueOf();
+        return evalDate >= startDate && evalDate <= endDate;
+      });
+    }
+    
+    // 评分筛选
+    if (rating) {
+      results = results.filter(evaluation => evaluation.rating === Number(rating));
+    }
+    
+    setSearchResults(results);
+    
+    // 检查是否有符合条件的记录
+    if (results.length === 0) {
+      message.info('未找到符合条件的记录');
+    }
+  };
+  
+  // 重置搜索
+  const handleResetSearch = () => {
+    searchForm.resetFields();
+    setSearched(false);
+    setSearchError('');
+    setSearchParams({
+      keyword: '',
+      dateRange: null,
+      rating: null
+    });
+  };
+  
+  // 获取要显示的评价列表
+  const getDisplayEvaluations = () => {
+    if (searched) {
+      return searchResults;
+    }
+    return evaluations;
+  };
+
   // 显示加载中
   if (loading) {
     return (
@@ -383,6 +484,18 @@ export default function StudentMyEvaluationsPage() {
                 />
               )}
               
+              {searchError && (
+                <Alert
+                  message="搜索错误"
+                  description={searchError}
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setSearchError('')}
+                />
+              )}
+              
               {evaluations.length === 0 ? (
                 <Empty
                   description={
@@ -402,108 +515,173 @@ export default function StudentMyEvaluationsPage() {
                 />
               ) : (
                 <div>
-                  <Title level={4} style={{ marginBottom: '20px' }}>我的课程评价记录</Title>
-                  <Row gutter={[16, 16]}>
-                    {evaluations.map((evaluation, index) => (
-                      <Col xs={24} key={index}>
-                        <Card 
-                          title={
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Text strong style={{ fontSize: '18px' }}>{evaluation.courseName}</Text>
-                              <Button 
-                                type="primary" 
-                                icon={<EyeOutlined />} 
-                                size="small"
-                                onClick={() => viewCourseDetail(evaluation.courseId)}
-                              >
-                                查看课程
+                  <Card style={{ marginBottom: '24px' }}>
+                    <Form
+                      form={searchForm}
+                      layout="horizontal"
+                      onFinish={handleSearch}
+                      initialValues={{
+                        keyword: '',
+                        dateRange: null,
+                        rating: null
+                      }}
+                    >
+                      <Row gutter={[16, 16]}>
+                        <Col xs={24} sm={24} md={6}>
+                          <Form.Item name="keyword" label="关键词">
+                            <Input 
+                              placeholder="课程名称/教师/内容" 
+                              prefix={<SearchOutlined />} 
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={24} md={10}>
+                          <Form.Item name="dateRange" label="提交日期">
+                            <DatePicker.RangePicker 
+                              style={{ width: '100%' }} 
+                              placeholder={['开始日期', '结束日期']}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={4}>
+                          <Form.Item name="rating" label="总体评分">
+                            <Select placeholder="选择评分">
+                              <Select.Option value={null}>全部</Select.Option>
+                              <Select.Option value={5}>5分</Select.Option>
+                              <Select.Option value={4}>4分</Select.Option>
+                              <Select.Option value={3}>3分</Select.Option>
+                              <Select.Option value={2}>2分</Select.Option>
+                              <Select.Option value={1}>1分</Select.Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={4} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+                          <Form.Item>
+                            <Space>
+                              <Button onClick={handleResetSearch}>重置</Button>
+                              <Button type="primary" htmlType="submit" icon={<FilterOutlined />}>
+                                搜索
                               </Button>
-                            </div>
-                          }
-                          style={{ marginBottom: '16px' }}
-                        >
-                          <Row gutter={[16, 16]}>
-                            <Col xs={24} md={12}>
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text>教师: {evaluation.teacherName}</Text>
+                            </Space>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form>
+                  </Card>
+                
+                  <Title level={4} style={{ marginBottom: '20px' }}>
+                    我的课程评价记录 
+                    {searched && <Tag color="blue" style={{ marginLeft: '8px' }}>搜索结果: {searchResults.length} 条</Tag>}
+                  </Title>
+                  
+                  {getDisplayEvaluations().length === 0 ? (
+                    <Empty 
+                      description="未找到符合条件的记录" 
+                      style={{ margin: '40px 0' }}
+                    />
+                  ) : (
+                    <Row gutter={[16, 16]}>
+                      {getDisplayEvaluations().map((evaluation, index) => (
+                        <Col xs={24} key={index}>
+                          <Card 
+                            title={
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text strong style={{ fontSize: '18px' }}>{evaluation.courseName}</Text>
+                                <Button 
+                                  type="primary" 
+                                  icon={<EyeOutlined />} 
+                                  size="small"
+                                  onClick={() => viewCourseDetail(evaluation.courseId)}
+                                >
+                                  查看课程
+                                </Button>
                               </div>
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <ClockCircleOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text>提交时间: {formatDateTime(evaluation.timestamp)}</Text>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <TeamOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text>匿名评价: {evaluation.isAnonymous ? '是' : '否'}</Text>
-                              </div>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <Card size="small" title="评分详情" style={{ marginBottom: '16px' }}>
-                                <Row gutter={[8, 8]}>
-                                  <Col span={12}>
-                                    <Text>总体评分:</Text>
-                                  </Col>
-                                  <Col span={12}>
-                                    <Rate disabled defaultValue={evaluation.rating} />
-                                  </Col>
-                                  <Col span={12}>
-                                    <Text>教学评分:</Text>
-                                  </Col>
-                                  <Col span={12}>
-                                    <Rate disabled defaultValue={evaluation.teachingRating} />
-                                  </Col>
-                                  <Col span={12}>
-                                    <Text>内容评分:</Text>
-                                  </Col>
-                                  <Col span={12}>
-                                    <Rate disabled defaultValue={evaluation.contentRating} />
-                                  </Col>
-                                  <Col span={12}>
-                                    <Text>互动评分:</Text>
-                                  </Col>
-                                  <Col span={12}>
-                                    <Rate disabled defaultValue={evaluation.interactionRating} />
-                                  </Col>
+                            }
+                            style={{ marginBottom: '16px' }}
+                          >
+                            <Row gutter={[16, 16]}>
+                              <Col xs={24} md={12}>
+                                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                  <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                  <Text>教师: {evaluation.teacherName}</Text>
+                                </div>
+                                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                  <ClockCircleOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                  <Text>提交时间: {formatDateTime(evaluation.timestamp)}</Text>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <TeamOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                  <Text>匿名评价: {evaluation.isAnonymous ? '是' : '否'}</Text>
+                                </div>
+                              </Col>
+                              <Col xs={24} md={12}>
+                                <Card size="small" title="评分详情" style={{ marginBottom: '16px' }}>
+                                  <Row gutter={[8, 8]}>
+                                    <Col span={12}>
+                                      <Text>总体评分:</Text>
+                                    </Col>
+                                    <Col span={12}>
+                                      <Rate disabled defaultValue={evaluation.rating} />
+                                    </Col>
+                                    <Col span={12}>
+                                      <Text>教学评分:</Text>
+                                    </Col>
+                                    <Col span={12}>
+                                      <Rate disabled defaultValue={evaluation.teachingRating} />
+                                    </Col>
+                                    <Col span={12}>
+                                      <Text>内容评分:</Text>
+                                    </Col>
+                                    <Col span={12}>
+                                      <Rate disabled defaultValue={evaluation.contentRating} />
+                                    </Col>
+                                    <Col span={12}>
+                                      <Text>互动评分:</Text>
+                                    </Col>
+                                    <Col span={12}>
+                                      <Rate disabled defaultValue={evaluation.interactionRating} />
+                                    </Col>
+                                  </Row>
+                                </Card>
+                              </Col>
+                            </Row>
+                            
+                            <Divider orientation="left">评价内容</Divider>
+                            <Paragraph>
+                              {evaluation.content || '无评价内容'}
+                            </Paragraph>
+                            
+                            {evaluation.imageHashes && evaluation.imageHashes.length > 0 && (
+                              <>
+                                <Divider orientation="left">附件图片</Divider>
+                                <Row gutter={[16, 16]}>
+                                  {evaluation.imageHashes.map((hash, idx) => (
+                                    <Col key={idx} xs={24} sm={12} md={8} lg={6}>
+                                      <Card 
+                                        size="small" 
+                                        style={{ textAlign: 'center' }}
+                                      >
+                                        <AntImage
+                                          width={200}
+                                          height={150}
+                                          src={`https://gateway.pinata.cloud/ipfs/${hash}`}
+                                          alt={`评价图片 ${idx + 1}`}
+                                          fallback="/images/image-error.png"
+                                          preview={{
+                                            src: `https://gateway.pinata.cloud/ipfs/${hash}`
+                                          }}
+                                        />
+                                      </Card>
+                                    </Col>
+                                  ))}
                                 </Row>
-                              </Card>
-                            </Col>
-                          </Row>
-                          
-                          <Divider orientation="left">评价内容</Divider>
-                          <Paragraph>
-                            {evaluation.content || '无评价内容'}
-                          </Paragraph>
-                          
-                          {evaluation.imageHashes && evaluation.imageHashes.length > 0 && (
-                            <>
-                              <Divider orientation="left">附件图片</Divider>
-                              <Row gutter={[16, 16]}>
-                                {evaluation.imageHashes.map((hash, idx) => (
-                                  <Col key={idx} xs={24} sm={12} md={8} lg={6}>
-                                    <Card 
-                                      size="small" 
-                                      style={{ textAlign: 'center' }}
-                                    >
-                                      <AntImage
-                                        width={200}
-                                        height={150}
-                                        src={`https://gateway.pinata.cloud/ipfs/${hash}`}
-                                        alt={`评价图片 ${idx + 1}`}
-                                        fallback="/images/image-error.png"
-                                        preview={{
-                                          src: `https://gateway.pinata.cloud/ipfs/${hash}`
-                                        }}
-                                      />
-                                    </Card>
-                                  </Col>
-                                ))}
-                              </Row>
-                            </>
-                          )}
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
+                              </>
+                            )}
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  )}
                 </div>
               )}
             </Content>
