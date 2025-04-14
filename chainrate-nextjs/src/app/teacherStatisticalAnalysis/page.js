@@ -140,6 +140,7 @@ export default function TeacherStatisticalAnalysisPage() {
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [contract02, setContract02] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState(null);
 
   // 统计数据状态
   const [evaluations, setEvaluations] = useState([]);
@@ -232,7 +233,7 @@ export default function TeacherStatisticalAnalysisPage() {
         const signer = await provider.getSigner();
         setSigner(signer);
         
-        // 连接到主合约
+        // 连接到合约
         const chainRateContract = new ethers.Contract(
           ChainRateAddress.address,
           ChainRateABI.abi,
@@ -240,7 +241,6 @@ export default function TeacherStatisticalAnalysisPage() {
         );
         setContract(chainRateContract);
         
-        // 连接到教师评价合约
         const chainRate02Contract = new ethers.Contract(
           ChainRate02Address.address,
           ChainRate02ABI.abi,
@@ -251,6 +251,15 @@ export default function TeacherStatisticalAnalysisPage() {
         // 加载教师评价统计数据
         await loadTeacherEvaluationStats(chainRateContract, chainRate02Contract, await signer.getAddress());
         
+        // 设置定时刷新
+        const interval = setInterval(async () => {
+          if (chainRateContract && chainRate02Contract && signer) {
+            await loadTeacherEvaluationStats(chainRateContract, chainRate02Contract, await signer.getAddress());
+          }
+        }, 30000); // 每30秒刷新一次
+        
+        setRefreshInterval(interval);
+        
         setLoading(false);
       } catch (err) {
         console.error("初始化Web3失败:", err);
@@ -260,6 +269,13 @@ export default function TeacherStatisticalAnalysisPage() {
     };
     
     checkUserAuth();
+    
+    // 组件卸载时清除定时器
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
   }, [router]);
   
   // 时间范围改变处理
