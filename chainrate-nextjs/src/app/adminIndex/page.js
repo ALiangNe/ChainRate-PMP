@@ -127,7 +127,7 @@ export default function AdminIndexPage() {
         
         if (!isLoggedIn || userRole !== 'admin') {
           console.log('未认证为管理员，重定向到登录页面');
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
 

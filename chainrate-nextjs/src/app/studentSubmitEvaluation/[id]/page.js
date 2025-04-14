@@ -129,7 +129,7 @@ export default function SubmitEvaluationPage({ params }) {
         const userRole = localStorage.getItem('userRole');
         
         if (!isLoggedIn || userRole !== 'student') {
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
 

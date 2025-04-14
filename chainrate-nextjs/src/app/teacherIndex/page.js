@@ -91,7 +91,7 @@ export default function TeacherIndexPage() {
         
         if (!isLoggedIn || userRole !== 'teacher') {
           console.log('未认证为教师，重定向到登录页面');
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
 

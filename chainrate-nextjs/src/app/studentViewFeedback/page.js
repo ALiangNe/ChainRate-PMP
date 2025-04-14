@@ -196,7 +196,7 @@ export default function StudentViewFeedbackPage() {
         
         if (!isLoggedIn || userRole !== 'student') {
           console.log('未认证为学生，重定向到登录页面');
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
         

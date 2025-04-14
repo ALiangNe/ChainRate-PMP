@@ -1,0 +1,36 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.backButton {
+  margin-top: 20px;
+  height: 40px;
+  font-size: 16px;
+  padding: 0 30px;
+}
+
+.tips {
+  margin-top: 40px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 100%;
+}
+
+.tips ul {
+  margin-top: 16px;
+  padding-left: 20px;
+}
+
+.tips li {
+  margin-bottom: 8px;
+  color: #666;
+} 

@@ -166,7 +166,7 @@ export default function TeacherViewEvaluationPage() {
         const userRole = localStorage.getItem('userRole');
         
         if (!isLoggedIn || userRole !== 'teacher') {
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
 

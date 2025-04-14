@@ -97,7 +97,7 @@ export default function StudentViewCoursesPage() {
         const userRole = localStorage.getItem('userRole');
         
         if (!isLoggedIn || userRole !== 'student') {
-          router.push('/login');
+          router.push('/NotFound');
           return;
         }
 
