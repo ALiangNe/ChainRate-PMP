@@ -42,7 +42,8 @@ import {
   Alert,
   Tooltip,
   Badge,
-  Divider
+  Divider,
+  Select
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import StudentSidebar from '../components/StudentSidebar';
@@ -50,13 +51,14 @@ import StudentSidebar from '../components/StudentSidebar';
 const { Header, Content, Sider } = Layout;
 const { Meta } = Card;
 const { Search } = Input;
+const { Option } = Select;
 
 export default function StudentViewCoursesPage() {
   const router = useRouter();
   
   // 提前调用 useToken，确保Hook顺序一致
   const { token } = theme.useToken();
-  const { colorBgContainer, borderRadiusLG } = token;
+  const { colorBgContainer, borderRadiusLG, colorPrimary } = token;
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -83,6 +85,8 @@ export default function StudentViewCoursesPage() {
   const [joinCoursePending, setJoinCoursePending] = useState({});
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterValue, setFilterValue] = useState('');
   
   // Web3相关
   const [provider, setProvider] = useState(null);
@@ -242,21 +246,78 @@ export default function StudentViewCoursesPage() {
   };
   
   // 处理搜索
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredCourses(courses);
-    } else {
-      const filtered = courses.filter(course => 
-        course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.teacherName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredCourses(filtered);
-    }
-  }, [searchTerm, courses]);
-  
-  // 处理搜索输入
   const handleSearchChange = (value) => {
+    // 检查是否包含特殊字符
+    const specialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
+    if (specialChars.test(value)) {
+      setError('搜索内容包含非法字符');
+      return;
+    }
+    
     setSearchTerm(value);
+    filterCourses(value);
+  };
+
+  // 处理筛选条件变化
+  const handleFilterChange = (filterType, value) => {
+    // 检查筛选条件组合是否有效
+    if (filterType === 'status' && value === 'joined' && Object.keys(joinedCourses).length === 0) {
+      setError('请选择有效的筛选条件');
+      return;
+    }
+    
+    // 更新筛选条件
+    setFilterType(filterType);
+    setFilterValue(value);
+    filterCourses(searchTerm, filterType, value);
+  };
+
+  // 筛选课程
+  const filterCourses = (search = '', filterType = 'all', filterValue = '') => {
+    let result = [...courses];
+    
+    // 应用搜索
+    if (search.trim() !== '') {
+      result = result.filter(course => 
+        course.name.toLowerCase().includes(search.toLowerCase()) ||
+        course.teacherName.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    // 应用筛选
+    switch (filterType) {
+      case 'status':
+        if (filterValue === 'joined') {
+          result = result.filter(course => joinedCourses[course.id]);
+        } else if (filterValue === 'not_joined') {
+          result = result.filter(course => !joinedCourses[course.id]);
+        }
+        break;
+      case 'time':
+        const now = new Date();
+        if (filterValue === 'active') {
+          result = result.filter(course => 
+            new Date(course.startTime) <= now && now <= new Date(course.endTime)
+          );
+        } else if (filterValue === 'upcoming') {
+          result = result.filter(course => new Date(course.startTime) > now);
+        } else if (filterValue === 'ended') {
+          result = result.filter(course => new Date(course.endTime) < now);
+        }
+        break;
+      default:
+        // 不做任何筛选
+        break;
+    }
+    
+    setFilteredCourses(result);
+    
+    // 如果筛选结果为空，显示提示
+    if (result.length === 0) {
+      setError('未找到符合条件的数据，请尝试调整筛选条件');
+    } else {
+      setError('');
+    }
   };
   
   // 加入课程
@@ -397,7 +458,7 @@ export default function StudentViewCoursesPage() {
             <Breadcrumb
               items={[
                 { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
-                { title: '查看课程' }
+                { title: '课程列表' }
               ]}
               style={{ margin: '16px 0' }}
             />
@@ -410,52 +471,102 @@ export default function StudentViewCoursesPage() {
                 borderRadius: borderRadiusLG,
               }}
             >
-              <div className={styles.courseContainer}>
-                <div style={{ marginBottom: '20px' }}>
+              {error && (
+                <Alert
+                  message="提示"
+                  description={error}
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setError('')}
+                />
+              )}
+              
+              {successMessage && (
+                <Alert
+                  message="成功"
+                  description={successMessage}
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: '20px' }}
+                  closable
+                  onClose={() => setSuccessMessage('')}
+                />
+              )}
+              
+              <Card
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <BookOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
+                    <span>课程列表</span>
+                  </div>
+                }
+                style={{ marginBottom: '20px' }}
+              >
+                <div style={{ marginBottom: '16px' }}>
                   <Search
-                    placeholder="搜索课程名称或教师"
+                    placeholder="搜索课程名称或教师姓名"
                     allowClear
-                    enterButton={<><SearchOutlined /> 搜索</>}
-                    size="large"
+                    enterButton="搜索"
+                    size="middle"
                     onSearch={handleSearchChange}
-                    style={{ maxWidth: '600px' }}
+                    style={{ width: '100%', maxWidth: '500px' }}
+                    disabled={loadingCourses}
                   />
                 </div>
-
-                {error && 
-                  <Alert
-                    message="错误"
-                    description={error}
-                    type="error"
-                    showIcon
-                    style={{ marginBottom: '20px' }}
-                    closable
-                    onClose={() => setError('')}
-                  />
-                }
                 
-                {successMessage && 
-                  <Alert
-                    message="成功"
-                    description={successMessage}
-                    type="success"
-                    showIcon
-                    style={{ marginBottom: '20px' }}
-                    closable
-                    onClose={() => setSuccessMessage('')}
-                  />
-                }
-
+                <div style={{ marginBottom: '16px' }}>
+                  <Space>
+                    <Select
+                      placeholder="筛选状态"
+                      style={{ width: 120 }}
+                      onChange={(value) => handleFilterChange('status', value)}
+                      disabled={loadingCourses}
+                    >
+                      <Option value="all">全部课程</Option>
+                      <Option value="joined">已加入</Option>
+                      <Option value="not_joined">未加入</Option>
+                    </Select>
+                    
+                    <Select
+                      placeholder="筛选时间"
+                      style={{ width: 120 }}
+                      onChange={(value) => handleFilterChange('time', value)}
+                      disabled={loadingCourses}
+                    >
+                      <Option value="all">全部时间</Option>
+                      <Option value="active">进行中</Option>
+                      <Option value="upcoming">即将开始</Option>
+                      <Option value="ended">已结束</Option>
+                    </Select>
+                  </Space>
+                </div>
+                
                 {loadingCourses ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                    <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-                    <p style={{ marginTop: '16px' }}>正在加载课程列表...</p>
+                    <Spin size="large">
+                      <div style={{ padding: '30px', textAlign: 'center' }}>
+                        <div>加载课程中...</div>
+                      </div>
+                    </Spin>
                   </div>
                 ) : filteredCourses.length === 0 ? (
                   <Empty 
-                    description="没有找到符合条件的课程" 
+                    description={
+                      <div>
+                        <p>未找到符合条件的数据</p>
+                        <p style={{ color: '#999', marginTop: '8px' }}>
+                          请尝试：
+                          <ul style={{ marginTop: '8px' }}>
+                            <li>调整搜索关键词</li>
+                            <li>更改筛选条件</li>
+                            <li>清除所有筛选条件</li>
+                          </ul>
+                        </p>
+                      </div>
+                    }
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    style={{ margin: '40px 0' }}
                   />
                 ) : (
                   <Row gutter={[16, 16]}>
@@ -463,7 +574,7 @@ export default function StudentViewCoursesPage() {
                       const courseStatus = getCourseStatus(course);
                       
                       return (
-                        <Col xs={24} sm={12} md={8} lg={8} xl={6} key={course.id}>
+                        <Col xs={24} sm={12} md={8} lg={6} key={course.id}>
                           <Card
                             hoverable
                             style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
@@ -539,7 +650,7 @@ export default function StudentViewCoursesPage() {
                     })}
                   </Row>
                 )}
-              </div>
+              </Card>
             </Content>
           </Layout>
         </Layout>
