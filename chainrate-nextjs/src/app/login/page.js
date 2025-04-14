@@ -41,6 +41,19 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 
+// 格式化剩余锁定时间
+const formatRemainingTime = (expiryDate) => {
+  if (!expiryDate) return '';
+  
+  const now = new Date();
+  const diffMs = expiryDate.getTime() - now.getTime();
+  
+  if (diffMs <= 0) return '0分钟';
+  
+  const diffMins = Math.ceil(diffMs / (60 * 1000));
+  return `${diffMins}分钟`;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const [form] = Form.useForm();
@@ -55,6 +68,86 @@ export default function LoginPage() {
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  
+  // 添加登录尝试相关状态
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [accountLocked, setAccountLocked] = useState(false);
+  const [lockExpiry, setLockExpiry] = useState(null);
+
+  // 初始化时检查账号是否被锁定
+  useEffect(() => {
+    // 如果没有连接钱包，不进行锁定检查
+    if (!account) return;
+    
+    // 构建特定于当前账户的锁定键
+    const accountLockKey = `accountLockedUntil_${account.toLowerCase()}`;
+    const accountAttemptsKey = `loginAttempts_${account.toLowerCase()}`;
+    
+    const lockedUntil = localStorage.getItem(accountLockKey);
+    if (lockedUntil) {
+      const expiryTime = parseInt(lockedUntil);
+      const now = Date.now();
+      
+      if (now < expiryTime) {
+        // 账号仍处于锁定状态
+        setAccountLocked(true);
+        setLockExpiry(new Date(expiryTime));
+        
+        // 设置计时器解除锁定
+        const timeout = setTimeout(() => {
+          setAccountLocked(false);
+          localStorage.removeItem(accountLockKey);
+          localStorage.removeItem(accountAttemptsKey);
+          setLoginAttempts(0);
+        }, expiryTime - now);
+        
+        return () => clearTimeout(timeout);
+      } else {
+        // 锁定已过期，清除存储
+        localStorage.removeItem(accountLockKey);
+        localStorage.removeItem(accountAttemptsKey);
+      }
+    }
+    
+    // 恢复登录尝试次数
+    const savedAttempts = localStorage.getItem(accountAttemptsKey);
+    if (savedAttempts) {
+      setLoginAttempts(parseInt(savedAttempts));
+    } else {
+      // 如果切换了账户，重置尝试次数
+      setLoginAttempts(0);
+    }
+  }, [account]); // 依赖于account，确保账户变化时重新检查
+
+  // 检查登录会话是否过期
+  useEffect(() => {
+    const checkSessionExpiry = () => {
+      const loginTime = localStorage.getItem('loginTime');
+      if (loginTime && localStorage.getItem('isLoggedIn') === 'true') {
+        const expiryTime = parseInt(loginTime) + 30 * 60 * 1000; // 30分钟过期
+        
+        if (Date.now() > expiryTime) {
+          // 会话已过期，清除登录信息
+          localStorage.removeItem('isLoggedIn');
+          localStorage.removeItem('userAddress');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userRoleHash');
+          localStorage.removeItem('loginTime');
+          
+          message.warning('登录已过期，请重新登录');
+        }
+      }
+    };
+    
+    // 页面加载时检查一次
+    checkSessionExpiry();
+    
+    // 设置定期检查
+    const interval = setInterval(checkSessionExpiry, 60000); // 每分钟检查一次
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // 初始化钱包连接
   useEffect(() => {
@@ -135,6 +228,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // 检查账号是否被锁定
+      if (accountLocked) {
+        setError(`账号已被锁定，请在 ${formatRemainingTime(lockExpiry)} 后重试`);
+        setLoading(false);
+        return;
+      }
+
       // 表单验证已由 Ant Design Form 组件处理
       const password = values.password;
 
@@ -161,6 +261,11 @@ export default function LoginPage() {
       if (isValidPassword) {
         console.log('登录成功');
         
+        // 登录成功，重置登录尝试次数
+        setLoginAttempts(0);
+        const accountAttemptsKey = `loginAttempts_${account.toLowerCase()}`;
+        localStorage.removeItem(accountAttemptsKey);
+        
         try {
           // 获取用户角色哈希值
           const roleHash = userInfo.role.toString();
@@ -176,6 +281,9 @@ export default function LoginPage() {
           localStorage.setItem('userCollege', userInfo.college || '');
           localStorage.setItem('userMajor', userInfo.major || '');
           localStorage.setItem('userGrade', userInfo.grade || '');
+          
+          // 存储登录时间，用于会话过期检查
+          localStorage.setItem('loginTime', Date.now().toString());
           
           // 尝试从合约获取角色常量
           try {
@@ -216,7 +324,29 @@ export default function LoginPage() {
           router.push('/dashboard'); // 默认重定向
         }
       } else {
-        setError('密码错误，请重试');
+        // 密码错误，增加尝试次数
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        
+        // 使用特定于账户的键存储尝试次数
+        const accountAttemptsKey = `loginAttempts_${account.toLowerCase()}`;
+        localStorage.setItem(accountAttemptsKey, newAttempts.toString());
+        
+        // 检查是否需要锁定账号
+        if (newAttempts >= 3) {
+          // 锁定账号15分钟
+          const lockTime = Date.now() + 15 * 60 * 1000;
+          setAccountLocked(true);
+          setLockExpiry(new Date(lockTime));
+          
+          // 使用特定于账户的键存储锁定时间
+          const accountLockKey = `accountLockedUntil_${account.toLowerCase()}`;
+          localStorage.setItem(accountLockKey, lockTime.toString());
+          
+          setError('账号已被锁定，请15分钟后重试');
+        } else {
+          setError(`用户名或密码错误（${newAttempts}/3次尝试）`);
+        }
       }
     } catch (err) {
       console.error("登录失败:", err);
@@ -414,11 +544,21 @@ export default function LoginPage() {
               </div>
             </Space> */}
 
-            {error && (
+            {error && !accountLocked && (
               <Alert
                 message="登录失败"
                 description={error}
                 type="error"
+                showIcon
+                className={styles.errorAlert}
+              />
+            )}
+            
+            {accountLocked && (
+              <Alert
+                message="账号已锁定"
+                description={`由于多次密码错误，您的账号已被临时锁定。请在 ${formatRemainingTime(lockExpiry)} 后重试。`}
+                type="warning"
                 showIcon
                 className={styles.errorAlert}
               />
@@ -452,7 +592,7 @@ export default function LoginPage() {
                   block
                   icon={<LoginOutlined />}
                   loading={loading}
-                  disabled={!walletConnected || !userInfo}
+                  disabled={!walletConnected || !userInfo || accountLocked}
                   className={styles.loginButton}
                 >
                   {loading ? '登录中...' : '安全登录'}
