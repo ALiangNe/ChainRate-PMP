@@ -237,7 +237,24 @@ export default function RegisterPage() {
     try {
       // 验证密码匹配
       if (values.password !== values.confirmPassword) {
+        message.error('两次输入的密码不一致');
         setError('两次输入的密码不一致');
+        setLoading(false);
+        return;
+      }
+
+      // 验证手机号格式
+      if (!/^1[3-9]\d{9}$/.test(values.phone)) {
+        message.error('请输入11位有效手机号码');
+        setError('请输入11位有效手机号码');
+        setLoading(false);
+        return;
+      }
+
+      // 验证密码格式
+      if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/.test(values.password)) {
+        message.error('密码必须包含数字和字母，长度6-20位');
+        setError('密码必须包含数字和字母，长度6-20位');
         setLoading(false);
         return;
       }
@@ -289,14 +306,17 @@ export default function RegisterPage() {
       console.log('交易已确认', tx.hash);
 
       // 注册成功
-      message.success('注册成功！');
+      message.success('注册成功！即将跳转到登录页面...');
       
       // 保存头像信息到localStorage，因为合约中暂时没有存储
       if (avatarIpfsHash) {
         localStorage.setItem('userAvatar', avatarIpfsHash);
       }
       
-      router.push('/login');
+      // 2秒后跳转到登录页面
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     } catch (err) {
       console.error("注册失败:", err);
       setError('注册失败: ' + (err.message || err));
@@ -501,7 +521,13 @@ export default function RegisterPage() {
 
               <Form.Item
                 name="phone"
-                rules={[{ required: true, message: '请输入手机号码' }]}
+                rules={[
+                  { required: true, message: '请输入手机号码' },
+                  { 
+                    pattern: /^1[3-9]\d{9}$/, 
+                    message: '请输入11位有效手机号码' 
+                  }
+                ]}
               >
                 <Input 
                   prefix={<PhoneOutlined className={styles.inputIcon} />} 
@@ -617,7 +643,11 @@ export default function RegisterPage() {
                 name="password"
                 rules={[
                   { required: true, message: '请输入密码' },
-                  { min: 6, message: '密码长度至少为6位' }
+                  { min: 6, max: 20, message: '密码长度在6-20位之间' },
+                  { 
+                    pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/, 
+                    message: '密码必须包含数字和字母，长度6-20位' 
+                  }
                 ]}
               >
                 <Input.Password 
