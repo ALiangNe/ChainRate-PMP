@@ -381,6 +381,13 @@ export default function SubmitEvaluationPage({ params }) {
         setSubmitting(false);
         return;
       }
+
+      // 检查评价内容长度
+      if (content.trim().length < 10) {
+        setError('评价内容至少需要 10 个字');
+        setSubmitting(false);
+        return;
+      }
       
       // 上传图片到IPFS并获取哈希值
       let imageHashes = [];

@@ -434,7 +434,7 @@ export default function CourseDetailPage({ params }) {
               items={[
                 { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
                 { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
-                { title: course?.name || '课程详情' }
+                { title: '课程详情' }
               ]}
               style={{ margin: '16px 0' }}
             />
@@ -447,7 +447,13 @@ export default function CourseDetailPage({ params }) {
                 borderRadius: borderRadiusLG,
               }}
             >
-              {error && (
+              {loading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                  <Spin size="large" tip="加载中，请稍候...">
+                    <div style={{ padding: '100px', background: 'rgba(0,0,0,0.01)', borderRadius: '4px' }} />
+                  </Spin>
+                </div>
+              ) : error ? (
                 <Alert
                   message="错误"
                   description={error}
@@ -457,107 +463,88 @@ export default function CourseDetailPage({ params }) {
                   closable
                   onClose={() => setError('')}
                 />
-              )}
-              
-              {successMessage && (
-                <Alert
-                  message="成功"
-                  description={successMessage}
-                  type="success"
-                  showIcon
-                  style={{ marginBottom: '20px' }}
-                  closable
-                  onClose={() => setSuccessMessage('')}
-                />
-              )}
-              
-              {!course ? (
-                <Empty 
-                  description="未找到课程" 
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+              ) : !course ? (
+                <Empty
+                  description="课程不存在或无法访问"
+                  style={{ margin: '40px 0' }}
                 />
               ) : (
-                <>
+                <div>
                   <Card
                     title={
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Space>
-                          <BookOutlined style={{ color: colorPrimary, fontSize: '20px' }} />
-                          <Title level={4} style={{ margin: 0 }}>{course.name}</Title>
-                          <Tag color={getCourseStatus().color}>{getCourseStatus().status}</Tag>
-                        </Space>
-                        {!isJoined ? (
-                          <Button 
-                            type="primary" 
-                            onClick={handleJoinCourse}
-                            loading={joinCoursePending}
-                            icon={<TeamOutlined />}
-                          >
-                            加入课程
-                          </Button>
-                        ) : canEvaluate ? (
-                          <Button 
-                            type="primary" 
-                            onClick={handleEvaluateCourse}
-                            icon={<FormOutlined />}
-                          >
-                            评价课程
-                          </Button>
-                        ) : hasEvaluated ? (
-                          <Button 
-                            type="default" 
-                            disabled
-                            icon={<CheckCircleOutlined />}
-                          >
-                            已评价
-                          </Button>
-                        ) : (
-                          <Button 
-                            type="primary" 
-                            ghost
-                            disabled
-                            icon={<CheckCircleOutlined />}
-                          >
-                            已加入
-                          </Button>
-                        )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Title level={3} style={{ margin: 0 }}>{course.name}</Title>
+                        <Tag color={course.isActive ? 'success' : 'default'}>
+                          {course.isActive ? '进行中' : '已结束'}
+                        </Tag>
                       </div>
                     }
                     style={{ marginBottom: '24px' }}
                   >
-                    <Row gutter={[24, 24]}>
+                    <Row gutter={[16, 16]}>
                       <Col xs={24} md={12}>
                         <div style={{ marginBottom: '16px' }}>
-                          <Text strong>课程信息</Text>
-                          <Divider style={{ margin: '12px 0' }} />
-                          <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                            <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                            <Text>教师: {course.teacherName}</Text>
-                          </div>
-                          <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                            <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                            <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <TeamOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                            <Text>学生数: {course.studentCount}</Text>
-                          </div>
+                          <Text strong>教师：</Text>
+                          <Text>{course.teacherName}</Text>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong>开课时间：</Text>
+                          <Text>{formatDateTime(course.startTime)}</Text>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong>结课时间：</Text>
+                          <Text>{formatDateTime(course.endTime)}</Text>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong>学生人数：</Text>
+                          <Text>{course.studentCount}</Text>
+                        </div>
+                        <div>
+                          <Text strong>平均评分：</Text>
+                          <Rate disabled defaultValue={course.averageRating} allowHalf />
+                          <Text style={{ marginLeft: '8px' }}>{course.averageRating.toFixed(1)}</Text>
                         </div>
                       </Col>
                       <Col xs={24} md={12}>
-                        <div style={{ textAlign: 'center' }}>
-                          <Text strong>课程评分</Text>
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '24px 0' }}>
-                            <Statistic 
-                              value={course.averageRating.toFixed(1)}
-                              suffix="/5"
-                              valueStyle={{ color: colorPrimary, fontSize: '40px' }}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                          <Button 
+                            icon={<ArrowLeftOutlined />} 
+                            onClick={goBack}
+                          >
+                            返回
+                          </Button>
+                          {!isJoined ? (
+                            <Button 
+                              type="primary" 
+                              icon={<TeamOutlined />}
+                              loading={joinCoursePending}
+                              onClick={handleJoinCourse}
+                            >
+                              加入课程
+                            </Button>
+                          ) : hasEvaluated ? (
+                            <Alert
+                              message="您已完成评分，不可重复操作"
+                              type="info"
+                              showIcon
+                              style={{ marginBottom: '16px' }}
                             />
-                          </div>
-                          <Rate allowHalf disabled defaultValue={course.averageRating} style={{ fontSize: '24px' }} />
-                          <div style={{ marginTop: '12px' }}>
-                            <Text type="secondary">基于 {evaluations.length} 条学生评价</Text>
-                          </div>
+                          ) : canEvaluate ? (
+                            <Button 
+                              type="primary" 
+                              icon={<StarOutlined />}
+                              onClick={handleEvaluateCourse}
+                            >
+                              评价课程
+                            </Button>
+                          ) : (
+                            <Alert
+                              message="当前不在评价期间内"
+                              type="warning"
+                              showIcon
+                              style={{ marginBottom: '16px' }}
+                            />
+                          )}
                         </div>
                       </Col>
                     </Row>
@@ -618,7 +605,7 @@ export default function CourseDetailPage({ params }) {
                       />
                     )}
                   </Card>
-                </>
+                </div>
               )}
             </Content>
           </Layout>
