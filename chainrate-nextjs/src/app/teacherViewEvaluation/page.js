@@ -536,7 +536,29 @@ export default function TeacherViewEvaluationPage() {
 
   // 在组件内，添加导出到Excel的函数
   const handleExportToExcel = () => {
-    if (!selectedCourse || filteredEvaluations.length === 0) return;
+    if (!selectedCourse || filteredEvaluations.length === 0) {
+      setError('所选时间段内无评价数据');
+      return;
+    }
+    
+    // 检查数据量是否超过限制
+    if (filteredEvaluations.length > 1000) {
+      setError('单次导出记录数不能超过1000条');
+      return;
+    }
+    
+    // 检查时间范围是否超过3个月
+    if (filteredEvaluations.length > 0) {
+      const firstDate = new Date(filteredEvaluations[0].timestamp);
+      const lastDate = new Date(filteredEvaluations[filteredEvaluations.length - 1].timestamp);
+      const monthsDiff = (lastDate.getFullYear() - firstDate.getFullYear()) * 12 + 
+                        (lastDate.getMonth() - firstDate.getMonth());
+      
+      if (monthsDiff > 3) {
+        setError('单次导出数据范围不能超过3个月');
+        return;
+      }
+    }
     
     try {
       // 动态导入xlsx库
@@ -618,7 +640,29 @@ export default function TeacherViewEvaluationPage() {
 
   // 修改PDF导出函数
   const handleExportToPdf = () => {
-    if (!selectedCourse || filteredEvaluations.length === 0) return;
+    if (!selectedCourse || filteredEvaluations.length === 0) {
+      setError('所选时间段内无评价数据');
+      return;
+    }
+    
+    // 检查数据量是否超过限制
+    if (filteredEvaluations.length > 1000) {
+      setError('单次导出记录数不能超过1000条');
+      return;
+    }
+    
+    // 检查时间范围是否超过3个月
+    if (filteredEvaluations.length > 0) {
+      const firstDate = new Date(filteredEvaluations[0].timestamp);
+      const lastDate = new Date(filteredEvaluations[filteredEvaluations.length - 1].timestamp);
+      const monthsDiff = (lastDate.getFullYear() - firstDate.getFullYear()) * 12 + 
+                        (lastDate.getMonth() - firstDate.getMonth());
+      
+      if (monthsDiff > 3) {
+        setError('单次导出数据范围不能超过3个月');
+        return;
+      }
+    }
     
     try {
       // 使用html2canvas和jspdf配合导出，这样可以正确显示中文
