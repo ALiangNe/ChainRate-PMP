@@ -116,122 +116,208 @@
   gap: 1.5rem;
 }
 
-.courseCard {
+/* 新的现代化课程卡片样式 */
+.modernCard {
+  position: relative;
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.modernCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.modernCard:hover .cardStatusBar {
+  height: 12px;
+}
+
+.cardStatusBar {
+  height: 8px;
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+.modernCardContent {
+  padding: 20px;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.courseCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.courseHeader {
+.cardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #eee;
+  align-items: flex-start;
+  margin-bottom: 18px;
 }
 
-.courseName {
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303030;
   margin: 0;
-  font-size: 1.2rem;
-  color: #333;
-  max-width: 70%;
+  line-height: 1.3;
+  transition: color 0.3s ease;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.modernCard:hover .cardTitle {
+  color: #1a73e8;
+}
+
+.cardStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.courseStatus {
-  font-size: 0.8rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 12px;
+.modernCard:hover .cardStatus {
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.cardInfoItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  transition: transform 0.2s ease;
+}
+
+.cardInfoItem:hover {
+  transform: translateX(5px);
+}
+
+.infoIcon {
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a73e8;
+  transition: transform 0.3s ease;
+}
+
+.modernCard:hover .infoIcon {
+  transform: scale(1.2);
+}
+
+.infoText {
+  font-size: 14px;
+  color: #555;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
-.statusActive {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+.modernCard:hover .infoText {
+  color: #333;
 }
 
-.statusUpcoming {
-  background-color: #e3f2fd;
-  color: #1565c0;
+.cardDate {
+  font-size: 13px;
+  color: #777;
 }
 
-.statusEnded {
-  background-color: #f5f5f5;
-  color: #616161;
-}
-
-.courseBody {
-  padding: 1rem;
-  flex: 1;
-}
-
-.courseBody p {
-  margin: 0.5rem 0;
-  color: #616161;
-  font-size: 0.95rem;
-}
-
-.courseActions {
+.cardFooter {
+  padding: 15px 20px;
+  background-color: rgba(0, 0, 0, 0.02);
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
-  background-color: #fafafa;
-  border-top: 1px solid #eee;
+  gap: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.viewButton, .joinButton, .joinedButton {
-  padding: 0.6rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
+.actionButton {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
 }
 
 .viewButton {
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  color: #616161;
-  margin-right: 0.5rem;
+  background-color: rgba(26, 115, 232, 0.1);
+  color: #1a73e8;
+  border: 1px solid transparent;
 }
 
 .viewButton:hover {
-  background-color: #e0e0e0;
+  background-color: rgba(26, 115, 232, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.15);
 }
 
 .joinButton {
   background-color: #1a73e8;
-  border: none;
   color: white;
-  margin-left: 0.5rem;
+  border: 1px solid transparent;
 }
 
 .joinButton:hover:not(:disabled) {
-  background-color: #1565c0;
+  background-color: #0d62d9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.25);
 }
 
 .joinedButton {
-  background-color: #e8f5e9;
-  border: 1px solid #a5d6a7;
-  color: #2e7d32;
-  margin-left: 0.5rem;
+  background-color: rgba(82, 196, 26, 0.1);
+  color: #52c41a;
+  border: 1px solid #52c41a;
+}
+
+.joinedButton:hover {
+  background-color: rgba(82, 196, 26, 0.15);
 }
 
 .joinButton:disabled, .joinedButton:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ratingScore {
+  font-weight: 600;
+  color: #faad14;
+  font-size: 15px;
+}
+
+.studentCount {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.studentCountNumber {
+  font-weight: 600;
+  color: #1a73e8;
 }
 
 .footer {
@@ -242,19 +328,31 @@
   font-size: 0.9rem;
 }
 
-/* 响应式设计 */
+/* Responsive styles */
 @media (max-width: 768px) {
   .courseGrid {
     grid-template-columns: 1fr;
   }
   
   .header {
+    padding: 1rem;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
   }
   
   .backButton {
-    align-self: flex-end;
+    margin-top: 0.5rem;
+  }
+  
+  .cardInfoItem {
+    margin-bottom: 10px;
+  }
+  
+  .cardFooter {
+    flex-direction: column;
+  }
+  
+  .actionButton {
+    width: 100%;
   }
 } 

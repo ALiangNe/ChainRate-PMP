@@ -577,72 +577,88 @@ export default function StudentViewCoursesPage() {
                         <Col xs={24} sm={12} md={8} lg={6} key={course.id}>
                           <Card
                             hoverable
-                            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                            className={styles.modernCard}
                             cover={
-                              <div style={{ 
-                                height: '8px', 
-                                background: courseStatus.color === 'default' ? '#d9d9d9' : 
-                                            courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
-                              }} />
+                              <div 
+                                className={styles.cardStatusBar}
+                                style={{ 
+                                  background: courseStatus.color === 'default' ? '#d9d9d9' : 
+                                              courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
+                                }} 
+                              />
                             }
-                            actions={[
+                            bodyStyle={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}
+                          >
+                            <div className={styles.modernCardContent}>
+                              <div className={styles.cardHeader}>
+                                <div className={styles.cardTitle}>{course.name}</div>
+                                <Tag 
+                                  color={courseStatus.color} 
+                                  className={styles.cardStatus}
+                                >
+                                  {courseStatus.status}
+                                </Tag>
+                              </div>
+                              
+                              <div className={styles.cardInfoItem}>
+                                <UserOutlined className={styles.infoIcon} />
+                                <span className={styles.infoText}>{course.teacherName}</span>
+                              </div>
+                              
+                              <div className={styles.cardInfoItem}>
+                                <CalendarOutlined className={styles.infoIcon} />
+                                <div className={styles.infoText}>
+                                  <div>{formatDateTime(course.startTime)}</div>
+                                  <div>至</div>
+                                  <div>{formatDateTime(course.endTime)}</div>
+                                </div>
+                              </div>
+                              
+                              <div className={styles.cardInfoItem}>
+                                <TeamOutlined className={styles.infoIcon} />
+                                <span className={styles.infoText}>
+                                  学生数: <span className={styles.studentCountNumber}>{course.studentCount}</span>
+                                </span>
+                              </div>
+                              
+                              <div className={styles.cardInfoItem}>
+                                <StarOutlined className={styles.infoIcon} />
+                                <span className={styles.infoText}>
+                                  评分: <span className={styles.ratingScore}>{course.averageRating.toFixed(1)}</span>
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className={styles.cardFooter}>
                               <Button 
                                 key="view" 
                                 icon={<BookOutlined />}
                                 onClick={() => handleViewCourseDetail(course.id)}
+                                className={`${styles.actionButton} ${styles.viewButton}`}
                               >
                                 查看详情
-                              </Button>,
-                              course.isJoined ? (
+                              </Button>
+                              
+                              {course.isJoined ? (
                                 <Button 
                                   key="joined" 
-                                  type="primary" 
-                                  ghost 
-                                  disabled 
                                   icon={<CheckCircleOutlined />}
+                                  disabled
+                                  className={`${styles.actionButton} ${styles.joinedButton}`}
                                 >
                                   已加入
                                 </Button>
                               ) : (
                                 <Button 
                                   key="join" 
-                                  type="primary" 
                                   loading={joinCoursePending[course.id]} 
                                   onClick={() => handleJoinCourse(course.id)}
                                   icon={<TeamOutlined />}
+                                  className={`${styles.actionButton} ${styles.joinButton}`}
                                 >
                                   加入课程
                                 </Button>
-                              )
-                            ]}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                              <Meta
-                                title={<span style={{ fontSize: '16px', fontWeight: 'bold' }}>{course.name}</span>}
-                              />
-                              <Tag color={courseStatus.color}>{courseStatus.status}</Tag>
-                            </div>
-                            
-                            <div style={{ flex: 1 }}>
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <UserOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
-                                <span>{course.teacherName}</span>
-                              </div>
-                              
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <CalendarOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
-                                <span>{formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</span>
-                              </div>
-                              
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <TeamOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
-                                <span>学生数: {course.studentCount}</span>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <StarOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
-                                <span>评分: {course.averageRating.toFixed(1)}</span>
-                              </div>
+                              )}
                             </div>
                           </Card>
                         </Col>
