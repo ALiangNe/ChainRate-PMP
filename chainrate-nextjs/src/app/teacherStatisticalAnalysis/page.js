@@ -173,7 +173,7 @@ export default function TeacherStatisticalAnalysisPage() {
   
   // 评分分布状态
   const [ratingDistribution, setRatingDistribution] = useState([
-    { name: '5星', value: 0, color: '#52c41a' },
+    { name: '5星', value: 0, color: '#1a73e8' },
     { name: '4星', value: 0, color: '#1890ff' },
     { name: '3星', value: 0, color: '#faad14' },
     { name: '2星', value: 0, color: '#fa8c16' },
@@ -405,7 +405,7 @@ export default function TeacherStatisticalAnalysisPage() {
     
     // 更新评分分布
     const distributionData = [
-      { name: '5星', value: distribution[4], color: '#52c41a' },
+      { name: '5星', value: distribution[4], color: '#1a73e8' },
       { name: '4星', value: distribution[3], color: '#1890ff' },
       { name: '3星', value: distribution[2], color: '#faad14' },
       { name: '2星', value: distribution[1], color: '#fa8c16' },
@@ -505,7 +505,7 @@ export default function TeacherStatisticalAnalysisPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 教师端主题色
+          colorPrimary: '#1a73e8', // 使用蓝色主题
         },
       }}
     >
@@ -621,7 +621,7 @@ export default function TeacherStatisticalAnalysisPage() {
                                 <Statistic 
                                   title="评价总数" 
                                   value={overallStats.total} 
-                                  prefix={<CommentOutlined style={{ color: '#34a853' }} />} 
+                                  prefix={<CommentOutlined style={{ color: '#1a73e8' }} />} 
                                 />
                                 {timeRange !== 'all' && (
                                   <div className={styles.trendValue}>
@@ -717,7 +717,7 @@ export default function TeacherStatisticalAnalysisPage() {
                                     <RatingDisplay 
                                       title="教学态度" 
                                       value={overallStats.avgTeachingAttitude} 
-                                      color="#52c41a" 
+                                      color="#1a73e8" 
                                       icon={<TeamOutlined />} 
                                     />
                                   </div>
@@ -868,7 +868,7 @@ export default function TeacherStatisticalAnalysisPage() {
                                               className={styles.monthlyChartBarInner} 
                                               style={{ 
                                                 height: `${(count / Math.max(...monthlyData, 1)) * 100}%`,
-                                                backgroundColor: count > 0 ? '#34a853' : '#f0f0f0'
+                                                backgroundColor: count > 0 ? '#1a73e8' : '#f0f0f0'
                                               }}
                                             >
                                               {count > 0 && (

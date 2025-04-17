@@ -8,6 +8,7 @@
   display: flex;
   align-items: center;
   font-weight: 500;
+  color: #1a73e8;
 }
 
 /* 统计模块样式 */
@@ -94,7 +95,7 @@
 }
 
 .trendChange.up {
-  color: #52c41a;
+  color: #1a73e8;
 }
 
 .trendChange.down {
