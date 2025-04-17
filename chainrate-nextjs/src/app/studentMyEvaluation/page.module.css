@@ -123,9 +123,17 @@
 .evaluationCard {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.evaluationCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .evaluationHeader {
@@ -163,7 +171,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 16px;
   font-size: 0.95rem;
 }
 
@@ -191,7 +199,8 @@
 .ratingItem {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 8px;
 }
 
 .ratingLabel {
@@ -321,6 +330,14 @@
   .imagesGrid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
+  
+  .statCard {
+    margin-bottom: 16px;
+  }
+  
+  .evaluationCard {
+    margin-bottom: 20px;
+  }
 }
 
 .footer {
@@ -329,4 +346,127 @@
   text-align: center;
   color: #5f6368;
   font-size: 0.9rem;
+}
+
+/* 添加统计卡片样式 */
+.statsContainer {
+  margin-bottom: 20px;
+}
+
+.statCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.statIcon {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+/* 详细评分区域 */
+.detailedRatings {
+  margin-top: 12px;
+}
+
+.evaluationContent {
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* 评价详情模态框样式 */
+.evaluationDetail {
+  padding: 0 10px;
+}
+
+.detailHeader {
+  margin-bottom: 16px;
+}
+
+.courseTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.detailInfoCard {
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.detailInfoItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ratingsSummary {
+  margin-bottom: 20px;
+}
+
+.overallRating {
+  margin-bottom: 16px;
+}
+
+.mainRating {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.detailRatingItem {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.contentBox {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.imagesSection {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.imageItem {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.imageItem:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .imageGrid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .detailInfoItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 } 
