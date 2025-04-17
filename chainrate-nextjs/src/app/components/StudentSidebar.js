@@ -6,7 +6,8 @@ import { Layout, Menu, theme } from 'antd';
 import { 
   UserOutlined, 
   BookOutlined, 
-  CommentOutlined 
+  CommentOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -56,16 +57,6 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
           onClick: () => router.push('/studentMyEvaluation')
         },
         {
-          key: '7',
-          label: '提交课程反馈',
-          onClick: () => router.push('/studentSubmitFeedback')
-        },
-        {
-          key: '8',
-          label: '查看课程反馈',
-          onClick: () => router.push('/studentViewFeedback')
-        },
-        {
           key: '5',
           label: '进行教师评价',
           onClick: () => router.push('/studentEvaluateTeacher')
@@ -74,6 +65,23 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
           key: '6',
           label: '查看教师评价',
           onClick: () => router.push('/studentViewEvaluateTeacher')
+        }
+      ],
+    },
+    {
+      key: 'sub4',
+      icon: React.createElement(FileTextOutlined),
+      label: '反馈管理',
+      children: [
+        {
+          key: '7',
+          label: '提交课程反馈',
+          onClick: () => router.push('/studentSubmitFeedback')
+        },
+        {
+          key: '8',
+          label: '查看课程反馈',
+          onClick: () => router.push('/studentViewFeedback')
         }
       ],
     }
