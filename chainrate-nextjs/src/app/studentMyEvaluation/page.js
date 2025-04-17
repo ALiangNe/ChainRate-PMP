@@ -722,7 +722,7 @@ export default function StudentMyEvaluationsPage() {
                               </Title>
                               
                               <Row gutter={[16, 16]}>
-                                <Col xs={24} md={24}>
+                                <Col xs={24} md={12}>
                                   <div className={styles.evaluationInfo}>
                                     <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                                       <UserOutlined style={{ marginRight: 8, color: colorPrimary }} />
@@ -734,16 +734,20 @@ export default function StudentMyEvaluationsPage() {
                                     </div>
                                     
                                     <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
-                                      <ClockCircleOutlined style={{ marginRight: 8, color: colorPrimary }} />
-                                      <Text style={{ minWidth: 80 }}>提交时间:</Text>
-                                      <Text>{formatDateTime(evaluation.timestamp)}</Text>
-                                    </div>
-                                    
-                                    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                                       <StarFilled style={{ marginRight: 8, color: '#faad14' }} />
                                       <Text style={{ minWidth: 80 }}>总体评分:</Text>
                                       <Rate disabled value={evaluation.rating} style={{ fontSize: 14 }} />
                                       <Text strong style={{ marginLeft: 8 }}>{evaluation.rating}.0</Text>
+                                    </div>
+                                  </div>
+                                </Col>
+                                
+                                <Col xs={24} md={12}>
+                                  <div className={styles.evaluationInfo}>
+                                    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+                                      <ClockCircleOutlined style={{ marginRight: 8, color: colorPrimary }} />
+                                      <Text style={{ minWidth: 80 }}>提交时间:</Text>
+                                      <Text>{formatDateTime(evaluation.timestamp)}</Text>
                                     </div>
                                     
                                     {evaluation.imageHashes && evaluation.imageHashes.length > 0 && (

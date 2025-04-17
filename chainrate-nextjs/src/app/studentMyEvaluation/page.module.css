@@ -168,11 +168,18 @@
 }
 
 .evaluationInfo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   margin-bottom: 16px;
-  font-size: 0.95rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.evaluationInfo > div {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  min-height: 32px;
 }
 
 .teacherInfo, .timestampInfo, .anonymousInfo {
