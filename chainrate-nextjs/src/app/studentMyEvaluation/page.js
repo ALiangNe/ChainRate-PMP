@@ -53,7 +53,8 @@ import {
   message,
   Statistic,
   List,
-  Modal
+  Modal,
+  Collapse
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import StudentSidebar from '../components/StudentSidebar';
@@ -736,8 +737,14 @@ export default function StudentMyEvaluationsPage() {
                                     <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                                       <StarFilled style={{ marginRight: 8, color: '#faad14' }} />
                                       <Text style={{ minWidth: 80 }}>总体评分:</Text>
-                                      <Rate disabled value={evaluation.rating} style={{ fontSize: 14 }} />
-                                      <Text strong style={{ marginLeft: 8 }}>{evaluation.rating}.0</Text>
+                                      <div className={styles.mainRating}>
+                                        <div className={styles.ratingStars}>
+                                          <Rate disabled defaultValue={evaluation.rating || 0} />
+                                          <span className={styles.ratingScore}>
+                                            {evaluation.rating ? evaluation.rating.toFixed(1) : '0.0'}
+                                          </span>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 </Col>
@@ -772,20 +779,77 @@ export default function StudentMyEvaluationsPage() {
                               <Divider style={{ margin: '12px 0' }} />
                               
                               <div className={styles.detailedRatings}>
-                                <Row gutter={[8, 8]}>
-                                  {Object.entries(ratingLabels).filter(([key]) => key !== 'rating').map(([key, label]) => (
-                                    <Col span={8} key={key}>
-                                      <div className={styles.ratingItem}>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>{label}:</Text>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation[key]} 
-                                          style={{ fontSize: 12 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                  ))}
-                                </Row>
+                                <Collapse
+                                  bordered={false}
+                                  defaultActiveKey={['1']}
+                                  items={[
+                                    {
+                                      key: '1',
+                                      label: <div className={styles.collapseHeader}>详细评分</div>,
+                                      children: (
+                                        <div className={styles.detailedRatings}>
+                                          <Row gutter={[16, 16]}>
+                                            <Col span={8}>
+                                              <div className={styles.detailRatingItem}>
+                                                <div>内容质量</div>
+                                                <div className={styles.ratingStars}>
+                                                  <Rate disabled defaultValue={evaluation.contentRating || 0} />
+                                                  <span className={styles.ratingScore}>
+                                                    {evaluation.contentRating ? evaluation.contentRating.toFixed(1) : '0.0'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                            <Col span={8}>
+                                              <div className={styles.detailRatingItem}>
+                                                <div>教学方式</div>
+                                                <div className={styles.ratingStars}>
+                                                  <Rate disabled defaultValue={evaluation.teachingRating || 0} />
+                                                  <span className={styles.ratingScore}>
+                                                    {evaluation.teachingRating ? evaluation.teachingRating.toFixed(1) : '0.0'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                            <Col span={8}>
+                                              <div className={styles.detailRatingItem}>
+                                                <div>作业难度</div>
+                                                <div className={styles.ratingStars}>
+                                                  <Rate disabled defaultValue={evaluation.homeworkRating || 0} />
+                                                  <span className={styles.ratingScore}>
+                                                    {evaluation.homeworkRating ? evaluation.homeworkRating.toFixed(1) : '0.0'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                            <Col span={8}>
+                                              <div className={styles.detailRatingItem}>
+                                                <div>师生互动</div>
+                                                <div className={styles.ratingStars}>
+                                                  <Rate disabled defaultValue={evaluation.interactionRating || 0} />
+                                                  <span className={styles.ratingScore}>
+                                                    {evaluation.interactionRating ? evaluation.interactionRating.toFixed(1) : '0.0'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                            <Col span={8}>
+                                              <div className={styles.detailRatingItem}>
+                                                <div>课程收获</div>
+                                                <div className={styles.ratingStars}>
+                                                  <Rate disabled defaultValue={evaluation.gainRating || 0} />
+                                                  <span className={styles.ratingScore}>
+                                                    {evaluation.gainRating ? evaluation.gainRating.toFixed(1) : '0.0'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </Col>
+                                          </Row>
+                                        </div>
+                                      )
+                                    }
+                                  ]}
+                                />
                               </div>
                             </div>
                           </Card>
@@ -828,30 +892,28 @@ export default function StudentMyEvaluationsPage() {
                           
                           <Card className={styles.detailInfoCard}>
                             <Row gutter={[16, 16]}>
-                              <Col xs={24} sm={12}>
-                                <div className={styles.detailInfoItem}>
-                                  <UserOutlined style={{ color: colorPrimary, marginRight: 8 }} />
-                                  <Text style={{ minWidth: 80 }}>教师:</Text>
-                                  <Text strong>{selectedEvaluation.teacherName}</Text>
-                                </div>
-                              </Col>
-                              
-                              <Col xs={24} sm={12}>
-                                <div className={styles.detailInfoItem}>
-                                  <TeamOutlined style={{ color: colorPrimary, marginRight: 8 }} />
-                                  <Text style={{ minWidth: 80 }}>匿名评价:</Text>
-                                  <Text>{selectedEvaluation.isAnonymous ? '是' : '否'}</Text>
-                                  {selectedEvaluation.isAnonymous && (
-                                    <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
-                                  )}
-                                </div>
-                              </Col>
-                              
-                              <Col xs={24} sm={12}>
-                                <div className={styles.detailInfoItem}>
-                                  <ClockCircleOutlined style={{ color: colorPrimary, marginRight: 8 }} />
-                                  <Text style={{ minWidth: 80 }}>提交时间:</Text>
-                                  <Text>{formatDateTime(selectedEvaluation.timestamp)}</Text>
+                              <Col xs={24}>
+                                <div className={styles.detailInfoRow}>
+                                  <div className={styles.detailInfoItem}>
+                                    <UserOutlined style={{ color: colorPrimary, marginRight: 8 }} />
+                                    <Text style={{ minWidth: 60 }}>教师:</Text>
+                                    <Text strong>{selectedEvaluation.teacherName}</Text>
+                                  </div>
+                                  
+                                  <div className={styles.detailInfoItemCenter}>
+                                    <ClockCircleOutlined style={{ color: colorPrimary, marginRight: 8 }} />
+                                    <Text style={{ minWidth: 60 }}>提交时间:</Text>
+                                    <Text>{formatDateTime(selectedEvaluation.timestamp)}</Text>
+                                  </div>
+                                  
+                                  <div className={styles.detailInfoItemRight}>
+                                    <TeamOutlined style={{ color: colorPrimary, marginRight: 8 }} />
+                                    <Text style={{ minWidth: 60 }}>匿名评价:</Text>
+                                    <Text>{selectedEvaluation.isAnonymous ? '是' : '否'}</Text>
+                                    {selectedEvaluation.isAnonymous && (
+                                      <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
+                                    )}
+                                  </div>
                                 </div>
                               </Col>
                             </Row>
@@ -863,9 +925,11 @@ export default function StudentMyEvaluationsPage() {
                             <Title level={5}>评分详情</Title>
                             <div className={styles.overallRating}>
                               <div className={styles.mainRating}>
-                                <Text>总体评分:</Text>
-                                <Rate disabled value={selectedEvaluation.rating} />
-                                <Text strong style={{ marginLeft: 8 }}>{selectedEvaluation.rating}.0</Text>
+                                <Text strong style={{ fontSize: '16px', color: '#333', marginRight: '12px' }}>总体评分:</Text>
+                                <div className={styles.ratingStars}>
+                                  <Rate disabled value={selectedEvaluation.rating} />
+                                  <Text style={{ marginLeft: 12, fontSize: '18px', fontWeight: 'bold', color: '#1a73e8' }}>{selectedEvaluation.rating.toFixed(1)}</Text>
+                                </div>
                               </div>
                             </div>
                             
@@ -873,9 +937,11 @@ export default function StudentMyEvaluationsPage() {
                               {Object.entries(ratingLabels).filter(([key]) => key !== 'rating').map(([key, label]) => (
                                 <Col span={8} key={key}>
                                   <div className={styles.detailRatingItem}>
-                                    <Text>{label}:</Text>
-                                    <Rate disabled value={selectedEvaluation[key]} style={{ fontSize: 16 }} />
-                                    <Text strong>{selectedEvaluation[key]}.0</Text>
+                                    <Text strong style={{ fontSize: '14px', marginBottom: '4px', color: '#333' }}>{label}</Text>
+                                    <div className={styles.ratingStars}>
+                                      <Rate disabled value={selectedEvaluation[key]} style={{ fontSize: 16 }} />
+                                      <Text style={{ marginLeft: 8, fontSize: '14px', color: '#1a73e8' }}>{selectedEvaluation[key].toFixed(1)}</Text>
+                                    </div>
                                   </div>
                                 </Col>
                               ))}
