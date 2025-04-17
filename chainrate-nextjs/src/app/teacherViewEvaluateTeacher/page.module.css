@@ -22,7 +22,7 @@
 }
 
 .statIcon {
-  color: #34a853;
+  color: #1a73e8;
   font-size: 1.2em;
 }
 
@@ -89,13 +89,13 @@
 
 /* 导出按钮样式 */
 .exportButton {
-  background-color: #34a853;
-  border-color: #34a853;
+  background-color: #1a73e8;
+  border-color: #1a73e8;
 }
 
 .exportButton:hover {
-  background-color: #2d8e47;
-  border-color: #2d8e47;
+  background-color: #1967d2;
+  border-color: #1967d2;
 }
 
 /* 评价列表样式 */
@@ -161,7 +161,7 @@
 .ratingText {
   margin-left: 8px;
   font-weight: bold;
-  color: #34a853;
+  color: #1a73e8;
 }
 
 .dimensionRating {
@@ -287,7 +287,7 @@
 .scoreNumber {
   font-size: 28px;
   font-weight: 600;
-  color: #34a853;
+  color: #1a73e8;
 }
 
 .scoreTotal {

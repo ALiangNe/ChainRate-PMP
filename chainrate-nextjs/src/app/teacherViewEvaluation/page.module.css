@@ -10,7 +10,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #34a853; /* 使用绿色作为教师端主题色 */
+  background-color: #1a73e8; /* 使用蓝色作为教师端主题色 */
   color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -53,12 +53,12 @@
   display: flex;
   align-items: center;
   font-weight: 500;
-  color: #34a853;
+  color: #1a73e8;
 }
 
 .cardTitleIcon {
   margin-right: 10px;
-  color: #34a853;
+  color: #1a73e8;
 }
 
 /* 课程选择器 */
@@ -72,7 +72,7 @@
 }
 
 .selectorCard:hover {
-  box-shadow: 0 4px 12px rgba(52, 168, 83, 0.1);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.1);
 }
 
 .selectLabel {
@@ -89,18 +89,18 @@
   margin-bottom: 24px;
   border-radius: 10px;
   background-color: #ffffff;
-  border: 1px solid #e8f5e9;
+  border: 1px solid #e8f0fe;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .courseInfoCard:hover {
-  box-shadow: 0 4px 15px rgba(52, 168, 83, 0.15);
+  box-shadow: 0 4px 15px rgba(26, 115, 232, 0.15);
 }
 
 .courseTitle {
-  color: #34a853;
+  color: #1a73e8;
   font-weight: 600;
   font-size: 18px;
 }
@@ -248,7 +248,7 @@
 
 .exportButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(52, 168, 83, 0.2);
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
 }
 
 .exportPdfButton {
@@ -353,9 +353,9 @@
 }
 
 .anonymousTag {
-  background-color: #e8f5e9;
-  color: #34a853;
-  border: 1px solid #34a853;
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
   font-size: 12px;
   margin-left: 8px;
   border-radius: 12px;
@@ -425,12 +425,12 @@
 /* 点击效果 */
 .clickable-breadcrumb {
   cursor: pointer;
-  color: #34a853;
+  color: #1a73e8;
   transition: color 0.2s ease;
 }
 
 .clickable-breadcrumb:hover {
-  color: #2d964a;
+  color: #1967d2;
 }
 
 /* 响应式调整 */

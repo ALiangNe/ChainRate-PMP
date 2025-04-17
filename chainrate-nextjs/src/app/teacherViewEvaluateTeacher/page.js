@@ -603,7 +603,7 @@ export default function TeacherViewEvaluateTeacherPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 教师端主题色
+          colorPrimary: '#1a73e8', // 使用蓝色主题
         },
       }}
     >
@@ -709,7 +709,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                                   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                                   return e.timestamp > thirtyDaysAgo;
                                 }).length} 
-                                prefix={<CalendarOutlined className={styles.statIcon} style={{ color: '#52c41a' }} />} 
+                                prefix={<CalendarOutlined className={styles.statIcon} style={{ color: '#1a73e8' }} />} 
                                 suffix="条"
                               />
                             </Col>
@@ -733,7 +733,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                                 status="active"
                                 strokeColor={{
                                   '0%': '#108ee9',
-                                  '100%': '#34a853',
+                                  '100%': '#1a73e8',
                                 }}
                                 format={() => `${evaluationStats.avgRating}/5`}
                                 style={{ marginTop: 12 }}
@@ -753,7 +753,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                           <RatingDisplay 
                             title="教学态度" 
                             value={parseFloat(evaluationStats.avgTeachingAttitude)} 
-                            color="#52c41a" 
+                            color="#1a73e8" 
                             icon={<TeamOutlined />} 
                           />
                           <RatingDisplay 
@@ -838,13 +838,13 @@ export default function TeacherViewEvaluateTeacherPage() {
                                     size={64} 
                                     icon={<UserOutlined />} 
                                     src={evaluation.avatarUrl}
-                                    style={{ backgroundColor: evaluation.isAnonymous ? '#87d068' : '#1a73e8' }}
+                                    style={{ backgroundColor: evaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
                                   />
                                   <div className={styles.evaluationMeta}>
                                     <div className={styles.studentName}>
                                       {evaluation.studentName}
                                       {evaluation.isAnonymous && (
-                                        <Tag color="green" style={{ marginLeft: 8 }}>匿名</Tag>
+                                        <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
                                       )}
                                     </div>
                                     <div className={styles.evaluationTime}>
@@ -962,13 +962,13 @@ export default function TeacherViewEvaluateTeacherPage() {
                         size={64}
                         icon={<UserOutlined />}
                         src={selectedEvaluation.avatarUrl}
-                        style={{ backgroundColor: selectedEvaluation.isAnonymous ? '#87d068' : '#1a73e8' }}
+                        style={{ backgroundColor: selectedEvaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
                       />
                       <div className={styles.studentDetailInfo}>
                         <Title level={4} style={{ margin: 0 }}>
                           {selectedEvaluation.studentName}
                           {selectedEvaluation.isAnonymous && (
-                            <Tag color="green" style={{ marginLeft: 8 }}>匿名评价</Tag>
+                            <Tag color="blue" style={{ marginLeft: 8 }}>匿名评价</Tag>
                           )}
                         </Title>
                         <Text type="secondary">

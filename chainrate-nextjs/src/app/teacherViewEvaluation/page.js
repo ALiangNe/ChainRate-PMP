@@ -500,14 +500,14 @@ export default function TeacherViewEvaluationPage() {
   
   // 获取评分颜色
   const getRatingColor = (rating) => {
-    if (rating >= 4) return '#52c41a'; // 绿色 - 好评
+    if (rating >= 4) return '#1a73e8'; // 蓝色 - 好评
     if (rating >= 3) return '#faad14'; // 黄色 - 中评
     return '#f5222d'; // 红色 - 差评
   };
   
   // 获取评分背景色（淡化版本）
   const getRatingBgColor = (rating) => {
-    if (rating >= 4) return '#f6ffed'; // 淡绿色背景 - 好评
+    if (rating >= 4) return '#e8f0fe'; // 淡蓝色背景 - 好评
     if (rating >= 3) return '#fffbe6'; // 淡黄色背景 - 中评
     return '#fff1f0'; // 淡红色背景 - 差评
   };
@@ -781,7 +781,7 @@ export default function TeacherViewEvaluationPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1a73e8', // 使用蓝色主题
           borderRadius: 8,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.09)',
         },
@@ -904,7 +904,7 @@ export default function TeacherViewEvaluationPage() {
                     <Col xs={24} sm={12} md={6}>
                       <div className={styles.statCard}>
                         <div className={styles.statIcon}>
-                          <CommentOutlined style={{ color: '#34a853' }} />
+                          <CommentOutlined style={{ color: '#1a73e8' }} />
                         </div>
                         <div className={styles.statContent}>
                           <div className={styles.statValue}>{courseStatistics.totalEvaluations}</div>
@@ -976,7 +976,7 @@ export default function TeacherViewEvaluationPage() {
                       <RatingDisplay 
                         title="教学质量"
                         value={courseStatistics.averageTeachingRating}
-                        color="#34a853"
+                        color="#1a73e8"
                         icon={<ExperimentOutlined />}
                       />
                     </Col>
