@@ -778,7 +778,7 @@ export default function StudentMyEvaluationsPage() {
                               
                               <Divider style={{ margin: '12px 0' }} />
                               
-                              <div className={styles.detailedRatings}>
+                              {/* <div className={styles.detailedRatings}>
                                 <Collapse
                                   bordered={false}
                                   defaultActiveKey={['1']}
@@ -813,33 +813,11 @@ export default function StudentMyEvaluationsPage() {
                                             </Col>
                                             <Col span={8}>
                                               <div className={styles.detailRatingItem}>
-                                                <div>作业难度</div>
-                                                <div className={styles.ratingStars}>
-                                                  <Rate disabled defaultValue={evaluation.homeworkRating || 0} />
-                                                  <span className={styles.ratingScore}>
-                                                    {evaluation.homeworkRating ? evaluation.homeworkRating.toFixed(1) : '0.0'}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            </Col>
-                                            <Col span={8}>
-                                              <div className={styles.detailRatingItem}>
                                                 <div>师生互动</div>
                                                 <div className={styles.ratingStars}>
                                                   <Rate disabled defaultValue={evaluation.interactionRating || 0} />
                                                   <span className={styles.ratingScore}>
                                                     {evaluation.interactionRating ? evaluation.interactionRating.toFixed(1) : '0.0'}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            </Col>
-                                            <Col span={8}>
-                                              <div className={styles.detailRatingItem}>
-                                                <div>课程收获</div>
-                                                <div className={styles.ratingStars}>
-                                                  <Rate disabled defaultValue={evaluation.gainRating || 0} />
-                                                  <span className={styles.ratingScore}>
-                                                    {evaluation.gainRating ? evaluation.gainRating.toFixed(1) : '0.0'}
                                                   </span>
                                                 </div>
                                               </div>
@@ -850,7 +828,7 @@ export default function StudentMyEvaluationsPage() {
                                     }
                                   ]}
                                 />
-                              </div>
+                              </div> */}
                             </div>
                           </Card>
                         </List.Item>
