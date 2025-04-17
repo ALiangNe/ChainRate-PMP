@@ -284,7 +284,7 @@ export default function TeacherIndexPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1a73e8', // 修改为蓝色与学生端保持一致
         },
       }}
     >
@@ -344,7 +344,7 @@ export default function TeacherIndexPage() {
                           size={100} 
                           src={userData.avatar}
                           style={{ 
-                            boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
+                            boxShadow: '0 4px 8px rgba(26,115,232,0.2)'
                           }} 
                         />
                       ) : (
@@ -352,33 +352,33 @@ export default function TeacherIndexPage() {
                           size={100} 
                           icon={<UserOutlined />} 
                           style={{ 
-                            backgroundColor: '#34a853',
-                            boxShadow: '0 4px 8px rgba(52,168,83,0.2)'
+                            backgroundColor: '#1a73e8',
+                            boxShadow: '0 4px 8px rgba(26,115,232,0.2)'
                           }} 
                         />
                       )}
                     </div>
                   </Col>
                   <Col xs={24} sm={18} md={18} lg={14}>
-                    <h2 style={{ marginBottom: 16, fontSize: 24 }}>{userData.name} <Tag color="green">教师</Tag></h2>
+                    <h2 style={{ marginBottom: 16, fontSize: 24 }}>{userData.name} <Tag color="blue">教师</Tag></h2>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <GlobalOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <GlobalOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                       <span style={{ wordBreak: 'break-all' }}><strong>钱包地址:</strong> {userData.address}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <MailOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <MailOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                       <span><strong>邮箱:</strong> {userData.email || '未设置'}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <TeamOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <TeamOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                       <span><strong>学院:</strong> {userData.college || '未设置'}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                      <BookOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <BookOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                       <span><strong>专业:</strong> {userData.major || '未设置'}</span>
                     </p>
                     <p style={{ display: 'flex', alignItems: 'center' }}>
-                      <TrophyOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                      <TrophyOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                       <span><strong>职称:</strong> {userData.grade || '未设置'}</span>
                     </p>
                   </Col>
@@ -389,7 +389,7 @@ export default function TeacherIndexPage() {
                           title="已创建课程"
                           value={statsLoading ? <Spin size="small" /> : coursesCount}
                           prefix={<BookOutlined />}
-                          valueStyle={{ color: '#34a853' }}
+                          valueStyle={{ color: '#1a73e8' }}
                         />
                       </Col>
                       <Col span={8}>
@@ -397,7 +397,7 @@ export default function TeacherIndexPage() {
                           title="学生人数"
                           value={statsLoading ? <Spin size="small" /> : studentsCount}
                           prefix={<TeamOutlined />}
-                          valueStyle={{ color: '#34a853' }}
+                          valueStyle={{ color: '#1a73e8' }}
                         />
                       </Col>
                       <Col span={8}>
@@ -405,7 +405,7 @@ export default function TeacherIndexPage() {
                           title="收到评价"
                           value={statsLoading ? <Spin size="small" /> : evaluationsCount}
                           prefix={<CommentOutlined />}
-                          valueStyle={{ color: '#34a853' }}
+                          valueStyle={{ color: '#1a73e8' }}
                         />
                       </Col>
                     </Row>
@@ -423,7 +423,7 @@ export default function TeacherIndexPage() {
                     onClick={() => router.push('/teacherCreateCourse')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <FileAddOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <FileAddOutlined style={{ fontSize: 48, color: '#1a73e8' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
@@ -445,7 +445,7 @@ export default function TeacherIndexPage() {
                     onClick={() => router.push('/teacherViewCourse')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <BookOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <BookOutlined style={{ fontSize: 48, color: '#1a73e8' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
@@ -467,7 +467,7 @@ export default function TeacherIndexPage() {
                     onClick={() => router.push('/teacherViewEvaluation')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <CommentOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <CommentOutlined style={{ fontSize: 48, color: '#1a73e8' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
@@ -489,7 +489,7 @@ export default function TeacherIndexPage() {
                     onClick={() => router.push('/statistics')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
-                        <PieChartOutlined style={{ fontSize: 48, color: '#34a853' }} />
+                        <PieChartOutlined style={{ fontSize: 48, color: '#1a73e8' }} />
                       </div>
                     }
                     style={{ height: '100%' }}
@@ -509,7 +509,7 @@ export default function TeacherIndexPage() {
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <RocketOutlined style={{ marginRight: 8, color: '#34a853' }} />
+                    <RocketOutlined style={{ marginRight: 8, color: '#1a73e8' }} />
                     <span>系统公告</span>
                   </div>
                 }

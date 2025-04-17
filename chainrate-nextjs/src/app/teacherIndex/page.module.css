@@ -10,7 +10,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #34a853; /* 使用不同的颜色区分教师端 */
+  background-color: #1a73e8; /* 修改为蓝色与学生端保持一致 */
   color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -80,7 +80,7 @@
 }
 
 .functionCard h3 {
-  color: #34a853; /* 使用与头部相同的颜色保持一致性 */
+  color: #1a73e8; /* 修改为蓝色与学生端保持一致 */
   margin-top: 0;
   margin-bottom: 0.5rem;
 }
@@ -117,15 +117,15 @@
 
 .functionCardEnhanced:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 16px rgba(52, 168, 83, 0.2);
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.2); /* 修改为蓝色阴影 */
 }
 
 /* 点击效果 */
 .clickable-breadcrumb {
   cursor: pointer;
-  color: #34a853;
+  color: #1a73e8; /* 修改为蓝色与学生端保持一致 */
 }
 
 .clickable-breadcrumb:hover {
-  color: #2d964a;
+  color: #1557b0; /* 修改为深蓝色 */
 } 
