@@ -253,7 +253,7 @@ export default function CreateCoursePage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1a73e8', // 使用蓝色与其他页面保持一致
         },
       }}
     >
@@ -303,13 +303,13 @@ export default function CreateCoursePage() {
             >
               <div className={styles.pageHeader}>
                 <div className={styles.pageHeaderLeft}>
-                  <Badge color="#34a853" className={styles.pageHeaderBadge} />
+                  <Badge color="#1a73e8" className={styles.pageHeaderBadge} />
                   <Typography.Title level={2} className={styles.pageTitle}>
                     创建新课程
                   </Typography.Title>
                 </div>
                 <div className={styles.pageHeaderRight}>
-                  <Tag color="#34a853" icon={<BookOutlined />}>课程管理</Tag>
+                  <Tag color="#1a73e8" icon={<BookOutlined />}>课程管理</Tag>
                 </div>
               </div>
               
@@ -425,7 +425,7 @@ export default function CreateCoursePage() {
                     }
                     tooltip={{ 
                       title: '学生只能在设定的时间范围内提交课程评价', 
-                      icon: <InfoCircleOutlined style={{ color: '#34a853' }} /> 
+                      icon: <InfoCircleOutlined style={{ color: '#1a73e8' }} /> 
                     }}
                     rules={[{ required: true, message: '请选择评价时间范围' }]}
                   >
@@ -436,7 +436,7 @@ export default function CreateCoursePage() {
                       size="large"
                       className={styles.modernDatePicker}
                       placeholder={['开始时间', '结束时间']}
-                      suffixIcon={<ClockCircleOutlined style={{ color: '#34a853' }} />}
+                      suffixIcon={<ClockCircleOutlined style={{ color: '#1a73e8' }} />}
                     />
                   </Form.Item>
                   

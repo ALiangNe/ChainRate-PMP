@@ -297,7 +297,7 @@ export default function ViewCoursesPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1a73e8', // 使用蓝色与其他页面保持一致
         },
       }}
     >
