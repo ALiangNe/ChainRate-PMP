@@ -584,13 +584,11 @@ export default function StudentViewFeedbackPage() {
             <div>
               <Breadcrumb
                 items={[
-                  { title: <HomeFilled />, href: '/student' },
+                  // { title: <HomeFilled />, href: '/student' },
+                  { title: '首页', href: '/student' },
                   { title: '我的反馈' }
                 ]}
               />
-              <Title level={2} style={{ margin: '16px 0' }}>
-                <MessageOutlined /> 我的课程反馈
-              </Title>
             </div>
             <UserAvatar userData={userData} />
           </Header>

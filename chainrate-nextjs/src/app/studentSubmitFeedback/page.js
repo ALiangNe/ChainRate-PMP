@@ -472,7 +472,8 @@ export default function StudentSubmitFeedbackPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
                 <Breadcrumb
                   items={[
-                    { title: <HomeFilled />, href: '/studentIndex' },
+                    // { title: <HomeFilled />, href: '/studentIndex' },
+                    { title: '首页', href: '/studentIndex' },
                     { title: '课程列表', href: '/studentViewCourses' },
                     { title: '提交课程反馈' },
                   ]}
@@ -537,7 +538,8 @@ export default function StudentSubmitFeedbackPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
                 <Breadcrumb
                   items={[
-                    { title: <HomeFilled />, href: '/studentIndex' },
+                    // { title: <HomeFilled />, href: '/studentIndex' },
+                    { title: '首页', href: '/studentIndex' },
                     { title: '评价管理', href: '/studentMyEvaluation' },
                     { title: '提交课程反馈' },
                   ]}
@@ -651,7 +653,8 @@ export default function StudentSubmitFeedbackPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
               <Breadcrumb
                 items={[
-                  { title: <HomeFilled />, href: '/studentIndex' },
+                  // { title: <HomeFilled />, href: '/studentIndex' },
+                  { title: '首页', href: '/studentIndex' },
                   { title: '评价管理' },
                   { title: '提交课程反馈' },
                 ]}
