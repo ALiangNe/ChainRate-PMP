@@ -95,6 +95,80 @@ const FEEDBACK_STATUS = {
   3: { text: '已删除', color: 'red', icon: <DeleteOutlined /> }
 };
 
+// 增加多个IPFS网关选项，提高成功率
+const IPFS_GATEWAYS = [
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://ipfs.io/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://dweb.link/ipfs/'
+];
+
+// 获取IPFS内容的辅助函数
+const getIPFSContent = async (contentHash) => {
+  if (!contentHash || contentHash === '') {
+    return { success: false, data: null, error: '内容哈希为空' };
+  }
+  
+  // 如果已经是完整URL，直接使用
+  if (contentHash.startsWith('http')) {
+    try {
+      const response = await fetch(contentHash);
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          return { success: true, data };
+        } catch (jsonErr) {
+          const text = await response.text();
+          return { success: true, data: text };
+        }
+      } else {
+        return { success: false, error: `HTTP错误: ${response.status}` };
+      }
+    } catch (fetchErr) {
+      return { success: false, error: fetchErr.message };
+    }
+  }
+  
+  // 尝试多个IPFS网关
+  let lastError = '';
+  for (const gateway of IPFS_GATEWAYS) {
+    try {
+      const url = `${gateway}${contentHash}`;
+      console.log(`尝试IPFS网关: ${url}`);
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          console.log(`成功从网关获取内容: ${gateway}`);
+          return { success: true, data };
+        } catch (jsonErr) {
+          const text = await response.text();
+          console.log(`成功从网关获取文本: ${gateway}`);
+          return { success: true, data: text };
+        }
+      } else {
+        lastError = `HTTP错误: ${response.status}`;
+        console.log(`网关 ${gateway} 返回错误: ${lastError}`);
+      }
+    } catch (fetchErr) {
+      lastError = fetchErr.message;
+      console.log(`网关 ${gateway} 访问失败: ${lastError}`);
+    }
+  }
+  
+  return { success: false, error: lastError || '所有IPFS网关均失败' };
+};
+
+// 创建完整IPFS URL的辅助函数
+const createIPFSUrl = (hash) => {
+  if (!hash || hash === '') return '';
+  if (hash.startsWith('http')) return hash;
+  
+  // 默认使用第一个网关
+  return `${IPFS_GATEWAYS[0]}${hash}`;
+};
+
 // 获取文件图标
 const getFileIcon = (fileUrl) => {
   if (!fileUrl) return <FileUnknownOutlined />;
@@ -133,11 +207,33 @@ const getFileName = (fileUrl) => {
   return urlParts[urlParts.length - 1].slice(0, 15) + '...';
 };
 
-// 判断是否为图片
+// 修改 isImage 函数，使其更准确地识别图片
 const isImage = (fileUrl) => {
   if (!fileUrl) return false;
-  const extension = fileUrl.split('.').pop().toLowerCase();
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension);
+  
+  // 尝试从URL中提取文件扩展名
+  let extension = '';
+  
+  // 处理有查询参数的URL
+  const urlWithoutParams = fileUrl.split('?')[0];
+  
+  // 从路径中获取扩展名
+  const pathParts = urlWithoutParams.split('/');
+  if (pathParts.length > 0) {
+    const fileName = pathParts[pathParts.length - 1];
+    const extensionParts = fileName.split('.');
+    if (extensionParts.length > 1) {
+      extension = extensionParts[extensionParts.length - 1].toLowerCase();
+    }
+  }
+  
+  // 如果无法从URL中获取扩展名，检查是否包含图片相关关键词
+  if (!extension) {
+    const imageKeywords = ['image', 'img', 'photo', 'picture', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+    return imageKeywords.some(keyword => fileUrl.toLowerCase().includes(keyword));
+  }
+  
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension);
 };
 
 export default function StudentViewFeedbackPage() {
@@ -355,63 +451,235 @@ export default function StudentViewFeedbackPage() {
       
       // 获取详细的反馈数据
       const feedbackDetailsPromises = studentFeedbackIds.map(async (id) => {
-        const feedback = await extensionContract.getCourseFeedbackDetails(id);
-        // 获取反馈回复
-        let reply = null;
-        
         try {
-          // 尝试获取教师回复，如果失败则意味着没有回复
-          reply = await extensionContract.getTeacherReplyDetails(id);
-        } catch (err) {
-          console.log(`反馈 ${id} 没有教师回复`);
-        }
-        
-        // 检查是否有版本历史
-        let versions = [];
-        
-        // 使用反馈中的 versions 字段判断版本数量
-        const versionCount = Number(feedback.versions || 0);
-        console.log(`反馈 ${id} 的版本数量: ${versionCount}`);
-        
-        if (versionCount > 0) {
-          for (let v = 0; v < versionCount; v++) {
-            try {
-              const versionData = await extensionContract.getFeedbackVersion(id, v);
-              versions.push({
-                id: v,
-                timestamp: Number(versionData.timestamp),
-                content: versionData.contentHash,
-                documentUrls: versionData.documentHashes || [],
-                imageUrls: versionData.imageHashes || []
-              });
-            } catch (err) {
-              console.error(`获取反馈 ${id} 的版本 ${v} 失败:`, err);
+          const feedback = await extensionContract.getCourseFeedbackDetails(id);
+          console.log(`反馈 ${id} 详情:`, feedback);
+          
+          // 检查imageHashes是否存在和正确
+          if (!feedback.imageHashes || feedback.imageHashes.length === 0) {
+            console.log(`反馈 ${id} 没有图片哈希或为空数组`);
+          } else {
+            console.log(`反馈 ${id} 原始图片哈希:`, feedback.imageHashes);
+          }
+          
+          // 检查documentHashes是否存在和正确
+          if (!feedback.documentHashes || feedback.documentHashes.length === 0) {
+            console.log(`反馈 ${id} 没有文档哈希或为空数组`);
+          } else {
+            console.log(`反馈 ${id} 原始文档哈希:`, feedback.documentHashes);
+          }
+          
+          // 获取内容
+          let contentText = "";
+          try {
+            // 使用辅助函数获取内容
+            const contentResult = await getIPFSContent(feedback.contentHash);
+            if (contentResult.success) {
+              if (typeof contentResult.data === 'object' && contentResult.data !== null) {
+                contentText = contentResult.data.content || JSON.stringify(contentResult.data);
+              } else {
+                contentText = contentResult.data;
+              }
+              console.log(`成功获取反馈 ${id} 的内容`);
+            } else {
+              console.error(`无法获取反馈 ${id} 内容: ${contentResult.error}`);
+              contentText = "内容加载失败";
+            }
+          } catch (err) {
+            console.error(`处理反馈 ${id} 内容时出错:`, err);
+            contentText = "内容处理错误";
+          }
+          
+          // 获取反馈回复
+          let reply = null;
+          
+          try {
+            // 尝试获取教师回复，如果失败则意味着没有回复
+            reply = await extensionContract.getTeacherReplyDetails(id);
+            
+            // 如果有回复，获取回复内容
+            if (reply && reply.contentHash && reply.contentHash !== '') {
+              let replyText = "";
+              try {
+                const replyResult = await getIPFSContent(reply.contentHash);
+                if (replyResult.success) {
+                  if (typeof replyResult.data === 'object' && replyResult.data !== null) {
+                    replyText = replyResult.data.content || JSON.stringify(replyResult.data);
+                  } else {
+                    replyText = replyResult.data;
+                  }
+                } else {
+                  replyText = `回复内容加载失败: ${replyResult.error}`;
+                }
+              } catch (err) {
+                console.error(`获取反馈 ${id} 回复内容失败:`, err);
+                replyText = "回复内容加载失败";
+              }
+              
+              // 更新回复内容
+              reply.content = replyText;
+            } else {
+              console.log(`反馈 ${id} 的回复contentHash为空或无效`);
+            }
+          } catch (err) {
+            console.log(`反馈 ${id} 没有教师回复`, err);
+          }
+          
+          // 检查是否有版本历史
+          let versions = [];
+          
+          // 使用反馈中的 versions 字段判断版本数量
+          const versionCount = Number(feedback.versions || 0);
+          console.log(`反馈 ${id} 的版本数量: ${versionCount}`);
+          
+          if (versionCount > 0) {
+            for (let v = 0; v < versionCount; v++) {
+              try {
+                const versionData = await extensionContract.getFeedbackVersion(id, v);
+                
+                // 获取版本内容
+                let versionText = "";
+                try {
+                  const versionResult = await getIPFSContent(versionData.contentHash);
+                  if (versionResult.success) {
+                    if (typeof versionResult.data === 'object' && versionResult.data !== null) {
+                      versionText = versionResult.data.content || JSON.stringify(versionResult.data);
+                    } else {
+                      versionText = versionResult.data;
+                    }
+                  } else {
+                    versionText = `版本内容加载失败: ${versionResult.error}`;
+                  }
+                } catch (err) {
+                  console.error(`获取反馈 ${id} 版本 ${v} 内容失败:`, err);
+                  versionText = "版本内容加载失败";
+                }
+                
+                // 处理文档和图片URL，确保它们是完整的URL
+                const documentHashesRaw = versionData.documentHashes || [];
+                const imageHashesRaw = versionData.imageHashes || [];
+                
+                console.log(`版本 ${v} 文档哈希数量:`, documentHashesRaw.length);
+                console.log(`版本 ${v} 图片哈希数量:`, imageHashesRaw.length);
+                
+                // 转换为完整URL
+                const documentUrls = documentHashesRaw
+                  .filter(hash => hash && hash !== '')
+                  .map(hash => createIPFSUrl(hash));
+                
+                const imageUrls = imageHashesRaw
+                  .filter(hash => hash && hash !== '')
+                  .map(hash => createIPFSUrl(hash));
+                
+                console.log(`版本 ${v} 处理后文档URL数量:`, documentUrls.length);
+                console.log(`版本 ${v} 处理后图片URL数量:`, imageUrls.length);
+                console.log(`版本 ${v} 处理后文档URLs:`, documentUrls);
+                console.log(`版本 ${v} 处理后图片URLs:`, imageUrls);
+                
+                versions.push({
+                  id: v,
+                  timestamp: Number(versionData.timestamp),
+                  content: versionText,
+                  documentUrls,
+                  imageUrls
+                });
+              } catch (err) {
+                console.error(`获取反馈 ${id} 的版本 ${v} 失败:`, err);
+              }
             }
           }
+          
+          // 可能的问题：imageHashes和documentHashes在合约返回时可能互换了位置
+          // 尝试一下交换处理
+          const documentHashesRaw = feedback.documentHashes || [];
+          const imageHashesRaw = feedback.imageHashes || [];
+          
+          // 检查一下哈希是否正确分类 - 有时候图片存在文档哈希中，反之亦然
+          console.log(`反馈 ${id} 文档哈希数量:`, documentHashesRaw.length);
+          console.log(`反馈 ${id} 图片哈希数量:`, imageHashesRaw.length);
+          
+          // 临时尝试交换处理，看看是否能正确显示图片
+          // 将两者合并并重新分类
+          const allHashes = [...documentHashesRaw, ...imageHashesRaw];
+          
+          // 基于文件扩展名分类
+          const probableImageHashes = allHashes.filter(hash => {
+            if (!hash) return false;
+            
+            // 查找可能的图片文件扩展名
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+            const hashLower = hash.toLowerCase();
+            
+            return imageExtensions.some(ext => hashLower.includes(`.${ext}`));
+          });
+          
+          const probableDocumentHashes = allHashes.filter(hash => {
+            if (!hash) return false;
+            if (probableImageHashes.includes(hash)) return false;
+            return true;
+          });
+          
+          console.log(`反馈 ${id} 可能的图片哈希:`, probableImageHashes);
+          console.log(`反馈 ${id} 可能的文档哈希:`, probableDocumentHashes);
+          
+          // 转换为完整URL
+          const documentUrls = probableDocumentHashes
+            .filter(hash => hash && hash !== '')
+            .map(hash => createIPFSUrl(hash));
+          
+          const imageUrls = probableImageHashes
+            .filter(hash => hash && hash !== '')
+            .map(hash => createIPFSUrl(hash));
+          
+          console.log(`反馈 ${id} 处理后文档URL数量:`, documentUrls.length);
+          console.log(`反馈 ${id} 处理后图片URL数量:`, imageUrls.length);
+          console.log(`反馈 ${id} 处理后文档URLs:`, documentUrls);
+          console.log(`反馈 ${id} 处理后图片URLs:`, imageUrls);
+          
+          let replyDocumentUrls = [], replyImageUrls = [];
+          if (reply) {
+            replyDocumentUrls = (reply.documentHashes || [])
+              .filter(hash => hash && hash !== '')
+              .map(createIPFSUrl);
+            
+            replyImageUrls = (reply.imageHashes || [])
+              .filter(hash => hash && hash !== '')
+              .map(createIPFSUrl);
+            
+            console.log(`回复图片URL:`, replyImageUrls);
+          }
+          
+          return {
+            id: id.toString(),
+            courseId: feedback.courseId.toString(),
+            student: feedback.student,
+            content: contentText,
+            contentHash: feedback.contentHash,
+            timestamp: Number(feedback.timestamp),
+            status: Number(feedback.status),
+            documentUrls,
+            imageUrls,
+            hasReply: reply !== null,
+            reply: reply ? {
+              teacher: reply.teacher,
+              content: reply.content,
+              contentHash: reply.contentHash,
+              timestamp: Number(reply.timestamp),
+              documentUrls: replyDocumentUrls,
+              imageUrls: replyImageUrls
+            } : null,
+            versions: versions
+          };
+        } catch (err) {
+          console.error(`处理反馈 ${id} 时出错:`, err);
+          return null;
         }
-        
-        return {
-          id: id.toString(),
-          courseId: feedback.courseId.toString(),
-          student: feedback.student,
-          content: feedback.contentHash,
-          timestamp: Number(feedback.timestamp),
-          status: Number(feedback.status),
-          documentUrls: feedback.documentHashes || [],
-          imageUrls: feedback.imageHashes || [],
-          hasReply: reply !== null,
-          reply: reply ? {
-            teacher: reply.teacher,
-            content: reply.contentHash,
-            timestamp: Number(reply.timestamp),
-            documentUrls: reply.documentHashes || [],
-            imageUrls: reply.imageHashes || []
-          } : null,
-          versions: versions
-        };
       });
       
-      const feedbackDetails = await Promise.all(feedbackDetailsPromises);
+      const allFeedbackDetails = await Promise.all(feedbackDetailsPromises);
+      // 过滤掉处理失败的反馈
+      const feedbackDetails = allFeedbackDetails.filter(feedback => feedback !== null);
+      
       console.log('获取到的反馈详情:', feedbackDetails);
       
       // 统计数据
@@ -452,6 +720,7 @@ export default function StudentViewFeedbackPage() {
   
   // 查看图片
   const handleViewImage = (url, index) => {
+    console.log(`查看图片: ${url}, 索引: ${index}`);
     setViewingImage(url);
     setImageGalleryIndex(index);
   };
@@ -461,21 +730,43 @@ export default function StudentViewFeedbackPage() {
     setViewingImage(null);
   };
   
-  // 为了显示目的，合并文档和图片URLs为一个数组
+  // 修改 getFileUrls 函数，不要用isImage过滤图片，而是依赖原始分类
   const getFileUrls = (feedback) => {
-    if (!feedback) return [];
-    return [...(feedback.documentUrls || []), ...(feedback.imageUrls || [])];
+    if (!feedback) return { documents: [], images: [] };
+    
+    // 直接返回原始的文档和图片URLs，不再尝试判断图片
+    const images = (feedback.imageUrls || [])
+      .filter(url => url && url !== '');
+    
+    const documents = (feedback.documentUrls || [])
+      .filter(url => url && url !== '');
+    
+    console.log('处理后的图片URLs:', images);
+    console.log('处理后的文档URLs:', documents);
+    
+    return { documents, images };
   };
 
-  // 修改使用 fileUrls 的函数为使用 getFileUrls
+  // 修改hasAttachments函数来检查是否有任何类型的附件
   const hasAttachments = (feedback) => {
-    const urls = getFileUrls(feedback);
-    return urls.length > 0;
+    if (!feedback) return false;
+    const { documents, images } = getFileUrls(feedback);
+    return documents.length > 0 || images.length > 0;
+  };
+
+  const hasImages = (feedback) => {
+    if (!feedback) return false;
+    return (feedback.imageUrls || []).length > 0;
+  };
+
+  const hasDocuments = (feedback) => {
+    if (!feedback) return false;
+    return (feedback.documentUrls || []).length > 0;
   };
   
   // 浏览上一张图片
   const handlePrevImage = (feedback) => {
-    const imageUrls = getFileUrls(feedback).filter(url => isImage(url));
+    const imageUrls = getFileUrls(feedback).images;
     let newIndex = imageGalleryIndex - 1;
     if (newIndex < 0) newIndex = imageUrls.length - 1;
     setImageGalleryIndex(newIndex);
@@ -484,7 +775,7 @@ export default function StudentViewFeedbackPage() {
   
   // 浏览下一张图片
   const handleNextImage = (feedback) => {
-    const imageUrls = getFileUrls(feedback).filter(url => isImage(url));
+    const imageUrls = getFileUrls(feedback).images;
     let newIndex = (imageGalleryIndex + 1) % imageUrls.length;
     setImageGalleryIndex(newIndex);
     setViewingImage(imageUrls[newIndex]);
@@ -714,6 +1005,7 @@ export default function StudentViewFeedbackPage() {
                       {filteredFeedbacks.map(feedback => {
                         const courseInfo = getCourseInfo(feedback.courseId);
                         const statusInfo = FEEDBACK_STATUS[feedback.status];
+                        const { documents, images } = getFileUrls(feedback);
                         
                         return (
                           <Col xs={24} sm={24} md={12} lg={8} xl={8} key={feedback.id}>
@@ -746,11 +1038,27 @@ export default function StudentViewFeedbackPage() {
                                   {feedback.content}
                                 </Paragraph>
                                 
-                                {/* 在卡片中显示附件数量 */}
-                                {hasAttachments(feedback) && (
+                                {/* 显示第一张图片预览（如果有） */}
+                                {images.length > 0 && (
+                                  <div className={styles.imagePreviewInCard}>
+                                    <img 
+                                      src={images[0]} 
+                                      alt="图片预览" 
+                                      className={styles.previewImg}
+                                    />
+                                    {images.length > 1 && (
+                                      <div className={styles.moreImagesBadge}>
+                                        +{images.length - 1}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* 显示文档附件数量（如果有） */}
+                                {documents.length > 0 && (
                                   <div className={styles.attachmentBadge}>
-                                    <Badge count={getFileUrls(feedback).length} overflowCount={9}>
-                                      <FileOutlined /> 附件
+                                    <Badge count={documents.length} overflowCount={9}>
+                                      <FileOutlined /> 文档附件
                                     </Badge>
                                   </div>
                                 )}
@@ -822,38 +1130,58 @@ export default function StudentViewFeedbackPage() {
                               {selectedFeedback.content}
                             </div>
                             
-                            {/* 在详情模态框中显示附件 */}
-                            {hasAttachments(selectedFeedback) && (
+                            {/* 直接显示图片 */}
+                            {hasImages(selectedFeedback) && (
+                              <div className={styles.imageGallery}>
+                                <Row gutter={[16, 16]}>
+                                  {getFileUrls(selectedFeedback).images.map((url, index) => (
+                                    <Col span={8} key={index}>
+                                      <div 
+                                        className={styles.imagePreview}
+                                        onClick={() => handleViewImage(url, index)}
+                                      >
+                                        <div className={styles.imageDebugInfo}>URL: {url}</div>
+                                        <img 
+                                          src={url} 
+                                          alt={`图片 ${index + 1}`} 
+                                          className={styles.galleryImg} 
+                                          onError={(e) => {
+                                            console.error(`图片加载失败: ${url}`);
+                                            e.target.onerror = null;
+                                            e.target.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTYwIiB2aWV3Qm94PSIwIDAgMTYwIDE2MCIgZmlsbD0ibm9uZSI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIGZpbGw9IiNmMGYwZjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNnB4IiBmaWxsPSIjOTk5Ij7lm77niYfliqDovb3lpLHotKU8L3RleHQ+PC9zdmc+";
+                                            message.error('图片加载失败，可能链接已失效');
+                                          }}
+                                        />
+                                        <div className={styles.previewOverlay}>
+                                          <EyeOutlined />
+                                        </div>
+                                      </div>
+                                    </Col>
+                                  ))}
+                                </Row>
+                              </div>
+                            )}
+                            
+                            {/* 仅将文档作为附件 */}
+                            {hasDocuments(selectedFeedback) && (
                               <div className={styles.attachments}>
                                 <div className={styles.attachmentTitle}>
-                                  <FileOutlined /> 附件 ({getFileUrls(selectedFeedback).length})
+                                  <FileOutlined /> 文档附件 ({getFileUrls(selectedFeedback).documents.length})
                                 </div>
                                 
                                 <Row gutter={[16, 16]} className={styles.fileList}>
-                                  {getFileUrls(selectedFeedback).map((url, index) => (
+                                  {getFileUrls(selectedFeedback).documents.map((url, index) => (
                                     <Col span={12} key={index}>
-                                      {isImage(url) ? (
-                                        <div 
-                                          className={styles.imagePreview}
-                                          onClick={() => handleViewImage(url, getFileUrls(selectedFeedback).filter(u => isImage(u)).indexOf(url))}
-                                        >
-                                          <img src={url} alt={`附件 ${index + 1}`} />
-                                          <div className={styles.previewOverlay}>
-                                            <EyeOutlined />
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <a 
-                                          href={url} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className={styles.fileLink}
-                                        >
-                                          {getFileIcon(url)}
-                                          <span className={styles.fileName}>{getFileName(url)}</span>
-                                          <DownloadOutlined className={styles.downloadIcon} />
-                                        </a>
-                                      )}
+                                      <a 
+                                        href={url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className={styles.fileLink}
+                                      >
+                                        {getFileIcon(url)}
+                                        <span className={styles.fileName}>{getFileName(url)}</span>
+                                        <DownloadOutlined className={styles.downloadIcon} />
+                                      </a>
                                     </Col>
                                   ))}
                                 </Row>
@@ -882,37 +1210,58 @@ export default function StudentViewFeedbackPage() {
                                 {selectedFeedback.reply.content}
                               </div>
                               
-                              {selectedFeedback.reply && hasAttachments(selectedFeedback.reply) && (
+                              {/* 直接显示回复中的图片 */}
+                              {selectedFeedback.reply && hasImages(selectedFeedback.reply) && (
+                                <div className={styles.imageGallery}>
+                                  <Row gutter={[16, 16]}>
+                                    {getFileUrls(selectedFeedback.reply).images.map((url, index) => (
+                                      <Col span={8} key={index}>
+                                        <div 
+                                          className={styles.imagePreview}
+                                          onClick={() => handleViewImage(url, index)}
+                                        >
+                                          <div className={styles.imageDebugInfo}>URL: {url}</div>
+                                          <img 
+                                            src={url} 
+                                            alt={`图片 ${index + 1}`} 
+                                            className={styles.galleryImg} 
+                                            onError={(e) => {
+                                              console.error(`图片加载失败: ${url}`);
+                                              e.target.onerror = null;
+                                              e.target.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTYwIiB2aWV3Qm94PSIwIDAgMTYwIDE2MCIgZmlsbD0ibm9uZSI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIGZpbGw9IiNmMGYwZjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNnB4IiBmaWxsPSIjOTk5Ij7lm77niYfliqDovb3lpLHotKU8L3RleHQ+PC9zdmc+";
+                                              message.error('图片加载失败，可能链接已失效');
+                                            }}
+                                          />
+                                          <div className={styles.previewOverlay}>
+                                            <EyeOutlined />
+                                          </div>
+                                        </div>
+                                      </Col>
+                                    ))}
+                                  </Row>
+                                </div>
+                              )}
+                              
+                              {/* 仅将回复中的文档作为附件 */}
+                              {selectedFeedback.reply && hasDocuments(selectedFeedback.reply) && (
                                 <div className={styles.attachments}>
                                   <div className={styles.attachmentTitle}>
-                                    <FileOutlined /> 附件 ({getFileUrls(selectedFeedback.reply).length})
+                                    <FileOutlined /> 文档附件 ({getFileUrls(selectedFeedback.reply).documents.length})
                                   </div>
                                   
                                   <Row gutter={[16, 16]} className={styles.fileList}>
-                                    {getFileUrls(selectedFeedback.reply).map((url, index) => (
+                                    {getFileUrls(selectedFeedback.reply).documents.map((url, index) => (
                                       <Col span={12} key={index}>
-                                        {isImage(url) ? (
-                                          <div 
-                                            className={styles.imagePreview}
-                                            onClick={() => handleViewImage(url, getFileUrls(selectedFeedback.reply).filter(u => isImage(u)).indexOf(url))}
-                                          >
-                                            <img src={url} alt={`附件 ${index + 1}`} />
-                                            <div className={styles.previewOverlay}>
-                                              <EyeOutlined />
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <a 
-                                            href={url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className={styles.fileLink}
-                                          >
-                                            {getFileIcon(url)}
-                                            <span className={styles.fileName}>{getFileName(url)}</span>
-                                            <DownloadOutlined className={styles.downloadIcon} />
-                                          </a>
-                                        )}
+                                        <a 
+                                          href={url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className={styles.fileLink}
+                                        >
+                                          {getFileIcon(url)}
+                                          <span className={styles.fileName}>{getFileName(url)}</span>
+                                          <DownloadOutlined className={styles.downloadIcon} />
+                                        </a>
                                       </Col>
                                     ))}
                                   </Row>
@@ -948,7 +1297,7 @@ export default function StudentViewFeedbackPage() {
                         onClick={handleCloseImageViewer}
                       />
                       
-                      {selectedFeedback && getFileUrls(selectedFeedback).filter(url => isImage(url)).length > 1 && (
+                      {selectedFeedback && getFileUrls(selectedFeedback).images.length > 1 && (
                         <>
                           <Button 
                             className={styles.prevButton} 
@@ -964,7 +1313,16 @@ export default function StudentViewFeedbackPage() {
                       )}
                       
                       <div className={styles.imageContainer}>
-                        <img src={viewingImage} alt="预览图" />
+                        <img 
+                          src={viewingImage} 
+                          alt="预览图" 
+                          onError={(e) => {
+                            console.error(`图片加载失败: ${viewingImage}`);
+                            e.target.onerror = null;
+                            e.target.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTYwIiB2aWV3Qm94PSIwIDAgMTYwIDE2MCIgZmlsbD0ibm9uZSI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIGZpbGw9IiNmMGYwZjAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNnB4IiBmaWxsPSIjOTk5Ij7lm77niYfliqDovb3lpLHotKU8L3RleHQ+PC9zdmc+";
+                            message.error('图片加载失败，可能链接已失效');
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -997,14 +1355,33 @@ export default function StudentViewFeedbackPage() {
                               {version.content}
                             </div>
                             
-                            {version.documentUrls && version.imageUrls && (version.documentUrls.length > 0 || version.imageUrls.length > 0) && (
+                            {/* 显示版本中的图片 */}
+                            {version.imageUrls && version.imageUrls.length > 0 && (
+                              <div className={styles.versionImageGallery}>
+                                <Row gutter={[8, 8]}>
+                                  {version.imageUrls.filter(url => isImage(url)).map((url, i) => (
+                                    <Col span={8} key={i}>
+                                      <img 
+                                        src={url} 
+                                        alt={`图片 ${i + 1}`} 
+                                        className={styles.versionImg} 
+                                        onClick={() => handleViewImage(url, i)}
+                                      />
+                                    </Col>
+                                  ))}
+                                </Row>
+                              </div>
+                            )}
+                            
+                            {/* 显示版本中的文档附件 */}
+                            {version.documentUrls && version.documentUrls.length > 0 && (
                               <div className={styles.versionFiles}>
                                 <div className={styles.attachmentTitle}>
-                                  <FileOutlined /> 附件 ({(version.documentUrls || []).length + (version.imageUrls || []).length})
+                                  <FileOutlined /> 文档附件 ({version.documentUrls.length})
                                 </div>
                                 
                                 <div className={styles.fileLinks}>
-                                  {[...(version.documentUrls || []), ...(version.imageUrls || [])].map((url, i) => (
+                                  {version.documentUrls.map((url, i) => (
                                     <a
                                       key={i}
                                       href={url}

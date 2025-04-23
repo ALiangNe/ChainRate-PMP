@@ -482,4 +482,24 @@
     top: auto;
     transform: none;
   }
+}
+
+.imageDebugInfo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 2px 5px;
+  font-size: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 2;
+  display: none;
+}
+
+.imagePreview:hover .imageDebugInfo {
+  display: block;
 } 

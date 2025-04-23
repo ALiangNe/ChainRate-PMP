@@ -603,7 +603,7 @@ export default function TeacherViewEvaluateTeacherPage() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#1a73e8', // 使用蓝色主题
+          colorPrimary: '#1a73e8', // 使用蓝色与其他页面保持一致
         },
       }}
     >

@@ -245,8 +245,10 @@ export default function StudentViewCoursesPage() {
     }
   };
   
-  // 处理搜索
+  // 处理搜索关键词变化
   const handleSearchChange = (value) => {
+    setError('');
+    
     // 检查是否包含特殊字符
     const specialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/;
     if (specialChars.test(value)) {
@@ -255,11 +257,13 @@ export default function StudentViewCoursesPage() {
     }
     
     setSearchTerm(value);
-    filterCourses(value);
+    filterCourses(value, filterType, filterValue);
   };
 
   // 处理筛选条件变化
   const handleFilterChange = (filterType, value) => {
+    setError('');
+    
     // 检查筛选条件组合是否有效
     if (filterType === 'status' && value === 'joined' && Object.keys(joinedCourses).length === 0) {
       setError('请选择有效的筛选条件');
@@ -314,7 +318,7 @@ export default function StudentViewCoursesPage() {
     
     // 如果筛选结果为空，显示提示
     if (result.length === 0) {
-      setError('未找到符合条件的数据，请尝试调整筛选条件');
+      setError('未找到符合条件的数据');
     } else {
       setError('');
     }

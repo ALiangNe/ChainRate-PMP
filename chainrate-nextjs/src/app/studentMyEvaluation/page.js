@@ -625,7 +625,7 @@ export default function StudentMyEvaluationsPage() {
                         rating: null
                       }}
                     >
-                      <Row gutter={[16, 16]}>
+                  <Row gutter={[16, 16]}>
                         <Col xs={24} sm={24} md={6}>
                           <Form.Item name="keyword" label="关键词">
                             <Input 
@@ -694,7 +694,7 @@ export default function StudentMyEvaluationsPage() {
                       dataSource={getDisplayEvaluations()}
                       renderItem={(evaluation) => (
                         <List.Item>
-                          <Card 
+                        <Card 
                             hoverable 
                             className={styles.evaluationCard}
                             onClick={() => showEvaluationDetails(evaluation)}
@@ -798,8 +798,8 @@ export default function StudentMyEvaluationsPage() {
                                                     {evaluation.contentRating ? evaluation.contentRating.toFixed(1) : '0.0'}
                                                   </span>
                                                 </div>
-                                              </div>
-                                            </Col>
+                              </div>
+                            </Col>
                                             <Col span={8}>
                                               <div className={styles.detailRatingItem}>
                                                 <div>教学方式</div>
@@ -810,7 +810,7 @@ export default function StudentMyEvaluationsPage() {
                                                   </span>
                                                 </div>
                                               </div>
-                                            </Col>
+                                  </Col>
                                             <Col span={8}>
                                               <div className={styles.detailRatingItem}>
                                                 <div>师生互动</div>
@@ -821,7 +821,7 @@ export default function StudentMyEvaluationsPage() {
                                                   </span>
                                                 </div>
                                               </div>
-                                            </Col>
+                                  </Col>
                                           </Row>
                                         </div>
                                       )
@@ -893,9 +893,9 @@ export default function StudentMyEvaluationsPage() {
                                     )}
                                   </div>
                                 </div>
-                              </Col>
-                            </Row>
-                          </Card>
+                                  </Col>
+                                </Row>
+                              </Card>
                           
                           <Divider />
                           
@@ -921,9 +921,9 @@ export default function StudentMyEvaluationsPage() {
                                       <Text style={{ marginLeft: 8, fontSize: '14px', color: '#1a73e8' }}>{selectedEvaluation[key].toFixed(1)}</Text>
                                     </div>
                                   </div>
-                                </Col>
+                            </Col>
                               ))}
-                            </Row>
+                          </Row>
                           </div>
                           
                           <Divider />
@@ -931,9 +931,9 @@ export default function StudentMyEvaluationsPage() {
                           <div className={styles.contentSection}>
                             <Title level={5}>评价内容</Title>
                             <div className={styles.contentBox}>
-                              <Paragraph>
+                          <Paragraph>
                                 {selectedEvaluation.content || '无评价内容'}
-                              </Paragraph>
+                          </Paragraph>
                             </div>
                           </div>
                           
@@ -958,7 +958,7 @@ export default function StudentMyEvaluationsPage() {
                                         }}
                                       />
                                     </div>
-                                  ))}
+                                ))}
                                 </div>
                               </div>
                             </>

@@ -357,12 +357,22 @@ export default function StudentSubmitFeedbackPage() {
     return hashes;
   };
   
-  // 上传文本内容到IPFS
+  // 修改uploadContentToIPFS函数，将内容存储为JSON格式
   const uploadContentToIPFS = async (content) => {
     try {
+      // 创建结构化的JSON内容对象
+      const contentObject = {
+        content: content,
+        timestamp: new Date().toISOString(),
+        author: userData.name || 'Anonymous Student'
+      };
+      
+      // 将内容转换为JSON字符串
+      const jsonContent = JSON.stringify(contentObject);
+      
       // 将内容转换为Blob
-      const blob = new Blob([content], { type: 'text/plain' });
-      const file = new File([blob], 'feedback-content.txt', { type: 'text/plain' });
+      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const file = new File([blob], 'feedback-content.json', { type: 'application/json' });
       
       return await uploadToIPFS(file);
     } catch (err) {
@@ -371,10 +381,16 @@ export default function StudentSubmitFeedbackPage() {
     }
   };
   
-  // 提交表单
+  // 修改和增强提交表单函数
   const handleSubmit = async (values) => {
     if (!selectedCourse || !extensionContract) {
       message.error('提交失败: 请先选择课程');
+      return;
+    }
+    
+    // 检查内容长度
+    if (values.content.trim().length < 10) {
+      message.error('反馈内容至少需要10个字');
       return;
     }
     
@@ -383,19 +399,32 @@ export default function StudentSubmitFeedbackPage() {
     try {
       // 上传内容到IPFS
       setUploading(true);
+      message.loading('上传反馈内容中...');
       const contentHash = await uploadContentToIPFS(values.content);
       
       // 上传文档到IPFS
-      const documentHashes = documentFiles.length > 0 
-        ? await uploadFilesToIPFS(documentFiles)
-        : [];
+      let documentHashes = [];
+      if (documentFiles.length > 0) {
+        message.loading(`上传${documentFiles.length}个文档文件中...`);
+        documentHashes = await uploadFilesToIPFS(documentFiles);
+      }
       
       // 上传图片到IPFS
-      const imageHashes = imageFiles.length > 0
-        ? await uploadFilesToIPFS(imageFiles)
-        : [];
+      let imageHashes = [];
+      if (imageFiles.length > 0) {
+        message.loading(`上传${imageFiles.length}张图片中...`);
+        imageHashes = await uploadFilesToIPFS(imageFiles);
+      }
       
       setUploading(false);
+      message.loading('提交到区块链中，请稍候...');
+      
+      console.log('提交反馈数据:', {
+        courseId: selectedCourse.id,
+        contentHash,
+        documentHashes,
+        imageHashes
+      });
       
       // 调用合约提交反馈
       const tx = await extensionContract.submitCourseFeedback(
@@ -406,6 +435,7 @@ export default function StudentSubmitFeedbackPage() {
       );
       
       // 等待交易确认
+      message.loading('等待区块链确认交易...');
       await tx.wait();
       
       // 获取反馈ID
@@ -418,9 +448,30 @@ export default function StudentSubmitFeedbackPage() {
       message.success('反馈提交成功!');
     } catch (error) {
       console.error('提交反馈失败:', error);
-      message.error('提交反馈失败: ' + error.message);
+      
+      let errorMessage = '提交反馈失败';
+      
+      // 尝试提取更友好的错误信息
+      if (error.message) {
+        if (error.message.includes('user rejected transaction')) {
+          errorMessage = '用户取消了交易';
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = '账户余额不足以支付交易费用';
+        } else if (error.message.includes('execution reverted')) {
+          // 尝试提取智能合约抛出的错误
+          const match = error.message.match(/reason="([^"]+)"/);
+          if (match && match[1]) {
+            errorMessage = `合约执行失败: ${match[1]}`;
+          } else {
+            errorMessage = '合约执行失败';
+          }
+        }
+      }
+      
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
   };
   
@@ -746,11 +797,16 @@ export default function StudentSubmitFeedbackPage() {
                   <Form.Item
                     name="content"
                     label="反馈内容"
-                    rules={[{ required: true, message: '请输入反馈内容' }]}
+                    rules={[
+                      { required: true, message: '请输入反馈内容' },
+                      { min: 10, message: '反馈内容至少需要10个字' }
+                    ]}
                   >
                     <TextArea 
                       placeholder="请详细描述您对课程内容的反馈、建议或问题..." 
                       autoSize={{ minRows: 6, maxRows: 12 }}
+                      showCount
+                      maxLength={2000}
                     />
                   </Form.Item>
                   
@@ -759,7 +815,7 @@ export default function StudentSubmitFeedbackPage() {
                   <Form.Item
                     name="documents"
                     label="文档上传 (可选)"
-                    extra="支持 PDF, Word, Excel, PPT 等文档格式，最大10MB"
+                    extra="支持 PDF(.pdf), Word(.doc, .docx), Excel(.xls, .xlsx), PPT(.ppt, .pptx), 文本(.txt)等格式，单个文件最大10MB"
                   >
                     <Upload
                       listType="text"
@@ -775,7 +831,7 @@ export default function StudentSubmitFeedbackPage() {
                   <Form.Item
                     name="images"
                     label="图片上传 (可选)"
-                    extra="支持JPG, PNG, GIF等图片格式，最大10MB"
+                    extra="支持JPG(.jpg, .jpeg), PNG(.png), GIF(.gif), WebP(.webp)等图片格式，单个文件最大10MB"
                   >
                     <Upload
                       listType="picture"
