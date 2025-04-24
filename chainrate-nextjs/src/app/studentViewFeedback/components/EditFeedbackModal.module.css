@@ -1,0 +1,70 @@
+.feedbackForm {
+  margin-top: 16px;
+}
+
+.uploadList {
+  margin-bottom: 16px;
+}
+
+.uploadProgress {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f6f6f6;
+  border-radius: 8px;
+}
+
+.progressStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  color: #1890ff;
+}
+
+.uploadResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.uploadSuccess {
+  color: #52c41a;
+}
+
+.uploadError {
+  color: #ff4d4f;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background-color: #f9f9f9;
+}
+
+.fileIcon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.fileName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileActions {
+  margin-left: 8px;
+}
+
+@media (max-width: 576px) {
+  .formButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+} 

@@ -29,7 +29,8 @@ import {
   Modal,
   Tabs,
   List,
-  Divider
+  Divider,
+  Timeline
 } from 'antd';
 import { 
   HomeFilled, 
@@ -51,6 +52,7 @@ import {
 } from '@ant-design/icons';
 import StudentSidebar from '../components/StudentSidebar';
 import UserAvatar from '../components/UserAvatar';
+import EditFeedbackModal from './components/EditFeedbackModal';
 import styles from './page.module.css';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -164,11 +166,18 @@ export default function StudentViewFeedbackPage() {
   // 查看状态
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [feedbackVersions, setFeedbackVersions] = useState([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
   
   // 过滤和排序
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
   const [searchText, setSearchText] = useState('');
+  
+  // 编辑反馈相关状态
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingFeedback, setEditingFeedback] = useState(null);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
   
   // 初始化
   useEffect(() => {
@@ -403,8 +412,11 @@ export default function StudentViewFeedbackPage() {
             timestamp: Number(feedback.timestamp),
             status: Number(feedback.status),
             documentUrls,
+            imageHashes: feedback.imageHashes,
+            documentHashes: feedback.documentHashes,
             imageUrls,
             hasReply: reply !== null,
+            versions: Number(feedback.versions),
             reply: reply ? {
               teacher: reply.teacher,
               content: reply.content,
@@ -442,21 +454,193 @@ export default function StudentViewFeedbackPage() {
     }
   };
   
+  // 加载反馈版本历史
+  const loadFeedbackVersions = async (feedbackId) => {
+    try {
+      setLoadingVersions(true);
+      if (!extensionContract) {
+        message.error('合约未初始化');
+        setLoadingVersions(false);
+        return;
+      }
+      
+      console.log('正在加载反馈历史版本...', feedbackId);
+      const feedback = feedbacks.find(f => f.id === feedbackId);
+      if (!feedback) {
+        message.error('未找到反馈信息');
+        setLoadingVersions(false);
+        return;
+      }
+      
+      // 获取所有版本信息
+      const versionsCount = feedback.versions;
+      if (versionsCount <= 0) {
+        setFeedbackVersions([]);
+        setLoadingVersions(false);
+        return;
+      }
+      
+      // 查询所有版本
+      const versionPromises = [];
+      for (let i = 0; i < versionsCount; i++) {
+        versionPromises.push(loadFeedbackVersion(feedbackId, i));
+      }
+      
+      const versions = await Promise.all(versionPromises);
+      // 按照时间降序排序，最新的在前面
+      versions.sort((a, b) => b.timestamp - a.timestamp);
+      
+      setFeedbackVersions(versions);
+      setLoadingVersions(false);
+    } catch (error) {
+      console.error('加载反馈版本历史失败:', error);
+      message.error('加载反馈版本历史失败: ' + error.message);
+      setLoadingVersions(false);
+    }
+  };
+  
+  // 加载特定版本反馈
+  const loadFeedbackVersion = async (feedbackId, versionId) => {
+    try {
+      const version = await extensionContract.getFeedbackVersion(feedbackId, versionId);
+      
+      // 获取内容
+      let contentText = "";
+      try {
+        const contentResult = await getIPFSContent(version.contentHash);
+        if (contentResult.success) {
+          if (typeof contentResult.data === 'object' && contentResult.data !== null) {
+            contentText = contentResult.data.content || JSON.stringify(contentResult.data);
+          } else {
+            contentText = contentResult.data;
+          }
+        } else {
+          contentText = "内容加载失败";
+        }
+      } catch (err) {
+        contentText = "内容处理错误";
+      }
+      
+      // 处理文档和图片URL
+      const documentUrls = (version.documentHashes || [])
+        .filter(hash => hash && hash !== '')
+        .map(hash => createIPFSUrl(hash));
+      
+      const imageUrls = (version.imageHashes || [])
+        .filter(hash => hash && hash !== '')
+        .map(hash => createIPFSUrl(hash));
+      
+      return {
+        id: Number(version.id),
+        feedbackId: Number(version.feedbackId),
+        timestamp: Number(version.timestamp),
+        content: contentText,
+        contentHash: version.contentHash,
+        documentUrls,
+        imageUrls,
+        documentHashes: version.documentHashes,
+        imageHashes: version.imageHashes
+      };
+    } catch (error) {
+      console.error(`加载反馈版本 ${versionId} 失败:`, error);
+      return {
+        id: versionId,
+        feedbackId: feedbackId,
+        timestamp: 0,
+        content: "版本加载失败",
+        contentHash: "",
+        documentUrls: [],
+        imageUrls: [],
+        documentHashes: [],
+        imageHashes: []
+      };
+    }
+  };
+  
   // 处理查看反馈详情
-  const handleViewFeedback = (feedback) => {
+  const handleViewFeedback = async (feedback) => {
     setSelectedFeedback(feedback);
     setDetailModalVisible(true);
+    
+    // 加载版本历史
+    if (feedback.versions > 0) {
+      await loadFeedbackVersions(feedback.id);
+    }
   };
   
   // 关闭详情模态框
   const handleCloseDetail = () => {
     setSelectedFeedback(null);
     setDetailModalVisible(false);
+    setFeedbackVersions([]);
   };
   
-  // 处理编辑反馈
+  // 修改编辑反馈函数
   const handleEditFeedback = (feedback) => {
-    router.push(`/studentSubmitFeedback?edit=true&id=${feedback.id}&courseId=${feedback.courseId}`);
+    setEditingFeedback(feedback);
+    setEditModalVisible(true);
+  };
+  
+  // 添加提交编辑的处理函数
+  const handleSubmitEdit = async (editData) => {
+    try {
+      setSubmittingEdit(true);
+      
+      console.log('提交编辑反馈数据:', editData);
+      
+      // 确保合约已初始化
+      if (!extensionContract) {
+        throw new Error('合约未初始化');
+      }
+      
+      // 调用合约的updateCourseFeedback方法更新反馈
+      const tx = await extensionContract.updateCourseFeedback(
+        editData.feedbackId,
+        editData.contentHash,
+        editData.documentHashes,
+        editData.imageHashes
+      );
+      
+      // 等待交易确认
+      message.loading('正在更新反馈，请等待区块链确认...');
+      await tx.wait();
+      
+      message.success('反馈更新成功！');
+      
+      // 关闭模态框
+      setEditModalVisible(false);
+      setEditingFeedback(null);
+      
+      // 重新加载学生反馈数据
+      const studentAddress = userData.address;
+      await loadStudentFeedbacks(extensionContract, mainContract, studentAddress);
+      
+    } catch (error) {
+      console.error('更新反馈失败:', error);
+      
+      let errorMessage = '更新反馈失败';
+      
+      // 尝试提取更友好的错误信息
+      if (error.message) {
+        if (error.message.includes('user rejected transaction')) {
+          errorMessage = '用户取消了交易';
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = '账户余额不足以支付交易费用';
+        } else if (error.message.includes('execution reverted')) {
+          // 尝试提取智能合约抛出的错误
+          const match = error.message.match(/reason="([^"]+)"/);
+          if (match && match[1]) {
+            errorMessage = `合约执行失败: ${match[1]}`;
+          } else {
+            errorMessage = '合约执行失败';
+          }
+        }
+      }
+      
+      message.error(errorMessage);
+    } finally {
+      setSubmittingEdit(false);
+    }
   };
   
   // 处理搜索
@@ -744,12 +928,12 @@ export default function StudentViewFeedbackPage() {
                                   <PictureOutlined /> 图片附件: {feedback.imageUrls.length} 个
                                 </Text>
                               )}
-                              {feedback.imageUrls.length > 0 && feedback.documentUrls.length > 0 && (
+                              {feedback.imageUrls.length > 0 && feedback.documentHashes.length > 0 && (
                                 <Divider type="vertical" />
                               )}
-                              {feedback.documentUrls.length > 0 && (
+                              {feedback.documentHashes.length > 0 && (
                                 <Text type="secondary">
-                                  <FileOutlined /> 文档附件: {feedback.documentUrls.length} 个
+                                  <FileOutlined /> 文档附件: {feedback.documentHashes.length} 个
                                 </Text>
                               )}
                             </div>
@@ -806,7 +990,7 @@ export default function StudentViewFeedbackPage() {
                             </div>
                             
                             {/* 显示附件信息 */}
-                            {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentUrls.length > 0) && (
+                            {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
                               <div className={styles.attachments}>
                                 {selectedFeedback.imageUrls.length > 0 && (
                                   <div className={styles.attachmentSection}>
@@ -829,17 +1013,17 @@ export default function StudentViewFeedbackPage() {
                                   </div>
                                 )}
                                 
-                                {selectedFeedback.documentUrls.length > 0 && (
+                                {selectedFeedback.documentHashes.length > 0 && (
                                   <div className={styles.attachmentSection}>
                                     <Title level={5}>
-                                      <FileOutlined /> 文档附件 ({selectedFeedback.documentUrls.length})
+                                      <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
                                     </Title>
                                     <List
-                                      dataSource={selectedFeedback.documentUrls}
-                                      renderItem={(url, index) => (
+                                      dataSource={selectedFeedback.documentHashes}
+                                      renderItem={(hash, index) => (
                                         <List.Item>
                                           <a 
-                                            href={url}
+                                            href={createIPFSUrl(hash)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className={styles.documentLink}
@@ -854,6 +1038,57 @@ export default function StudentViewFeedbackPage() {
                               </div>
                             )}
                           </div>
+                        </TabPane>
+                        
+                        <TabPane tab="版本历史" key="versions" disabled={!selectedFeedback.versions || selectedFeedback.versions <= 1}>
+                          {loadingVersions ? (
+                            <div className={styles.loadingContainer} style={{ height: '200px' }}>
+                              <Spin size="small" />
+                              <div>加载版本历史...</div>
+                            </div>
+                          ) : feedbackVersions.length > 0 ? (
+                            <div className={styles.versionsContainer}>
+                              <Timeline mode="left">
+                                {feedbackVersions.map((version, index) => (
+                                  <Timeline.Item 
+                                    key={version.id} 
+                                    color={index === 0 ? 'green' : 'blue'} 
+                                    label={dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                  >
+                                    <Card 
+                                      size="small" 
+                                      title={index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`} 
+                                      className={styles.versionCard}
+                                    >
+                                      <div className={styles.versionContent}>
+                                        {version.content}
+                                      </div>
+                                      
+                                      {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
+                                        <div className={styles.versionAttachments}>
+                                          {version.imageUrls.length > 0 && (
+                                            <Text type="secondary">
+                                              <PictureOutlined /> 图片: {version.imageUrls.length}
+                                            </Text>
+                                          )}
+                                          {version.imageUrls.length > 0 && version.documentHashes.length > 0 && (
+                                            <Divider type="vertical" />
+                                          )}
+                                          {version.documentHashes.length > 0 && (
+                                            <Text type="secondary">
+                                              <FileOutlined /> 文档: {version.documentHashes.length}
+                                            </Text>
+                                          )}
+                                        </div>
+                                      )}
+                                    </Card>
+                                  </Timeline.Item>
+                                ))}
+                              </Timeline>
+                            </div>
+                          ) : (
+                            <Empty description="没有找到版本历史记录" />
+                          )}
                         </TabPane>
                         
                         <TabPane tab="教师回复" key="reply" disabled={!selectedFeedback.hasReply}>
@@ -884,6 +1119,18 @@ export default function StudentViewFeedbackPage() {
           </Content>
         </Layout>
       </Layout>
+      
+      {/* 在最后添加EditFeedbackModal组件 */}
+      <EditFeedbackModal
+        visible={editModalVisible}
+        feedback={editingFeedback}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingFeedback(null);
+        }}
+        onSubmit={handleSubmitEdit}
+        loading={submittingEdit}
+      />
     </ConfigProvider>
   );
 } 
