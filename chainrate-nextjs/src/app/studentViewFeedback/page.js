@@ -72,7 +72,7 @@ dayjs.locale('zh-cn');
 
 // 反馈状态映射
 const FEEDBACK_STATUS = {
-  0: { text: '已提交', color: 'blue', icon: <ClockCircleOutlined /> },
+  0: { text: '未修改', color: 'blue', icon: <ClockCircleOutlined /> },
   1: { text: '已回复', color: 'green', icon: <CheckCircleOutlined /> },
   2: { text: '已修改', color: 'orange', icon: <SyncOutlined /> },
   3: { text: '已删除', color: 'red', icon: <DeleteOutlined /> }
@@ -437,13 +437,15 @@ export default function StudentViewFeedbackPage() {
       
       console.log('获取到的反馈详情:', feedbackDetails);
       
-      // 统计数据
+      // 修改统计数据计算逻辑
       const stats = {
         total: feedbackDetails.length,
-        replied: feedbackDetails.filter(f => f.status === 1).length,
-        unreplied: feedbackDetails.filter(f => f.status === 0).length,
+        replied: feedbackDetails.filter(f => f.hasReply).length,
+        unreplied: feedbackDetails.filter(f => !f.hasReply && f.status !== 3).length,
         deleted: feedbackDetails.filter(f => f.status === 3).length
       };
+      
+      console.log('反馈统计:', stats);
       
       setStatistics(stats);
       setFeedbacks(feedbackDetails);
@@ -663,6 +665,7 @@ export default function StudentViewFeedbackPage() {
   
   // 处理状态筛选
   const handleStatusFilter = (value) => {
+    console.log('筛选状态:', value);
     setFilterStatus(value);
   };
   
@@ -675,13 +678,23 @@ export default function StudentViewFeedbackPage() {
   const getFilteredAndSortedFeedbacks = () => {
     let result = [...feedbacks];
     
-    // 筛选状态
+    // 根据筛选状态过滤
     if (filterStatus !== 'all') {
-      const statusNum = parseInt(filterStatus);
-      result = result.filter(f => f.status === statusNum);
+      // 特殊处理已回复和未回复状态
+      if (filterStatus === 'replied') {
+        // 已回复：hasReply为true的反馈
+        result = result.filter(f => f.hasReply);
+      } else if (filterStatus === 'unreplied') {
+        // 未回复：hasReply为false且状态不为3(已删除)的反馈
+        result = result.filter(f => !f.hasReply && f.status !== 3);
+      } else {
+        // 其他状态：按照status值筛选
+        const statusNum = parseInt(filterStatus);
+        result = result.filter(f => f.status === statusNum);
+      }
     }
     
-    // 搜索
+    // 搜索功能保持不变
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
       result = result.filter(feedback => {
@@ -694,7 +707,7 @@ export default function StudentViewFeedbackPage() {
       });
     }
     
-    // 排序
+    // 排序功能保持不变
     switch (sortOrder) {
       case 'newest':
         result.sort((a, b) => b.timestamp - a.timestamp);
@@ -814,8 +827,8 @@ export default function StudentViewFeedbackPage() {
                         suffixIcon={<FilterOutlined />}
                       >
                         <Option value="all">所有状态</Option>
-                        <Option value="0">已提交</Option>
-                        <Option value="1">已回复</Option>
+                        <Option value="unreplied">未回复</Option>
+                        <Option value="replied">已回复</Option>
                         <Option value="2">已修改</Option>
                         <Option value="3">已删除</Option>
                       </Select>
@@ -906,9 +919,16 @@ export default function StudentViewFeedbackPage() {
                               </Button>
                             ]}
                             extra={
-                              <Tag color={statusInfo.color} icon={statusInfo.icon}>
-                                {statusInfo.text}
-                              </Tag>
+                              <Space>
+                                {feedback.hasReply && (
+                                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                                    已回复
+                                  </Tag>
+                                )}
+                                <Tag color={statusInfo.color} icon={statusInfo.icon}>
+                                  {statusInfo.text}
+                                </Tag>
+                              </Space>
                             }
                           >
                             <List.Item.Meta
