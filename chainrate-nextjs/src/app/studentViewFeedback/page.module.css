@@ -177,7 +177,7 @@
 /* 版本历史样式 */
 .versionsContainer {
   padding: 8px;
-  max-height: 500px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
@@ -185,6 +185,11 @@
   margin-bottom: 8px;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.versionCard:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 .versionContent {
@@ -197,14 +202,25 @@
   margin-bottom: 12px;
   max-height: 200px;
   overflow-y: auto;
+  border-left: 2px solid #e6f7ff;
 }
 
 .versionAttachments {
-  display: flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-top: 1px dashed #eee;
-  padding-top: 8px;
+  margin-top: 12px;
+}
+
+.versionImagePreview {
+  border-radius: 4px;
+  overflow: hidden;
+  height: 100px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+}
+
+.versionImagePreview:hover {
+  transform: scale(1.03);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* 响应式调整 */

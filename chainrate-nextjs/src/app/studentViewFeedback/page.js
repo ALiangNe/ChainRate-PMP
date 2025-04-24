@@ -30,7 +30,8 @@ import {
   Tabs,
   List,
   Divider,
-  Timeline
+  Timeline,
+  Alert
 } from 'antd';
 import { 
   HomeFilled, 
@@ -474,6 +475,9 @@ export default function StudentViewFeedbackPage() {
       
       // 获取所有版本信息
       const versionsCount = feedback.versions;
+      console.log('反馈版本数量:', versionsCount);
+      
+      // 即使只有一个版本也加载
       if (versionsCount <= 0) {
         setFeedbackVersions([]);
         setLoadingVersions(false);
@@ -562,10 +566,8 @@ export default function StudentViewFeedbackPage() {
     setSelectedFeedback(feedback);
     setDetailModalVisible(true);
     
-    // 加载版本历史
-    if (feedback.versions > 0) {
-      await loadFeedbackVersions(feedback.id);
-    }
+    // 始终加载版本历史，即使只有一个版本
+    await loadFeedbackVersions(feedback.id);
   };
   
   // 关闭详情模态框
@@ -614,6 +616,17 @@ export default function StudentViewFeedbackPage() {
       // 重新加载学生反馈数据
       const studentAddress = userData.address;
       await loadStudentFeedbacks(extensionContract, mainContract, studentAddress);
+      
+      // 如果当前正在查看该反馈的详情，则重新加载版本历史
+      if (detailModalVisible && selectedFeedback && selectedFeedback.id === editData.feedbackId) {
+        // 更新selectedFeedback
+        const updatedFeedback = feedbacks.find(f => f.id === editData.feedbackId);
+        if (updatedFeedback) {
+          setSelectedFeedback(updatedFeedback);
+          // 重新加载版本历史
+          await loadFeedbackVersions(editData.feedbackId);
+        }
+      }
       
     } catch (error) {
       console.error('更新反馈失败:', error);
@@ -1040,7 +1053,7 @@ export default function StudentViewFeedbackPage() {
                           </div>
                         </TabPane>
                         
-                        <TabPane tab="版本历史" key="versions" disabled={!selectedFeedback.versions || selectedFeedback.versions <= 1}>
+                        <TabPane tab="版本历史" key="versions">
                           {loadingVersions ? (
                             <div className={styles.loadingContainer} style={{ height: '200px' }}>
                               <Spin size="small" />
@@ -1048,6 +1061,13 @@ export default function StudentViewFeedbackPage() {
                             </div>
                           ) : feedbackVersions.length > 0 ? (
                             <div className={styles.versionsContainer}>
+                              <Alert
+                                message="版本历史记录"
+                                description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
+                                type="info"
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                              />
                               <Timeline mode="left">
                                 {feedbackVersions.map((version, index) => (
                                   <Timeline.Item 
@@ -1057,27 +1077,73 @@ export default function StudentViewFeedbackPage() {
                                   >
                                     <Card 
                                       size="small" 
-                                      title={index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`} 
+                                      title={
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
+                                          <Tag color={index === 0 ? "green" : "blue"}>
+                                            {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
+                                          </Tag>
+                                        </div>
+                                      }
                                       className={styles.versionCard}
                                     >
                                       <div className={styles.versionContent}>
                                         {version.content}
                                       </div>
                                       
+                                      {/* 增强版本附件显示 */}
                                       {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
                                         <div className={styles.versionAttachments}>
+                                          {/* 图片附件展示 */}
                                           {version.imageUrls.length > 0 && (
-                                            <Text type="secondary">
-                                              <PictureOutlined /> 图片: {version.imageUrls.length}
-                                            </Text>
+                                            <div style={{ marginTop: 12 }}>
+                                              <Divider orientation="left" plain>
+                                                <Text type="secondary">
+                                                  <PictureOutlined /> 图片附件 ({version.imageUrls.length})
+                                                </Text>
+                                              </Divider>
+                                              <Row gutter={[8, 8]}>
+                                                {version.imageUrls.map((url, imgIndex) => (
+                                                  <Col span={8} key={imgIndex}>
+                                                    <div className={styles.versionImagePreview}>
+                                                      <img 
+                                                        src={url} 
+                                                        alt={`版本 ${feedbackVersions.length - index} 图片 ${imgIndex + 1}`} 
+                                                        className={styles.previewImg}
+                                                        onClick={() => window.open(url, '_blank')}
+                                                      />
+                                                    </div>
+                                                  </Col>
+                                                ))}
+                                              </Row>
+                                            </div>
                                           )}
-                                          {version.imageUrls.length > 0 && version.documentHashes.length > 0 && (
-                                            <Divider type="vertical" />
-                                          )}
+                                          
+                                          {/* 文档附件展示 */}
                                           {version.documentHashes.length > 0 && (
-                                            <Text type="secondary">
-                                              <FileOutlined /> 文档: {version.documentHashes.length}
-                                            </Text>
+                                            <div style={{ marginTop: 12 }}>
+                                              <Divider orientation="left" plain>
+                                                <Text type="secondary">
+                                                  <FileOutlined /> 文档附件 ({version.documentHashes.length})
+                                                </Text>
+                                              </Divider>
+                                              <List
+                                                size="small"
+                                                dataSource={version.documentHashes}
+                                                renderItem={(hash, docIndex) => (
+                                                  <List.Item>
+                                                    <a 
+                                                      href={createIPFSUrl(hash)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className={styles.documentLink}
+                                                    >
+                                                      <FileTextOutlined /> 文档 {docIndex + 1}
+                                                    </a>
+                                                  </List.Item>
+                                                )}
+                                              />
+                                            </div>
                                           )}
                                         </div>
                                       )}
