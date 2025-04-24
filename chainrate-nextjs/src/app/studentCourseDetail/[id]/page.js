@@ -464,7 +464,7 @@ export default function CourseDetailPage({ params }) {
                   onClose={() => setError('')}
                 />
               ) : !course ? (
-                <Empty
+                <Empty 
                   description="课程不存在或无法访问"
                   style={{ margin: '40px 0' }}
                 />
@@ -490,15 +490,15 @@ export default function CourseDetailPage({ params }) {
                         <div style={{ marginBottom: '16px' }}>
                           <Text strong>开课时间：</Text>
                           <Text>{formatDateTime(course.startTime)}</Text>
-                        </div>
+                          </div>
                         <div style={{ marginBottom: '16px' }}>
                           <Text strong>结课时间：</Text>
                           <Text>{formatDateTime(course.endTime)}</Text>
-                        </div>
+                          </div>
                         <div style={{ marginBottom: '16px' }}>
                           <Text strong>学生人数：</Text>
                           <Text>{course.studentCount}</Text>
-                        </div>
+                          </div>
                         <div>
                           <Text strong>平均评分：</Text>
                           <Rate disabled defaultValue={course.averageRating} allowHalf />

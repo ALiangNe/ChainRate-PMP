@@ -476,27 +476,27 @@ export default function StudentViewCoursesPage() {
               }}
             >
               {error && (
-                <Alert
+                  <Alert
                   message="提示"
-                  description={error}
+                    description={error}
                   type="info"
-                  showIcon
-                  style={{ marginBottom: '20px' }}
-                  closable
-                  onClose={() => setError('')}
-                />
+                    showIcon
+                    style={{ marginBottom: '20px' }}
+                    closable
+                    onClose={() => setError('')}
+                  />
               )}
-              
+                
               {successMessage && (
-                <Alert
-                  message="成功"
-                  description={successMessage}
-                  type="success"
-                  showIcon
-                  style={{ marginBottom: '20px' }}
-                  closable
-                  onClose={() => setSuccessMessage('')}
-                />
+                  <Alert
+                    message="成功"
+                    description={successMessage}
+                    type="success"
+                    showIcon
+                    style={{ marginBottom: '20px' }}
+                    closable
+                    onClose={() => setSuccessMessage('')}
+                  />
               )}
               
               <Card
@@ -546,7 +546,7 @@ export default function StudentViewCoursesPage() {
                     </Select>
                   </Space>
                 </div>
-                
+
                 {loadingCourses ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <Spin size="large">
@@ -586,8 +586,8 @@ export default function StudentViewCoursesPage() {
                               <div 
                                 className={styles.cardStatusBar}
                                 style={{ 
-                                  background: courseStatus.color === 'default' ? '#d9d9d9' : 
-                                              courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
+                                background: courseStatus.color === 'default' ? '#d9d9d9' : 
+                                            courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
                                 }} 
                               />
                             }

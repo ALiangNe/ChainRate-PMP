@@ -315,7 +315,7 @@ export default function RegisterPage() {
       
       // 2秒后跳转到登录页面
       setTimeout(() => {
-        router.push('/login');
+      router.push('/login');
       }, 2000);
     } catch (err) {
       console.error("注册失败:", err);
