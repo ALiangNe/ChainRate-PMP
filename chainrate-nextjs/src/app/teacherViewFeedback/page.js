@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ethers } from 'ethers';
+import axios from 'axios';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import ChainRate02ABI from '../../contracts/ChainRate02.json';
@@ -339,7 +340,14 @@ export default function TeacherViewFeedbackPage() {
               try {
                 const replyDetails = await contract02Instance.getTeacherReplyDetails(feedbackId);
                 hasReply = true;
-                reply = replyDetails.contentHash;
+                
+                // 如果回复内容是IPFS链接，则获取实际内容
+                if (replyDetails.contentHash.startsWith('ipfs://')) {
+                  reply = await fetchIpfsContent(replyDetails.contentHash);
+                } else {
+                  reply = replyDetails.contentHash;
+                }
+                
                 replyTimestamp = new Date(Number(replyDetails.timestamp) * 1000);
                 console.log(`反馈 ${feedbackId} 已回复:`, reply);
               } catch (error) {
@@ -355,12 +363,23 @@ export default function TeacherViewFeedbackPage() {
           
           // 格式化时间戳
           const timestamp = new Date(Number(feedback.timestamp) * 1000);
+
+          // 从IPFS获取反馈内容
+          let content = feedback.contentHash;
+          if (content.startsWith('ipfs://')) {
+            try {
+              content = await fetchIpfsContent(content);
+              console.log(`从IPFS获取内容成功:`, content);
+            } catch (error) {
+              console.error(`获取IPFS内容失败 ${content}:`, error);
+              content = "无法加载内容";
+            }
+          }
           
           const feedbackItem = {
             id: feedbackId.toString(),
             courseId: courseId,
-            content: feedback.contentHash,
-            rating: 5, // 假设默认评分为5，因为反馈没有评分字段
+            content: content,
             isAnonymous: false, // 假设反馈不是匿名的，因为反馈没有匿名字段
             student: {
               address: feedback.student,
@@ -427,6 +446,29 @@ export default function TeacherViewFeedbackPage() {
       console.error("加载课程反馈失败:", err);
       setError('获取课程反馈失败: ' + (err.message || err));
       setLoading(false);
+    }
+  };
+  
+  // 从IPFS获取内容
+  const fetchIpfsContent = async (ipfsUrl) => {
+    try {
+      // 将ipfs://转换为HTTP网关URL
+      const cid = ipfsUrl.replace('ipfs://', '');
+      const gatewayUrl = `https://ipfs.io/ipfs/${cid}`;
+      
+      console.log("获取IPFS内容:", gatewayUrl);
+      const response = await axios.get(gatewayUrl);
+      
+      // 如果返回的是JSON，解析并返回content字段
+      if (typeof response.data === 'object' && response.data.content) {
+        return response.data.content;
+      }
+      
+      // 如果直接返回的是字符串
+      return response.data;
+    } catch (error) {
+      console.error("获取IPFS内容失败:", error);
+      throw error;
     }
   };
   
@@ -530,10 +572,12 @@ export default function TeacherViewFeedbackPage() {
       
       setSubmitting(true);
       
+      const replyContent = replyForm.getFieldValue('replyContent');
+      
       // 调用智能合约方法提交回复
       const tx = await contract02.replyToFeedback(
         currentFeedback.id,
-        replyForm.getFieldValue('replyContent'),
+        replyContent, // 直接使用文本内容，不上传到IPFS
         [], // 文档哈希数组
         []  // 图片哈希数组
       );
@@ -602,7 +646,6 @@ export default function TeacherViewFeedbackPage() {
                   </Tag>
                 </Tooltip>
               )}
-              <Rate disabled value={feedback.rating} style={{ fontSize: 14 }} />
               {feedback.hasReply ? (
                 <Tag icon={<CheckCircleOutlined />} color="success">已回复</Tag>
               ) : (
