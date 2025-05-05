@@ -581,6 +581,18 @@ export default function StudentViewFeedbackPage() {
   
   // 修改编辑反馈函数
   const handleEditFeedback = (feedback) => {
+    // 检查反馈是否已收到教师回复
+    if (feedback.hasReply) {
+      // 显示警告提示
+      Modal.warning({
+        title: '无法修改',
+        content: '已收到回复的反馈不可修改，但可以提交新的补充反馈',
+        okText: '知道了'
+      });
+      return;
+    }
+    
+    // 如果没有收到回复，正常进入编辑流程
     setEditingFeedback(feedback);
     setEditModalVisible(true);
   };
@@ -609,7 +621,7 @@ export default function StudentViewFeedbackPage() {
       message.loading('正在更新反馈，请等待区块链确认...');
       await tx.wait();
       
-      message.success('反馈更新成功！');
+      message.success('反馈已成功修改');
       
       // 关闭模态框
       setEditModalVisible(false);
@@ -913,7 +925,7 @@ export default function StudentViewFeedbackPage() {
                                 type="link" 
                                 icon={<EditOutlined />}
                                 onClick={() => handleEditFeedback(feedback)}
-                                disabled={feedback.status === 3}
+                                disabled={feedback.status === 3 || feedback.hasReply}
                               >
                                 编辑反馈
                               </Button>
@@ -996,7 +1008,7 @@ export default function StudentViewFeedbackPage() {
                         key="edit"
                         type="primary"
                         onClick={() => handleEditFeedback(selectedFeedback)}
-                        disabled={selectedFeedback.status === 3}
+                        disabled={selectedFeedback.status === 3 || selectedFeedback.hasReply}
                       >
                         编辑反馈
                       </Button>
