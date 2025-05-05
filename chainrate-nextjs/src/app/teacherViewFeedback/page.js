@@ -418,6 +418,36 @@ export default function TeacherViewFeedbackPage() {
           // 格式化时间戳
           const timestamp = new Date(Number(feedback.timestamp) * 1000);
 
+          // 获取反馈的修改信息
+          let isModified = Number(feedback.status) === 2; // FeedbackStatus.Modified = 2
+          let lastModifiedTimestamp = null;
+          let lastModifiedDate = null;
+          let versionsCount = Number(feedback.versions);
+          
+          // 如果反馈有多个版本，获取最新版本的时间
+          if (versionsCount > 1) {
+            try {
+              // 获取最新版本信息，版本号比总数少1
+              const latestVersion = await contract02Instance.getFeedbackVersion(
+                feedbackId, 
+                versionsCount - 1
+              );
+              
+              lastModifiedTimestamp = new Date(Number(latestVersion.timestamp) * 1000);
+              lastModifiedDate = lastModifiedTimestamp.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
+              console.log(`反馈 ${feedbackId} 最后修改时间:`, lastModifiedDate);
+            } catch (error) {
+              console.error(`获取反馈版本信息失败 ${feedbackId}:`, error);
+            }
+          }
+
           // 从IPFS获取反馈内容
           const content = await fetchContentIfNeeded(feedback.contentHash);
           
@@ -452,7 +482,9 @@ export default function TeacherViewFeedbackPage() {
                 minute: '2-digit'
               }) : null,
             hasReply: hasReply,
-            status: Number(feedback.status) // 保存原始状态值
+            status: Number(feedback.status),
+            isModified: isModified,
+            lastModifiedDate: lastModifiedDate
           };
           
           feedbacksList.push(feedbackItem);
@@ -673,6 +705,11 @@ export default function TeacherViewFeedbackPage() {
               ) : (
                 <Tag icon={<ClockCircleOutlined />} color="warning">待回复</Tag>
               )}
+              {feedback.isModified && (
+                <Tooltip title={`最后修改于 ${feedback.lastModifiedDate || '未知时间'}`}>
+                  <Tag icon={<FileTextOutlined />} color="purple">已修改</Tag>
+                </Tooltip>
+              )}
             </Space>
           }
           description={
@@ -680,6 +717,11 @@ export default function TeacherViewFeedbackPage() {
               <div className={styles.feedbackDate}>
                 <CalendarOutlined style={{ marginRight: 8 }} />
                 <span>{feedback.formattedDate}</span>
+                {feedback.isModified && feedback.lastModifiedDate && (
+                  <span className={styles.modifiedDate}>
+                    &nbsp;(最后修改于: {feedback.lastModifiedDate})
+                  </span>
+                )}
               </div>
               <Paragraph 
                 className={styles.feedbackContent}
