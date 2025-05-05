@@ -169,13 +169,19 @@
   font-size: 12px;
 }
 
+.modifiedDate {
+  color: #722ed1;
+  font-size: 12px;
+  font-style: italic;
+}
+
 .replyContent {
   white-space: pre-wrap;
 }
 
 /* 模态框样式 */
-.replyModal {
-  max-width: 600px;
+.replyModal, .compareModal {
+  max-width: 800px;
 }
 
 .modalTitle {
@@ -223,10 +229,94 @@
   margin-right: 4px;
 }
 
+/* 版本比较相关样式 */
+.compareModal .modalTitleIcon {
+  margin-right: 8px;
+}
+
+.versionSelectContainer {
+  margin-bottom: 16px;
+}
+
+.versionSelectWrapper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.versionSelectLabel {
+  width: 80px;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.versionSelect {
+  width: 100%;
+}
+
+.diffContainer {
+  margin-top: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.diffContent {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diffLine {
+  padding: 2px 0;
+}
+
+.diffAdded {
+  background-color: #e6ffed;
+  color: #22863a;
+}
+
+.diffRemoved {
+  background-color: #ffeef0;
+  color: #cb2431;
+}
+
+.diffUnchanged {
+  color: #24292e;
+}
+
+.diffPrefix {
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.noVersionsSelected {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
 /* 响应式样式 */
 @media (max-width: 768px) {
   .filterItem,
   .sortContainer {
     margin-bottom: 8px;
   }
+}
+
+/* 反馈列表头部样式 */
+.feedbackListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.feedbackListTitle {
+  font-size: 16px;
+  font-weight: 500;
 } 

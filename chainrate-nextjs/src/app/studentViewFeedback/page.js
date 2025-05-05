@@ -508,23 +508,30 @@ export default function StudentViewFeedbackPage() {
   // 加载特定版本反馈
   const loadFeedbackVersion = async (feedbackId, versionId) => {
     try {
+      console.log(`尝试加载反馈 ${feedbackId} 的版本 ${versionId}`);
       const version = await extensionContract.getFeedbackVersion(feedbackId, versionId);
+      console.log(`成功获取反馈 ${feedbackId} 的版本 ${versionId}:`, version);
       
       // 获取内容
       let contentText = "";
       try {
         const contentResult = await getIPFSContent(version.contentHash);
+        console.log(`获取到IPFS内容结果:`, contentResult);
+        
         if (contentResult.success) {
           if (typeof contentResult.data === 'object' && contentResult.data !== null) {
             contentText = contentResult.data.content || JSON.stringify(contentResult.data);
           } else {
             contentText = contentResult.data;
           }
+          console.log(`成功解析反馈 ${feedbackId} 的版本 ${versionId} 内容`);
         } else {
-          contentText = "内容加载失败";
+          console.error(`IPFS内容获取失败: ${contentResult.message}`);
+          contentText = `[无法加载版本 ${versionId} 的内容: ${contentResult.message}]`;
         }
       } catch (err) {
-        contentText = "内容处理错误";
+        console.error(`处理反馈 ${feedbackId} 的版本 ${versionId} 内容时出错:`, err);
+        contentText = `[内容处理错误: ${err.message}]`;
       }
       
       // 处理文档和图片URL
@@ -545,7 +552,13 @@ export default function StudentViewFeedbackPage() {
         documentUrls,
         imageUrls,
         documentHashes: version.documentHashes,
-        imageHashes: version.imageHashes
+        imageHashes: version.imageHashes,
+        date: new Date(Number(version.timestamp) * 1000),
+        formattedDate: new Date(Number(version.timestamp) * 1000).toLocaleString('zh-CN', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit'
+        }),
+        versionLabel: versionId === 0 ? '原始版本' : `修改版本 ${versionId}`
       };
     } catch (error) {
       console.error(`加载反馈版本 ${versionId} 失败:`, error);
@@ -553,12 +566,15 @@ export default function StudentViewFeedbackPage() {
         id: versionId,
         feedbackId: feedbackId,
         timestamp: 0,
-        content: "版本加载失败",
+        content: `[版本 ${versionId} 加载失败: ${error.message}]`,
         contentHash: "",
         documentUrls: [],
         imageUrls: [],
         documentHashes: [],
-        imageHashes: []
+        imageHashes: [],
+        date: new Date(),
+        formattedDate: '未知时间',
+        versionLabel: versionId === 0 ? '原始版本' : `修改版本 ${versionId}`
       };
     }
   };

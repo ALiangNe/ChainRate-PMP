@@ -9,6 +9,9 @@ import ChainRateAddress from '../../contracts/ChainRate-address.json';
 import ChainRate02ABI from '../../contracts/ChainRate02.json';
 import ChainRate02Address from '../../contracts/ChainRate02-address.json';
 import { default as NextImage } from 'next/image';
+import { diffLines } from 'diff';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -25,7 +28,10 @@ import {
   SortAscendingOutlined,
   EnvironmentOutlined,
   RollbackOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  HistoryOutlined,
+  DiffOutlined,
+  FileOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -124,6 +130,21 @@ export default function TeacherViewFeedbackPage() {
   const [replyContent, setReplyContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [replyForm] = Form.useForm();
+  
+  // 版本比较状态
+  const [compareModalVisible, setCompareModalVisible] = useState(false);
+  const [feedbackVersions, setFeedbackVersions] = useState([]);
+  const [selectedVersions, setSelectedVersions] = useState([null, null]);
+  const [versionContents, setVersionContents] = useState([null, null]);
+  const [versionDiff, setVersionDiff] = useState(null);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [currentFeedbackForVersions, setCurrentFeedbackForVersions] = useState(null);
+  
+  // PDF导出状态
+  const [exportLoading, setExportLoading] = useState(false);
+  
+  // 在feedbacks状态后添加新的状态
+  const [exportingAllFeedbacks, setExportingAllFeedbacks] = useState(false);
   
   // 初始化检查用户登录状态和加载数据
   useEffect(() => {
@@ -484,7 +505,9 @@ export default function TeacherViewFeedbackPage() {
             hasReply: hasReply,
             status: Number(feedback.status),
             isModified: isModified,
-            lastModifiedDate: lastModifiedDate
+            lastModifiedDate: lastModifiedDate,
+            versions: versionsCount, // 确保将版本数量添加到反馈项属性中
+            versionsCount: versionsCount // 保留versionsCount作为备用
           };
           
           feedbacksList.push(feedbackItem);
@@ -663,8 +686,800 @@ export default function TeacherViewFeedbackPage() {
     }
   };
   
+  // 打开版本比较模态框
+  const openCompareModal = async (feedback) => {
+    if (!feedback || !contract02) {
+      message.error('无法获取反馈版本信息');
+      return;
+    }
+    
+    try {
+      setLoadingVersions(true);
+      setCurrentFeedbackForVersions(feedback);
+      setCompareModalVisible(true);
+      
+      // 重置状态
+      setFeedbackVersions([]);
+      setSelectedVersions([null, null]);
+      setVersionContents([null, null]);
+      setVersionDiff(null);
+      
+      // 获取反馈的所有版本
+      const versionsCount = feedback.versionsCount || Number(feedback.versions) || 0;
+      console.log(`获取反馈 ${feedback.id} 的 ${versionsCount} 个版本`);
+      
+      if (versionsCount <= 1) {
+        message.info('此反馈只有一个版本，无法进行比较');
+        setLoadingVersions(false);
+        return;
+      }
+      
+      const versionsList = [];
+      
+      // 版本索引从0开始，原始版本是0，最新版本是 versionsCount-1
+      for (let i = 0; i < versionsCount; i++) {
+        try {
+          const version = await contract02.getFeedbackVersion(feedback.id, i);
+          
+          // 获取版本内容
+          const content = await fetchContentIfNeeded(version.contentHash);
+          
+          versionsList.push({
+            index: i,
+            timestamp: new Date(Number(version.timestamp) * 1000),
+            formattedDate: new Date(Number(version.timestamp) * 1000).toLocaleString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            contentHash: version.contentHash,
+            content: content,
+            label: `版本 ${i + 1} (${i === 0 ? '原始版本' : i === versionsCount - 1 ? '最新版本' : '修改版本'}) - ${new Date(Number(version.timestamp) * 1000).toLocaleString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}`
+          });
+          
+        } catch (error) {
+          console.error(`获取反馈版本 ${i} 失败:`, error);
+        }
+      }
+      
+      console.log("获取到的反馈版本:", versionsList);
+      setFeedbackVersions(versionsList);
+      
+      // 如果有多个版本，默认选择最早和最新的版本
+      if (versionsList.length >= 2) {
+        setSelectedVersions([0, versionsList.length - 1]);
+        setVersionContents([versionsList[0].content, versionsList[versionsList.length - 1].content]);
+        
+        // 计算差异
+        const diff = diffLines(versionsList[0].content, versionsList[versionsList.length - 1].content);
+        setVersionDiff(diff);
+      }
+      
+    } catch (error) {
+      console.error("获取反馈版本失败:", error);
+      message.error('获取反馈版本失败: ' + (error.message || error));
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+  
+  // 关闭版本比较模态框
+  const closeCompareModal = () => {
+    setCompareModalVisible(false);
+    setCurrentFeedbackForVersions(null);
+    setFeedbackVersions([]);
+    setSelectedVersions([null, null]);
+    setVersionContents([null, null]);
+    setVersionDiff(null);
+  };
+  
+  // 处理版本选择变化
+  const handleVersionChange = (index, versionIndex) => {
+    const newSelectedVersions = [...selectedVersions];
+    newSelectedVersions[index] = versionIndex;
+    setSelectedVersions(newSelectedVersions);
+    
+    // 更新内容
+    const newVersionContents = [...versionContents];
+    newVersionContents[index] = feedbackVersions[versionIndex].content;
+    setVersionContents(newVersionContents);
+    
+    // 如果两个版本都已选择，计算差异
+    if (newSelectedVersions[0] !== null && newSelectedVersions[1] !== null) {
+      const oldContent = feedbackVersions[newSelectedVersions[0]].content;
+      const newContent = feedbackVersions[newSelectedVersions[1]].content;
+      const diff = diffLines(oldContent, newContent);
+      setVersionDiff(diff);
+    }
+  };
+  
+  // 加载特定版本反馈
+  const loadFeedbackVersion = async (feedbackId, versionId) => {
+    try {
+      console.log(`尝试加载反馈 ${feedbackId} 的版本 ${versionId}`);
+      const version = await contract02.getFeedbackVersion(feedbackId, versionId);
+      console.log(`成功获取反馈 ${feedbackId} 的版本 ${versionId}:`, version);
+      
+      // 获取内容
+      let contentText = "";
+      try {
+        contentText = await fetchContentIfNeeded(version.contentHash);
+        console.log(`成功获取反馈 ${feedbackId} 的版本 ${versionId} 内容`);
+      } catch (err) {
+        console.error(`获取反馈 ${feedbackId} 的版本 ${versionId} 内容失败:`, err);
+        contentText = `[无法加载版本 ${versionId} 的内容]`;
+      }
+      
+      return {
+        id: Number(versionId),
+        feedbackId: Number(feedbackId),
+        timestamp: Number(version.timestamp),
+        content: contentText,
+        contentHash: version.contentHash,
+        date: new Date(Number(version.timestamp) * 1000),
+        formattedDate: new Date(Number(version.timestamp) * 1000).toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        versionLabel: versionId === 0 ? '原始版本' : 
+                      `修改版本 ${versionId}`
+      };
+    } catch (error) {
+      console.error(`加载反馈版本 ${versionId} 失败:`, error);
+      return {
+        id: versionId,
+        feedbackId: feedbackId,
+        timestamp: 0,
+        content: `[版本 ${versionId} 加载失败]`,
+        contentHash: "",
+        date: new Date(),
+        formattedDate: '未知时间',
+        versionLabel: versionId === 0 ? '原始版本' : 
+                      `修改版本 ${versionId}`
+      };
+    }
+  };
+
+  // 导出所有反馈历史记录为PDF
+  const exportAllFeedbackHistory = async () => {
+    if (!selectedCourse || !contract02 || filteredFeedbacks.length === 0) {
+      message.error('没有可导出的反馈记录');
+      return;
+    }
+    
+    try {
+      setExportingAllFeedbacks(true);
+      message.loading('正在生成所有反馈记录PDF报告...', 0);
+      
+      // 创建PDF文档 - 使用A4大小
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // 使用Canvas方式绘制中文文本 - 复用已有的drawText函数
+      const drawText = (text, x, y, options = {}) => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // 设置字体和大小
+        const fontSize = options.fontSize || 12;
+        const fontFamily = options.fontFamily || 'Arial, "Microsoft YaHei", "微软雅黑", STXihei, "华文细黑", sans-serif';
+        context.font = `${options.fontWeight || 'normal'} ${fontSize}px ${fontFamily}`;
+        
+        // 计算文本宽度并创建适当大小的canvas
+        const metrics = context.measureText(text);
+        const textWidth = metrics.width;
+        
+        // 确保Canvas大小足够容纳文本
+        const scaleFactor = 3; // 增加缩放因子，提高清晰度
+        canvas.width = textWidth * scaleFactor;
+        canvas.height = fontSize * scaleFactor * 1.3;
+        
+        // 重新设置字体（因为改变了canvas大小）
+        context.font = `${options.fontWeight || 'normal'} ${fontSize * scaleFactor}px ${fontFamily}`;
+        context.fillStyle = options.color || '#000000';
+        context.textBaseline = 'top';
+        
+        // 启用抗锯齿
+        context.textRendering = 'optimizeLegibility';
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        
+        // 绘制文本
+        context.fillText(text, 0, 0);
+        
+        // 计算文本尺寸
+        // 保持文本的原始宽高比，但确保尺寸合理
+        let outputWidth = textWidth * 0.35; // 调整这个系数以获得更合适的宽度
+        let outputHeight = fontSize * 0.4; // 高度也要调整
+        
+        // 居中对齐处理
+        let textX = x;
+        if (options.align === 'center') {
+          textX = x - (outputWidth / 2);
+        }
+        
+        // 将canvas添加到PDF
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', textX, y - (outputHeight * 0.8), outputWidth, outputHeight);
+      };
+      
+      // 绘制封面
+      // 绘制标题
+      drawText('课程反馈记录汇总', 105, 30, { fontSize: 20, fontWeight: 'bold', align: 'center' });
+      
+      // 绘制课程信息
+      drawText(`课程: ${selectedCourse?.name || 'Unknown'}`, 105, 50, { fontSize: 14, align: 'center' });
+      drawText(`教师: ${userData.name}`, 105, 60, { fontSize: 14, align: 'center' });
+      drawText(`反馈总数: ${filteredFeedbacks.length}`, 105, 70, { fontSize: 14, align: 'center' });
+      drawText(`生成时间: ${new Date().toLocaleString('zh-CN')}`, 105, 80, { fontSize: 14, align: 'center' });
+      
+      // 添加目录页
+      doc.addPage();
+      drawText('目录', 105, 20, { fontSize: 16, fontWeight: 'bold', align: 'center' });
+      
+      let tocYPos = 40;
+      // 生成目录
+      filteredFeedbacks.forEach((feedback, index) => {
+        const studentName = feedback.isAnonymous ? '匿名学生' : feedback.student.name;
+        drawText(`${index + 1}. ${studentName}的反馈 (ID: ${feedback.id})`, 25, tocYPos, { fontSize: 12 });
+        tocYPos += 8;
+        
+        // 每页最多20个目录项
+        if (tocYPos > 250 && index < filteredFeedbacks.length - 1) {
+          doc.addPage();
+          drawText('目录 (续)', 105, 20, { fontSize: 16, fontWeight: 'bold', align: 'center' });
+          tocYPos = 40;
+        }
+      });
+      
+      // 处理每个反馈的详细信息
+      for (let i = 0; i < filteredFeedbacks.length; i++) {
+        const feedback = filteredFeedbacks[i];
+        
+        // 新页开始
+        doc.addPage();
+        
+        // 获取反馈的版本数量
+        let versionsCount = 0;
+        try {
+          // 从feedback对象获取版本数
+          versionsCount = Number(feedback.versions || 0);
+        } catch (versionCountError) {
+          console.error(`获取反馈 ${feedback.id} 版本数量失败:`, versionCountError);
+          // 如果获取失败，至少设为1（当前版本）
+          versionsCount = 1;
+        }
+        
+        // 确保至少有一个版本
+        versionsCount = Math.max(versionsCount, 1);
+        
+        // 查询所有版本
+        const versionPromises = [];
+        for (let j = 0; j < versionsCount; j++) {
+          versionPromises.push(loadFeedbackVersion(feedback.id, j));
+        }
+        
+        const versionsList = await Promise.all(versionPromises);
+        // 按照时间升序排序，最早的在前面
+        versionsList.sort((a, b) => a.timestamp - b.timestamp);
+        
+        // 绘制反馈标题
+        drawText(`反馈 ${i + 1}: ID ${feedback.id}`, 105, 15, { fontSize: 16, fontWeight: 'bold', align: 'center' });
+        
+        // 绘制反馈信息
+        drawText(`学生: ${feedback.isAnonymous ? '匿名学生' : feedback.student.name}`, 14, 30, { fontSize: 11 });
+        drawText(`提交时间: ${feedback.formattedDate}`, 14, 38, { fontSize: 11 });
+        
+        if (feedback.hasReply) {
+          drawText(`教师回复: ${feedback.reply}`, 14, 46, { fontSize: 11 });
+          drawText(`回复时间: ${feedback.formattedReplyDate}`, 14, 54, { fontSize: 11 });
+          doc.line(14, 58, 196, 58);
+        } else {
+          doc.line(14, 42, 196, 42);
+        }
+        
+        // 版本索引从0开始
+        let yPos = feedback.hasReply ? 65 : 50;
+        
+        // 如果只有一个版本
+        if (versionsList.length <= 1) {
+          drawText('此反馈仅有一个版本，无修改历史。', 14, yPos, { fontSize: 11 });
+          drawText('反馈内容:', 14, yPos + 8, { fontSize: 11, fontWeight: 'bold' });
+          
+          // 分行显示内容
+          const contentLines = versionsList[0]?.content?.split('\n') || feedback.content.split('\n');
+          let contentYPos = yPos + 18;
+          contentLines.forEach(line => {
+            // 检查是否需要添加新页
+            if (contentYPos > 270) {
+              doc.addPage();
+              contentYPos = 20;
+            }
+            drawText(line, 14, contentYPos, { fontSize: 10 });
+            contentYPos += 5;
+          });
+        } else {
+          // 绘制版本历史标题
+          drawText('反馈修改历史:', 14, yPos, { fontSize: 11, fontWeight: 'bold' });
+          yPos += 8;
+          
+          // 准备版本历史数据
+          const tableData = versionsList.map((version, index) => [
+            `版本 ${index + 1} (${version.versionLabel})`,
+            version.formattedDate,
+            version.content.length > 30 ? version.content.substring(0, 27) + '...' : version.content
+          ]);
+          
+          // 添加版本历史表格
+          doc.autoTable({
+            startY: yPos,
+            head: [['版本', '修改时间', '内容摘要']],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [26, 115, 232], fontSize: 10 },
+            bodyStyles: { fontSize: 9 },
+            columnStyles: { 
+              0: { cellWidth: 40 },
+              1: { cellWidth: 40 },
+              2: { cellWidth: 'auto' }
+            },
+            margin: { top: yPos, left: 14, right: 14 },
+            didDrawCell: (data) => {
+              // 处理表格中的中文
+              if (data.section === 'body' && data.cell.text && data.cell.text.length > 0) {
+                // 清除自动绘制的文本
+                const originalText = data.cell.text[0];
+                data.cell.text = [''];
+                
+                // 用Canvas方式绘制中文
+                if (originalText && originalText !== '') {
+                  // 计算单元格的中心位置
+                  const x = data.cell.x + 2;
+                  const y = data.cell.y + 3;
+                  drawText(originalText, x, y, { fontSize: 8 });
+                }
+              }
+            }
+          });
+          
+          // 获取表格结束位置
+          yPos = doc.lastAutoTable.finalY + 10;
+          
+          // 添加最新版本的完整内容
+          if (yPos > 200) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          drawText('最新版本完整内容:', 14, yPos, { fontSize: 11, fontWeight: 'bold' });
+          yPos += 8;
+          
+          // 显示最新版本的内容
+          const latestVersion = versionsList[versionsList.length - 1];
+          
+          // 内容框
+          doc.setDrawColor(220, 220, 220);
+          doc.setFillColor(250, 250, 250);
+          // 计算内容高度
+          const contentLines = latestVersion.content.split('\n');
+          const contentHeight = Math.min(6 * contentLines.length + 10, 180); // 限制最大高度
+          doc.roundedRect(14, yPos, 180, contentHeight, 2, 2, 'FD');
+          yPos += 5;
+          
+          // 分行显示内容
+          let contentYPos = yPos;
+          contentLines.forEach(line => {
+            // 检查是否需要添加新页
+            if (contentYPos > 270) {
+              doc.addPage();
+              contentYPos = 20;
+              // 新页面也添加内容框
+              doc.setDrawColor(220, 220, 220);
+              doc.setFillColor(250, 250, 250);
+              doc.roundedRect(14, 15, 180, 250, 2, 2, 'FD');
+            }
+            
+            drawText(line, 20, contentYPos, { fontSize: 9 });
+            contentYPos += 5;
+          });
+        }
+      }
+      
+      // 添加页脚
+      const pageCount = doc.getNumberOfPages();
+      for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        
+        // 页脚分隔线
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, 285, 196, 285);
+        
+        // 页码和时间信息
+        drawText(`第 ${i} 页，共 ${pageCount} 页`, 105, 290, { 
+          fontSize: 8,
+          align: 'center'
+        });
+        
+        // 时间戳
+        drawText(`生成时间: ${new Date().toLocaleString('zh-CN')}`, 105, 295, { 
+          fontSize: 8,
+          align: 'center' 
+        });
+      }
+      
+      // 保存PDF
+      const filename = `${selectedCourse?.name || 'course'}_全部反馈记录_${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(filename);
+      
+      message.destroy();
+      message.success(`所有反馈记录PDF报告已生成: ${filename}`);
+      
+    } catch (error) {
+      console.error("导出所有反馈历史记录失败:", error);
+      message.error('导出失败: ' + (error.message || error));
+    } finally {
+      setExportingAllFeedbacks(false);
+    }
+  };
+  
+  // 导出反馈历史记录为PDF
+  const exportFeedbackHistory = async (feedback) => {
+    if (!feedback || !contract02) {
+      message.error('无法获取反馈版本信息');
+      return;
+    }
+    
+    try {
+      setExportLoading(true);
+      message.loading('正在生成PDF报告...', 0);
+      
+      // 获取反馈的版本数量
+      let versionsCount = 0;
+      try {
+        console.log(`尝试获取反馈 ${feedback.id} 的版本数量`);
+        // 从feedback对象获取版本数
+        versionsCount = Number(feedback.versions || 0);
+        console.log(`反馈 ${feedback.id} 的版本数量: ${versionsCount}`);
+      } catch (versionCountError) {
+        console.error('获取版本数量失败:', versionCountError);
+        // 如果获取失败，至少设为1（当前版本）
+        versionsCount = 1;
+      }
+      
+      // 确保至少有一个版本
+      versionsCount = Math.max(versionsCount, 1);
+      console.log(`导出反馈 ${feedback.id} 的 ${versionsCount} 个版本`);
+      
+      // 查询所有版本
+      const versionPromises = [];
+      for (let i = 0; i < versionsCount; i++) {
+        versionPromises.push(loadFeedbackVersion(feedback.id, i));
+      }
+      
+      const versionsList = await Promise.all(versionPromises);
+      // 按照时间升序排序，最早的在前面
+      versionsList.sort((a, b) => a.timestamp - b.timestamp);
+      
+      console.log(`成功获取 ${versionsList.length} 个版本记录:`, versionsList);
+      
+      // 创建PDF文档 - 使用A4大小
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // 使用Canvas方式绘制中文文本
+      const drawText = (text, x, y, options = {}) => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // 设置字体和大小
+        const fontSize = options.fontSize || 12;
+        const fontFamily = options.fontFamily || 'Arial, "Microsoft YaHei", "微软雅黑", STXihei, "华文细黑", sans-serif';
+        context.font = `${options.fontWeight || 'normal'} ${fontSize}px ${fontFamily}`;
+        
+        // 计算文本宽度并创建适当大小的canvas
+        const metrics = context.measureText(text);
+        const textWidth = metrics.width;
+        
+        // 确保Canvas大小足够容纳文本
+        const scaleFactor = 3; // 增加缩放因子，提高清晰度
+        canvas.width = textWidth * scaleFactor;
+        canvas.height = fontSize * scaleFactor * 1.3;
+        
+        // 重新设置字体（因为改变了canvas大小）
+        context.font = `${options.fontWeight || 'normal'} ${fontSize * scaleFactor}px ${fontFamily}`;
+        context.fillStyle = options.color || '#000000';
+        context.textBaseline = 'top';
+        
+        // 启用抗锯齿
+        context.textRendering = 'optimizeLegibility';
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        
+        // 绘制文本
+        context.fillText(text, 0, 0);
+        
+        // 计算文本尺寸
+        // 保持文本的原始宽高比，但确保尺寸合理
+        let outputWidth = textWidth * 0.35; // 调整这个系数以获得更合适的宽度
+        let outputHeight = fontSize * 0.4; // 高度也要调整
+        
+        // 居中对齐处理
+        let textX = x;
+        if (options.align === 'center') {
+          textX = x - (outputWidth / 2);
+        }
+        
+        // 将canvas添加到PDF
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', textX, y - (outputHeight * 0.8), outputWidth, outputHeight);
+      };
+      
+      // 绘制标题
+      drawText('反馈历史记录', 105, 15, { fontSize: 16, fontWeight: 'bold', align: 'center' });
+      
+      // 绘制反馈信息
+      drawText(`反馈ID: ${feedback.id}`, 14, 30, { fontSize: 11 });
+      drawText(`课程: ${selectedCourse?.name || 'Unknown'}`, 14, 38, { fontSize: 11 });
+      drawText(`学生: ${feedback.isAnonymous ? '匿名学生' : feedback.student.name}`, 14, 46, { fontSize: 11 });
+      drawText(`提交时间: ${feedback.formattedDate}`, 14, 54, { fontSize: 11 });
+      
+      if (feedback.hasReply) {
+        drawText(`教师回复: ${feedback.reply}`, 14, 62, { fontSize: 11 });
+        drawText(`回复时间: ${feedback.formattedReplyDate}`, 14, 70, { fontSize: 11 });
+        doc.line(14, 74, 196, 74);
+      } else {
+        doc.line(14, 60, 196, 60);
+      }
+      
+      // 版本索引从0开始
+      let yPos = feedback.hasReply ? 80 : 65;
+      
+      // 如果只有一个版本
+      if (versionsList.length <= 1) {
+        drawText('此反馈仅有一个版本，无修改历史。', 14, yPos, { fontSize: 11 });
+        drawText('反馈内容:', 14, yPos + 8, { fontSize: 11, fontWeight: 'bold' });
+        
+        // 分行显示内容
+        const contentLines = versionsList[0]?.content?.split('\n') || feedback.content.split('\n');
+        let contentYPos = yPos + 18;
+        contentLines.forEach(line => {
+          drawText(line, 14, contentYPos, { fontSize: 10 });
+          contentYPos += 5;
+        });
+      } else {
+        // 绘制版本历史标题
+        drawText('反馈修改历史:', 14, yPos, { fontSize: 11, fontWeight: 'bold' });
+        yPos += 8;
+        
+        // 准备版本历史数据
+        const tableData = versionsList.map((version, index) => [
+          `版本 ${index + 1} (${version.versionLabel})`,
+          version.formattedDate,
+          version.content.length > 30 ? version.content.substring(0, 27) + '...' : version.content
+        ]);
+        
+        // 添加版本历史表格
+        doc.autoTable({
+          startY: yPos,
+          head: [['版本', '修改时间', '内容摘要']],
+          body: tableData,
+          theme: 'striped',
+          headStyles: { fillColor: [26, 115, 232], fontSize: 10 },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: { 
+            0: { cellWidth: 40 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 'auto' }
+          },
+          margin: { top: yPos, left: 14, right: 14 },
+          didDrawCell: (data) => {
+            // 处理表格中的中文
+            if (data.section === 'body' && data.cell.text && data.cell.text.length > 0) {
+              // 清除自动绘制的文本
+              const originalText = data.cell.text[0];
+              data.cell.text = [''];
+              
+              // 用Canvas方式绘制中文
+              if (originalText && originalText !== '') {
+                // 计算单元格的中心位置
+                const x = data.cell.x + 2;
+                const y = data.cell.y + 3;
+                drawText(originalText, x, y, { fontSize: 8 });
+              }
+            }
+          }
+        });
+        
+        // 获取表格结束位置
+        yPos = doc.lastAutoTable.finalY + 10;
+        
+        // 添加各版本完整内容
+        doc.addPage();
+        yPos = 15;
+        
+        drawText('各版本完整内容', 105, yPos, { fontSize: 14, fontWeight: 'bold', align: 'center' });
+        yPos += 10;
+        
+        versionsList.forEach((version, index) => {
+          // 检查是否需要添加新页
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 15;
+          }
+          
+          // 版本标题
+          drawText(
+            `版本 ${index + 1} (${version.versionLabel})`,
+            14, yPos, { fontSize: 12, fontWeight: 'bold' }
+          );
+          yPos += 7;
+          
+          drawText(`修改时间: ${version.formattedDate}`, 14, yPos, { fontSize: 10 });
+          yPos += 7;
+          
+          drawText('内容:', 14, yPos, { fontSize: 10, fontWeight: 'bold' });
+          yPos += 6;
+          
+          // 内容框
+          doc.setDrawColor(220, 220, 220);
+          doc.setFillColor(250, 250, 250);
+          // 计算内容高度
+          const contentLines = version.content.split('\n');
+          const contentHeight = Math.min(6 * contentLines.length + 10, 200); // 限制最大高度
+          doc.roundedRect(14, yPos, 180, contentHeight, 2, 2, 'FD');
+          yPos += 5;
+          
+          // 分行显示内容
+          contentLines.forEach(line => {
+            // 检查是否需要添加新页
+            if (yPos > 280) {
+              doc.addPage();
+              yPos = 15;
+            }
+            
+            drawText(line, 20, yPos, { fontSize: 9 });
+            yPos += 5;
+          });
+          
+          // 版本间隔
+          yPos += 12;
+        });
+        
+        // 如果内容太多，自动添加了新页
+        // 添加版本比较
+        if (versionsList.length >= 2) {
+          // 添加相邻版本的比较
+          for (let i = 0; i < versionsList.length - 1; i++) {
+            const oldVersion = versionsList[i];
+            const newVersion = versionsList[i + 1];
+            
+            doc.addPage();
+            drawText(`版本 ${i + 1} 与版本 ${i + 2} 的比较`, 105, 15, { fontSize: 14, fontWeight: 'bold', align: 'center' });
+            
+            // 版本信息
+            drawText(`旧版本: ${oldVersion.versionLabel} (${oldVersion.formattedDate})`, 14, 30, { fontSize: 10 });
+            drawText(`新版本: ${newVersion.versionLabel} (${newVersion.formattedDate})`, 14, 38, { fontSize: 10 });
+            
+            // 计算差异
+            const oldContent = oldVersion.content;
+            const newContent = newVersion.content;
+            const diff = diffLines(oldContent, newContent);
+            
+            drawText('变更对比:', 14, 47, { fontSize: 11, fontWeight: 'bold' });
+            
+            // 比较框
+            doc.setDrawColor(220, 220, 220);
+            doc.setFillColor(250, 250, 250);
+            doc.roundedRect(14, 55, 180, 230, 2, 2, 'FD');
+            
+            let diffY = 59;
+            diff.forEach(part => {
+              // 检查是否需要添加新页
+              if (diffY > 270) {
+                doc.addPage();
+                diffY = 15;
+                // 新页面也添加比较框
+                doc.setDrawColor(220, 220, 220);
+                doc.setFillColor(250, 250, 250);
+                doc.roundedRect(14, 14, 180, 270, 2, 2, 'FD');
+              }
+              
+              // 设置颜色
+              let textColor = '#000000'; // 默认黑色
+              let prefix = '';
+              
+              if (part.added) {
+                textColor = '#22863a'; // 绿色
+                prefix = '+ ';
+              } else if (part.removed) {
+                textColor = '#cb2431'; // 红色
+                prefix = '- ';
+              }
+              
+              // 分行显示差异内容
+              const lines = part.value.split('\n');
+              lines.forEach(line => {
+                if (diffY > 270) {
+                  doc.addPage();
+                  diffY = 15;
+                  // 新页面也添加比较框
+                  doc.setDrawColor(220, 220, 220);
+                  doc.setFillColor(250, 250, 250);
+                  doc.roundedRect(14, 14, 180, 270, 2, 2, 'FD');
+                }
+                
+                if (line.trim() || part.added || part.removed) {
+                  drawText(prefix + line, 20, diffY, { 
+                    fontSize: 9, 
+                    color: textColor 
+                  });
+                  diffY += 5;
+                }
+              });
+            });
+          }
+        }
+      }
+      
+      // 添加页脚
+      const pageCount = doc.getNumberOfPages();
+      for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        
+        // 页脚分隔线
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, 285, 196, 285);
+        
+        // 页码和时间信息
+        drawText(`第 ${i} 页，共 ${pageCount} 页`, 105, 290, { 
+          fontSize: 8,
+          align: 'center'
+        });
+        
+        // 时间戳
+        drawText(`生成时间: ${new Date().toLocaleString('zh-CN')}`, 105, 295, { 
+          fontSize: 8,
+          align: 'center' 
+        });
+      }
+      
+      // 保存PDF
+      const filename = `反馈历史记录_${feedback.id}_${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(filename);
+      
+      message.destroy();
+      message.success(`PDF报告已生成: ${filename}`);
+      
+    } catch (error) {
+      console.error("导出反馈历史记录失败:", error);
+      message.error('导出失败: ' + (error.message || error));
+    } finally {
+      setExportLoading(false);
+    }
+  };
+  
   // 渲染反馈列表项
   const renderFeedbackItem = (feedback) => {
+    // 修改版本判断逻辑，增加对isModified和versions属性的检查
+    const hasMultipleVersions = (feedback.versions > 1) || feedback.isModified || (feedback.versionsCount > 1);
+    
     return (
       <List.Item
         key={feedback.id}
@@ -676,8 +1491,27 @@ export default function TeacherViewFeedbackPage() {
             key="reply-button"
           >
             {feedback.hasReply ? "修改回复" : "回复"}
+          </Button>,
+          hasMultipleVersions && (
+            <Button
+              type="default"
+              icon={<DiffOutlined />}
+              onClick={() => openCompareModal(feedback)}
+              key="compare-button"
+            >
+              版本对比
+            </Button>
+          ),
+          <Button
+            type="default"
+            icon={<FileOutlined />}
+            onClick={() => exportFeedbackHistory(feedback)}
+            loading={exportLoading}
+            key="export-button"
+          >
+            导出记录
           </Button>
-        ]}
+        ].filter(Boolean)} // 过滤掉可能的undefined元素
       >
         <List.Item.Meta
           avatar={
@@ -935,6 +1769,25 @@ export default function TeacherViewFeedbackPage() {
                   
                   {/* 反馈列表 */}
                   <Card className={styles.feedbackListCard}>
+                    <div className={styles.feedbackListHeader}>
+                      <div className={styles.feedbackListTitle}>
+                        {filteredFeedbacks.length > 0 ? (
+                          <span>共 {filteredFeedbacks.length} 条反馈</span>
+                        ) : (
+                          <span>暂无反馈</span>
+                        )}
+                      </div>
+                      {filteredFeedbacks.length > 0 && (
+                        <Button
+                          type="primary"
+                          icon={<FileOutlined />}
+                          onClick={exportAllFeedbackHistory}
+                          loading={exportingAllFeedbacks}
+                        >
+                          导出全部反馈
+                        </Button>
+                      )}
+                    </div>
                     {filteredFeedbacks.length > 0 ? (
                       <List
                         itemLayout="vertical"
@@ -1038,6 +1891,110 @@ export default function TeacherViewFeedbackPage() {
               </div>
             </Form>
           </div>
+        )}
+      </Modal>
+      
+      {/* 版本比较模态框 */}
+      <Modal
+        title={
+          <div className={styles.modalTitle}>
+            <DiffOutlined className={styles.modalTitleIcon} />
+            <span>反馈版本比较</span>
+          </div>
+        }
+        open={compareModalVisible}
+        onCancel={closeCompareModal}
+        footer={[
+          <Button key="close" onClick={closeCompareModal}>
+            关闭
+          </Button>
+        ]}
+        width={800}
+        className={styles.compareModal}
+      >
+        {loadingVersions ? (
+          <div className={styles.loadingContainer}>
+            <Spin />
+            <div className={styles.loadingText}>正在加载版本信息...</div>
+          </div>
+        ) : (
+          currentFeedbackForVersions && (
+            <div>
+              <div className={styles.versionSelectContainer}>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <div className={styles.versionSelectWrapper}>
+                      <div className={styles.versionSelectLabel}>旧版本:</div>
+                      <Select
+                        className={styles.versionSelect}
+                        value={selectedVersions[0]}
+                        onChange={(value) => handleVersionChange(0, value)}
+                        placeholder="选择旧版本"
+                      >
+                        {feedbackVersions.map((version, index) => (
+                          <Option key={`old-${index}`} value={index}>
+                            {version.label || `版本 ${index + 1}`}
+                          </Option>
+                        ))}
+                      </Select>
+                    </div>
+                  </Col>
+                  <Col span={12}>
+                    <div className={styles.versionSelectWrapper}>
+                      <div className={styles.versionSelectLabel}>新版本:</div>
+                      <Select
+                        className={styles.versionSelect}
+                        value={selectedVersions[1]}
+                        onChange={(value) => handleVersionChange(1, value)}
+                        placeholder="选择新版本"
+                      >
+                        {feedbackVersions.map((version, index) => (
+                          <Option key={`new-${index}`} value={index}>
+                            {version.label || `版本 ${index + 1}`}
+                          </Option>
+                        ))}
+                      </Select>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+              
+              {selectedVersions[0] !== null && selectedVersions[1] !== null ? (
+                <div className={styles.diffContainer}>
+                  <Divider>差异对比</Divider>
+                  
+                  {versionDiff && (
+                    <div className={styles.diffContent}>
+                      {versionDiff.map((part, i) => (
+                        <div 
+                          key={i}
+                          className={
+                            part.added 
+                              ? styles.diffAdded 
+                              : part.removed 
+                                ? styles.diffRemoved 
+                                : styles.diffUnchanged
+                          }
+                        >
+                          {part.value.split('\n').map((line, lineIndex) => (
+                            <div key={`${i}-${lineIndex}`} className={styles.diffLine}>
+                              {part.added && <span className={styles.diffPrefix}>+</span>}
+                              {part.removed && <span className={styles.diffPrefix}>-</span>}
+                              {line || ' '}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.noVersionsSelected}>
+                  <Empty description="请选择两个版本进行比较" />
+                </div>
+              )}
+            </div>
+          )
         )}
       </Modal>
     </ConfigProvider>
