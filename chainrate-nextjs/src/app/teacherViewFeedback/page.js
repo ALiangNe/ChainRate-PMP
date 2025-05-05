@@ -286,6 +286,64 @@ export default function TeacherViewFeedbackPage() {
     }
   };
   
+  // 从IPFS获取内容
+  const fetchIpfsContent = async (contentUrl) => {
+    try {
+      // 处理不同格式的IPFS链接
+      let gatewayUrl = contentUrl;
+      
+      // 如果是ipfs://格式的链接
+      if (contentUrl.startsWith('ipfs://')) {
+        const cid = contentUrl.replace('ipfs://', '');
+        gatewayUrl = `https://ipfs.io/ipfs/${cid}`;
+      }
+      // 如果已经是网关链接但不是以https开头，添加https
+      else if (contentUrl.includes('/ipfs/') && !contentUrl.startsWith('http')) {
+        gatewayUrl = `https://${contentUrl}`;
+      }
+      
+      console.log("获取IPFS内容:", gatewayUrl);
+      const response = await axios.get(gatewayUrl);
+      
+      // 如果返回的是JSON对象并且有content字段
+      if (typeof response.data === 'object' && response.data.content) {
+        console.log("从JSON中提取内容字段:", response.data.content);
+        return response.data.content;
+      }
+      
+      // 如果直接返回的是字符串
+      console.log("返回原始内容");
+      return response.data;
+    } catch (error) {
+      console.error("获取IPFS内容失败:", error);
+      throw error;
+    }
+  };
+
+  // 从IPFS获取反馈内容
+  const fetchContentIfNeeded = async (contentText) => {
+    if (!contentText) return "内容为空";
+    
+    // 识别各种可能的IPFS链接格式
+    if (
+      contentText.startsWith('ipfs://') || 
+      contentText.includes('/ipfs/') ||
+      contentText.startsWith('https://gateway.pinata.cloud/') ||
+      contentText.startsWith('https://ipfs.io/')
+    ) {
+      try {
+        const content = await fetchIpfsContent(contentText);
+        console.log("成功从IPFS获取内容:", content);
+        return content;
+      } catch (error) {
+        console.error("获取IPFS内容失败:", error);
+        return "无法加载内容";
+      }
+    }
+    
+    return contentText;
+  };
+  
   // 加载课程反馈
   const loadCourseFeedbacks = async (contract02Instance, courseId) => {
     try {
@@ -341,12 +399,8 @@ export default function TeacherViewFeedbackPage() {
                 const replyDetails = await contract02Instance.getTeacherReplyDetails(feedbackId);
                 hasReply = true;
                 
-                // 如果回复内容是IPFS链接，则获取实际内容
-                if (replyDetails.contentHash.startsWith('ipfs://')) {
-                  reply = await fetchIpfsContent(replyDetails.contentHash);
-                } else {
-                  reply = replyDetails.contentHash;
-                }
+                // 获取回复的实际内容
+                reply = await fetchContentIfNeeded(replyDetails.contentHash);
                 
                 replyTimestamp = new Date(Number(replyDetails.timestamp) * 1000);
                 console.log(`反馈 ${feedbackId} 已回复:`, reply);
@@ -365,16 +419,7 @@ export default function TeacherViewFeedbackPage() {
           const timestamp = new Date(Number(feedback.timestamp) * 1000);
 
           // 从IPFS获取反馈内容
-          let content = feedback.contentHash;
-          if (content.startsWith('ipfs://')) {
-            try {
-              content = await fetchIpfsContent(content);
-              console.log(`从IPFS获取内容成功:`, content);
-            } catch (error) {
-              console.error(`获取IPFS内容失败 ${content}:`, error);
-              content = "无法加载内容";
-            }
-          }
+          const content = await fetchContentIfNeeded(feedback.contentHash);
           
           const feedbackItem = {
             id: feedbackId.toString(),
@@ -446,29 +491,6 @@ export default function TeacherViewFeedbackPage() {
       console.error("加载课程反馈失败:", err);
       setError('获取课程反馈失败: ' + (err.message || err));
       setLoading(false);
-    }
-  };
-  
-  // 从IPFS获取内容
-  const fetchIpfsContent = async (ipfsUrl) => {
-    try {
-      // 将ipfs://转换为HTTP网关URL
-      const cid = ipfsUrl.replace('ipfs://', '');
-      const gatewayUrl = `https://ipfs.io/ipfs/${cid}`;
-      
-      console.log("获取IPFS内容:", gatewayUrl);
-      const response = await axios.get(gatewayUrl);
-      
-      // 如果返回的是JSON，解析并返回content字段
-      if (typeof response.data === 'object' && response.data.content) {
-        return response.data.content;
-      }
-      
-      // 如果直接返回的是字符串
-      return response.data;
-    } catch (error) {
-      console.error("获取IPFS内容失败:", error);
-      throw error;
     }
   };
   
