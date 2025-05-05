@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ethers } from 'ethers';
@@ -23,7 +23,8 @@ import {
   RiseOutlined,
   FallOutlined,
   FilterOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -47,13 +48,19 @@ import {
   Rate,
   List,
   Table,
-  Tag
+  Tag,
+  Checkbox
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip as ChartTooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// 注册Chart.js组件
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, Legend);
 
 const { Header, Content, Sider } = Layout;
-const { Title, Text, Paragraph } = Typography;
+const { Title: AntTitle, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -179,6 +186,26 @@ export default function TeacherStatisticalAnalysisPage() {
     { name: '2星', value: 0, color: '#fa8c16' },
     { name: '1星', value: 0, color: '#f5222d' }
   ]);
+
+  // 多维度评分趋势图相关状态
+  const [selectedDimensions, setSelectedDimensions] = useState(['avgRating']);
+  const [trendData, setTrendData] = useState({
+    labels: [],
+    datasets: []
+  });
+  
+  // 评分维度配置
+  const dimensionConfig = {
+    avgRating: { label: '总体评分', color: '#faad14' },
+    avgTeachingAbility: { label: '教学能力', color: '#1890ff' },
+    avgTeachingAttitude: { label: '教学态度', color: '#1a73e8' },
+    avgTeachingMethod: { label: '教学方法', color: '#faad14' },
+    avgAcademicLevel: { label: '学术水平', color: '#722ed1' },
+    avgGuidanceAbility: { label: '指导能力', color: '#eb2f96' }
+  };
+
+  // 图表引用
+  const chartRef = useRef(null);
 
   useEffect(() => {
     // 检查用户是否已登录且是教师角色
@@ -464,6 +491,9 @@ export default function TeacherStatisticalAnalysisPage() {
         }
       });
       
+      // 生成趋势图数据
+      generateTrendData();
+      
       return;
     }
     
@@ -494,7 +524,122 @@ export default function TeacherStatisticalAnalysisPage() {
         highRating: prevHighRatingCount
       }
     });
+    
+    // 生成趋势图数据
+    generateTrendData();
   };
+  
+  // 生成多维度趋势图数据
+  const generateTrendData = () => {
+    if (evaluations.length === 0) return;
+    
+    // 根据评价数量决定时间间隔粒度
+    let timeGroups = [];
+    let labels = [];
+    
+    // 对评价按照时间进行分组
+    if (evaluations.length <= 10) {
+      // 评价数较少时，每个评价作为一个点
+      evaluations.forEach(evaluation => {
+        const date = new Date(evaluation.timestamp);
+        const label = `${date.getMonth()+1}/${date.getDate()}`;
+        timeGroups.push({
+          label,
+          evaluations: [evaluation]
+        });
+      });
+      
+      // 按时间排序
+      timeGroups.sort((a, b) => 
+        new Date(a.evaluations[0].timestamp) - new Date(b.evaluations[0].timestamp)
+      );
+      
+      labels = timeGroups.map(group => group.label);
+    } else {
+      // 评价数较多时，按月份分组
+      const monthlyGroups = {};
+      
+      evaluations.forEach(evaluation => {
+        const date = new Date(evaluation.timestamp);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()+1}`;
+        
+        if (!monthlyGroups[monthKey]) {
+          monthlyGroups[monthKey] = {
+            label: `${date.getFullYear()}年${date.getMonth()+1}月`,
+            evaluations: []
+          };
+        }
+        
+        monthlyGroups[monthKey].evaluations.push(evaluation);
+      });
+      
+      // 将分组转换为数组并按时间排序
+      timeGroups = Object.values(monthlyGroups).sort((a, b) => {
+        const dateA = new Date(a.evaluations[0].timestamp);
+        const dateB = new Date(b.evaluations[0].timestamp);
+        return dateA - dateB;
+      });
+      
+      labels = timeGroups.map(group => group.label);
+    }
+    
+    // 为每个选中的维度创建数据集
+    const datasets = selectedDimensions.map(dimension => {
+      const dimensionInfo = dimensionConfig[dimension];
+      
+      // 计算每个时间组的平均值
+      const data = timeGroups.map(group => {
+        const dimensionValues = group.evaluations.map(evaluation => {
+          switch(dimension) {
+            case 'avgRating': return evaluation.overallRating;
+            case 'avgTeachingAbility': return evaluation.teachingAbilityRating;
+            case 'avgTeachingAttitude': return evaluation.teachingAttitudeRating;
+            case 'avgTeachingMethod': return evaluation.teachingMethodRating;
+            case 'avgAcademicLevel': return evaluation.academicLevelRating;
+            case 'avgGuidanceAbility': return evaluation.guidanceAbilityRating;
+            default: return 0;
+          }
+        });
+        
+        // 计算该维度在该时间组的平均值
+        const sum = dimensionValues.reduce((acc, val) => acc + val, 0);
+        return dimensionValues.length > 0 ? (sum / dimensionValues.length).toFixed(1) : 0;
+      });
+      
+      return {
+        label: dimensionInfo.label,
+        data,
+        backgroundColor: dimensionInfo.color,
+        borderColor: dimensionInfo.color,
+        borderWidth: 2,
+        pointBackgroundColor: dimensionInfo.color,
+        pointRadius: 4,
+        tension: 0.3
+      };
+    });
+    
+    setTrendData({
+      labels,
+      datasets
+    });
+  };
+  
+  // 处理维度选择变化
+  const handleDimensionChange = (checkedValues) => {
+    if (checkedValues.length === 0) {
+      // 至少选择一个维度
+      setSelectedDimensions(['avgRating']);
+    } else {
+      setSelectedDimensions(checkedValues);
+    }
+  };
+  
+  // 每当选中的维度变化时，重新生成趋势数据
+  useEffect(() => {
+    if (evaluations.length > 0) {
+      generateTrendData();
+    }
+  }, [selectedDimensions, evaluations]);
   
   // 处理时间范围切换
   const handleTimeRangeChange = (value) => {
@@ -887,6 +1032,107 @@ export default function TeacherStatisticalAnalysisPage() {
                                   })()}
                                 </div>
                               </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
+                  
+                  {/* 多维度评分趋势图 */}
+                  <div style={{ marginTop: 24 }}>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24}>
+                        <Card 
+                          title={
+                            <div className={styles.cardTitle}>
+                              <LineChartOutlined style={{ marginRight: 8 }} />
+                              多维度评分趋势分析
+                            </div>
+                          }
+                        >
+                          <div style={{ padding: '16px 0' }}>
+                            <div style={{ marginBottom: 16 }}>
+                              <AntTitle level={5}>选择评分维度</AntTitle>
+                              <Checkbox.Group 
+                                options={[
+                                  { label: '总体评分', value: 'avgRating' },
+                                  { label: '教学能力', value: 'avgTeachingAbility' },
+                                  { label: '教学态度', value: 'avgTeachingAttitude' },
+                                  { label: '教学方法', value: 'avgTeachingMethod' },
+                                  { label: '学术水平', value: 'avgAcademicLevel' },
+                                  { label: '指导能力', value: 'avgGuidanceAbility' }
+                                ]}
+                                value={selectedDimensions}
+                                onChange={handleDimensionChange}
+                              />
+                            </div>
+                            
+                            <Divider />
+                            
+                            <div style={{ height: '400px', position: 'relative' }}>
+                              {evaluations.length > 0 ? (
+                                <Line
+                                  ref={chartRef}
+                                  data={trendData}
+                                  options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                      y: {
+                                        beginAtZero: false,
+                                        min: 0,
+                                        max: 5,
+                                        ticks: {
+                                          stepSize: 1
+                                        },
+                                        title: {
+                                          display: true,
+                                          text: '评分 (1-5分)'
+                                        }
+                                      },
+                                      x: {
+                                        title: {
+                                          display: true,
+                                          text: '时间'
+                                        }
+                                      }
+                                    },
+                                    plugins: {
+                                      legend: {
+                                        position: 'top',
+                                        labels: {
+                                          usePointStyle: true,
+                                          boxWidth: 6
+                                        }
+                                      },
+                                      tooltip: {
+                                        callbacks: {
+                                          label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                              label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                              label += context.parsed.y;
+                                            }
+                                            return label;
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <Empty description="暂无评价数据，无法生成趋势图" />
+                              )}
+                            </div>
+                            
+                            <div style={{ marginTop: 16, textAlign: 'center' }}>
+                              <Text type="secondary">
+                                <InfoCircleOutlined style={{ marginRight: 4 }} />
+                                趋势图显示了各维度评分随时间的变化，可通过选择不同维度进行比较分析
+                              </Text>
                             </div>
                           </div>
                         </Card>

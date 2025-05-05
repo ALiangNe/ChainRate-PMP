@@ -255,19 +255,53 @@
 }
 
 .monthlyChartBarLabel {
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(0, 0, 0, 0.5);
 }
 
-/* 响应式调整 */
+/* 多维度趋势图样式 */
+.trendChartContainer {
+  width: 100%;
+  position: relative;
+}
+
+.dimensionSelector {
+  margin-bottom: 20px;
+}
+
+.dimensionOption {
+  margin-right: 16px;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dimensionColor {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.chartTooltip {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* 响应式布局调整 */
 @media (max-width: 768px) {
   .distributionBar {
     margin: 0 8px;
   }
   
   .distributionLabel {
-    width: 32px;
+    width: 30px;
   }
   
   .distributionValue {
@@ -276,5 +310,9 @@
   
   .monthlyChart {
     height: 120px;
+  }
+  
+  .dimensionOption {
+    margin-right: 8px;
   }
 } 
