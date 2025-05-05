@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
@@ -24,7 +23,9 @@ import {
   FallOutlined,
   FilterOutlined,
   InfoCircleOutlined,
-  CheckOutlined
+  CheckOutlined,
+  DownloadOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -49,12 +50,19 @@ import {
   List,
   Table,
   Tag,
-  Checkbox
+  Checkbox,
+  Button,
+  message,
+  Modal
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip as ChartTooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
+import { default as NextImage } from 'next/image';
 
 // 注册Chart.js组件
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, Legend);
@@ -199,13 +207,21 @@ export default function TeacherStatisticalAnalysisPage() {
     avgRating: { label: '总体评分', color: '#faad14' },
     avgTeachingAbility: { label: '教学能力', color: '#1890ff' },
     avgTeachingAttitude: { label: '教学态度', color: '#1a73e8' },
-    avgTeachingMethod: { label: '教学方法', color: '#faad14' },
+    avgTeachingMethod: { label: '教学方法', color: '#13c2c2' },
     avgAcademicLevel: { label: '学术水平', color: '#722ed1' },
     avgGuidanceAbility: { label: '指导能力', color: '#eb2f96' }
   };
 
+  // 报告导出相关状态
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [pdfQuality, setPdfQuality] = useState('high'); // 新增PDF质量控制选项
+  
   // 图表引用
   const chartRef = useRef(null);
+  const reportRef = useRef(null);
+  const distributionRef = useRef(null);
+  const monthlyChartRef = useRef(null);
+  const overallStatsRef = useRef(null);
 
   useEffect(() => {
     // 检查用户是否已登录且是教师角色
@@ -614,7 +630,8 @@ export default function TeacherStatisticalAnalysisPage() {
         borderWidth: 2,
         pointBackgroundColor: dimensionInfo.color,
         pointRadius: 4,
-        tension: 0.3
+        tension: 0.3,
+        fill: false // 确保线条不填充，便于多维度比较
       };
     });
     
@@ -646,6 +663,313 @@ export default function TeacherStatisticalAnalysisPage() {
     setTimeRange(value);
   };
   
+  // 导出PDF报告
+  const exportPdfReport = async () => {
+    try {
+      setExportingPdf(true);
+      message.loading('正在生成PDF报告，请稍候...', 0);
+      
+      // 配置缩放比例 - 高质量模式
+      const scaleConfig = pdfQuality === 'high' ? {
+        chartScale: 3,
+        imageScale: 2.5,
+        imageQuality: 1.0
+      } : {
+        chartScale: 2,
+        imageScale: 1.8,
+        imageQuality: 0.9
+      };
+
+      // 创建图表的图像 - 提高缩放比例以获得更清晰的图表
+      let trendChartImage = '';
+      if (chartRef.current && trendData.labels.length > 0) {
+        try {
+          // 防止滚动影响截图
+          const originalScrollPosition = window.scrollY;
+          window.scrollTo(0, chartRef.current.offsetTop);
+          
+          const canvas = await html2canvas(chartRef.current, {
+            scale: scaleConfig.chartScale, // 提高缩放比例
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            imageTimeout: 0, // 防止图像超时
+            allowTaint: true, // 允许跨域图像
+            width: chartRef.current.offsetWidth,
+            height: chartRef.current.offsetHeight
+          });
+          
+          // 恢复滚动位置
+          window.scrollTo(0, originalScrollPosition);
+          
+          trendChartImage = canvas.toDataURL('image/png', scaleConfig.imageQuality);
+        } catch (err) {
+          console.error('无法捕获图表:', err);
+        }
+      }
+      
+      // 使用单独的高质量设置捕获每个统计部分
+      let overallStatsImage = '';
+      if (overallStatsRef.current) {
+        try {
+          const originalScrollPosition = window.scrollY;
+          window.scrollTo(0, overallStatsRef.current.offsetTop);
+          
+          const canvas = await html2canvas(overallStatsRef.current, {
+            scale: scaleConfig.imageScale,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            imageTimeout: 0,
+            allowTaint: true,
+            width: overallStatsRef.current.offsetWidth,
+            height: overallStatsRef.current.offsetHeight
+          });
+          
+          window.scrollTo(0, originalScrollPosition);
+          overallStatsImage = canvas.toDataURL('image/png', scaleConfig.imageQuality);
+        } catch (err) {
+          console.error('无法捕获统计信息:', err);
+        }
+      }
+      
+      let distributionImage = '';
+      if (distributionRef.current) {
+        try {
+          const originalScrollPosition = window.scrollY;
+          window.scrollTo(0, distributionRef.current.offsetTop);
+          
+          const canvas = await html2canvas(distributionRef.current, {
+            scale: scaleConfig.imageScale,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            imageTimeout: 0,
+            allowTaint: true,
+            width: distributionRef.current.offsetWidth,
+            height: distributionRef.current.offsetHeight
+          });
+          
+          window.scrollTo(0, originalScrollPosition);
+          distributionImage = canvas.toDataURL('image/png', scaleConfig.imageQuality);
+        } catch (err) {
+          console.error('无法捕获分布图:', err);
+        }
+      }
+      
+      // 创建PDF文档 - 使用更大的格式以减少缩放压缩
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: false // 减少压缩以保持质量
+      });
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // 添加标题（使用addImage方式避免中文字体问题）
+      const titleImg = await createTextAsImage('教师评价统计分析报告', '24px bold SimHei', '#1a73e8');
+      pdf.addImage(titleImg, 'PNG', (pageWidth - 120) / 2, 10, 120, 10);
+      
+      // 添加基本信息
+      let yPosition = 30;
+      
+      // 添加教师信息（使用图像方式）
+      const teacherInfoImg = await createTextAsImage(`教师: ${userData.name}`, '14px SimSun', '#000000');
+      pdf.addImage(teacherInfoImg, 'PNG', 20, yPosition, 80, 8);
+      yPosition += 10;
+      
+      // 添加时间信息
+      const currentDate = new Date().toLocaleString('zh-CN');
+      const dateInfoImg = await createTextAsImage(`生成时间: ${currentDate}`, '14px SimSun', '#000000');
+      pdf.addImage(dateInfoImg, 'PNG', 20, yPosition, 120, 8);
+      yPosition += 10;
+      
+      // 添加范围信息
+      const rangeText = `时间范围: ${timeRange === 'all' ? '全部' : timeRange === 'month' ? '近一个月' : '近一周'}`;
+      const rangeInfoImg = await createTextAsImage(rangeText, '14px SimSun', '#000000');
+      pdf.addImage(rangeInfoImg, 'PNG', 20, yPosition, 120, 8);
+      yPosition += 10;
+      
+      // 添加评价总数
+      const totalInfoImg = await createTextAsImage(`总评价数: ${overallStats.total}`, '14px SimSun', '#000000');
+      pdf.addImage(totalInfoImg, 'PNG', 20, yPosition, 80, 8);
+      yPosition += 15;
+      
+      // 添加分割线
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 10;
+      
+      // 如果有多维度评分趋势图，先添加到PDF
+      if (trendChartImage) {
+        // 添加标题
+        const trendTitleImg = await createTextAsImage('多维度评分趋势分析', '16px bold SimHei', '#1a73e8');
+        pdf.addImage(trendTitleImg, 'PNG', 20, yPosition, 100, 8);
+        yPosition += 12;
+        
+        // 计算合适的图像尺寸 - 保持原始比例
+        const imgWidth = pageWidth - 40; // 留出页面边距
+        
+        // 获取原始图像尺寸以计算正确的比例
+        const tempImg = new Image();
+        await new Promise((resolve) => {
+          tempImg.onload = resolve;
+          tempImg.src = trendChartImage;
+        });
+        
+        const aspectRatio = tempImg.height / tempImg.width;
+        const imgHeight = imgWidth * aspectRatio;
+        
+        // 检查是否需要新页面
+        if (yPosition + imgHeight > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        // 使用更高质量设置添加图像
+        pdf.addImage(trendChartImage, 'PNG', 20, yPosition, imgWidth, imgHeight, undefined, 'FAST');
+        
+        // 添加图例说明
+        yPosition += imgHeight + 10;
+        const dimensionsSelected = selectedDimensions.map(dim => dimensionConfig[dim].label).join('、');
+        const legendImg = await createTextAsImage(`所选维度: ${dimensionsSelected}`, '12px SimSun', '#666666');
+        pdf.addImage(legendImg, 'PNG', 20, yPosition, 160, 6);
+        yPosition += 15;
+      }
+      
+      // 如果有统计图像，添加到PDF
+      if (overallStatsImage) {
+        // 检查是否需要新页面
+        if (yPosition + 100 > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        // 添加标题
+        const statsTitleImg = await createTextAsImage('评分统计概览', '16px bold SimHei', '#1a73e8');
+        pdf.addImage(statsTitleImg, 'PNG', 20, yPosition, 100, 8);
+        yPosition += 12;
+        
+        // 计算合适的图像尺寸 - 保持原始比例
+        const imgWidth = pageWidth - 40; // 留出页面边距
+        
+        // 获取原始图像尺寸以计算正确的比例
+        const tempImg = new Image();
+        await new Promise((resolve) => {
+          tempImg.onload = resolve;
+          tempImg.src = overallStatsImage;
+        });
+        
+        const aspectRatio = tempImg.height / tempImg.width;
+        const imgHeight = imgWidth * aspectRatio;
+        
+        // 检查是否需要新页面
+        if (yPosition + imgHeight > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        // 使用更高质量设置添加图像
+        pdf.addImage(overallStatsImage, 'PNG', 20, yPosition, imgWidth, imgHeight, undefined, 'FAST');
+        yPosition += imgHeight + 15;
+      }
+      
+      // 如果有分布图像，添加到PDF - 使用同样的比例计算方法
+      if (distributionImage) {
+        // 检查是否需要新页面
+        if (yPosition + 80 > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        // 添加标题
+        const distTitleImg = await createTextAsImage('评分分布情况', '16px bold SimHei', '#1a73e8');
+        pdf.addImage(distTitleImg, 'PNG', 20, yPosition, 100, 8);
+        yPosition += 12;
+        
+        // 计算正确的比例
+        const imgWidth = pageWidth - 40;
+        
+        // 获取原始图像尺寸
+        const tempImg = new Image();
+        await new Promise((resolve) => {
+          tempImg.onload = resolve;
+          tempImg.src = distributionImage;
+        });
+        
+        const aspectRatio = tempImg.height / tempImg.width;
+        const imgHeight = imgWidth * aspectRatio;
+        
+        // 检查是否需要新页面
+        if (yPosition + imgHeight > pageHeight - 20) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.addImage(distributionImage, 'PNG', 20, yPosition, imgWidth, imgHeight, undefined, 'FAST');
+        yPosition += imgHeight + 15;
+      }
+      
+      // 添加页脚
+      const footerImg = await createTextAsImage(`ChainRate教师评价分析系统 - ${new Date().toLocaleDateString('zh-CN')}`, '12px SimSun', '#999999');
+      pdf.addImage(footerImg, 'PNG', 60, pageHeight - 15, 120, 6);
+      
+      // 保存PDF
+      pdf.save(`教师评价分析报告_${userData.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      message.destroy();
+      message.success('PDF报告生成成功！');
+    } catch (error) {
+      console.error('生成PDF报告失败:', error);
+      message.destroy();
+      message.error('生成PDF报告失败: ' + error.message);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+  
+  // 辅助函数：将文本转换为图像
+  const createTextAsImage = (text, font, color) => {
+    return new Promise((resolve) => {
+      // 创建临时canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // 设置字体和大小
+      ctx.font = font;
+      ctx.fillStyle = color;
+      
+      // 测量文本宽度
+      const textWidth = ctx.measureText(text).width;
+      
+      // 设置canvas大小 - 添加抗锯齿处理
+      const scale = 2; // 提高Canvas内部分辨率
+      canvas.width = (textWidth + 20) * scale;
+      canvas.height = (parseInt(font) * 1.5) * scale;
+      
+      // 缩放画布以提高分辨率
+      ctx.scale(scale, scale);
+      
+      // 重新设置字体，因为canvas大小改变后字体设置会被重置
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textBaseline = 'middle';
+      
+      // 添加文本抗锯齿
+      ctx.textRendering = 'optimizeLegibility';
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 绘制文本
+      ctx.fillText(text, 10, canvas.height / (2 * scale));
+      
+      // 转换为高质量图像
+      resolve(canvas.toDataURL('image/png', 1.0));
+    });
+  };
+
   return (
     <ConfigProvider
       theme={{
@@ -658,7 +982,7 @@ export default function TeacherStatisticalAnalysisPage() {
         <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <div className={styles.logo}>
-              <Image 
+              <NextImage 
                 src="/images/logo1.png" 
                 alt="链评系统Logo" 
                 width={40} 
@@ -718,8 +1042,8 @@ export default function TeacherStatisticalAnalysisPage() {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
-                <>
-                  {/* 筛选条件 */}
+                <div ref={reportRef}>
+                  {/* 筛选条件和导出按钮 */}
                   <Card
                     title={
                       <div className={styles.cardTitle}>
@@ -728,6 +1052,27 @@ export default function TeacherStatisticalAnalysisPage() {
                       </div>
                     }
                     style={{ marginBottom: 24 }}
+                    extra={
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <Select
+                          defaultValue="high"
+                          style={{ width: 120 }}
+                          onChange={(value) => setPdfQuality(value)}
+                          options={[
+                            { value: 'high', label: '高质量PDF' },
+                            { value: 'standard', label: '标准质量PDF' },
+                          ]}
+                        />
+                        <Button 
+                          type="primary" 
+                          icon={<FilePdfOutlined />} 
+                          onClick={exportPdfReport}
+                          loading={exportingPdf}
+                        >
+                          导出分析报告
+                        </Button>
+                      </div>
+                    }
                   >
                     <Row gutter={[16, 16]} align="middle">
                       <Col xs={24} md={8}>
@@ -748,7 +1093,7 @@ export default function TeacherStatisticalAnalysisPage() {
                   </Card>
                   
                   {/* 总体数据卡片 */}
-                  <div className={styles.statisticsContainer}>
+                  <div className={styles.statisticsContainer} ref={overallStatsRef}>
                     <Row gutter={[16, 16]}>
                       <Col xs={24}>
                         <Card 
@@ -917,7 +1262,7 @@ export default function TeacherStatisticalAnalysisPage() {
                             </div>
                           }
                         >
-                          <div className={styles.distributionContainer}>
+                          <div className={styles.distributionContainer} ref={distributionRef}>
                             {/* 评分分布柱状图 */}
                             {ratingDistribution.map((item, index) => (
                               <div key={index} className={styles.distributionItem}>
@@ -954,7 +1299,7 @@ export default function TeacherStatisticalAnalysisPage() {
                             </div>
                           }
                         >
-                          <div className={styles.timeDistributionContainer}>
+                          <div className={styles.timeDistributionContainer} ref={monthlyChartRef}>
                             <div className={styles.timeDistributionContent}>
                               {/* 最近评价统计 */}
                               <List
@@ -1066,14 +1411,26 @@ export default function TeacherStatisticalAnalysisPage() {
                                 value={selectedDimensions}
                                 onChange={handleDimensionChange}
                               />
+                              <div style={{ marginTop: 8 }}>
+                                <Text type="secondary">
+                                  <InfoCircleOutlined style={{ marginRight: 4 }} />
+                                  选择多个维度可在同一张图表中进行对比分析
+                                </Text>
+                              </div>
                             </div>
                             
                             <Divider />
                             
-                            <div style={{ height: '400px', position: 'relative' }}>
+                            <div 
+                              style={{ 
+                                height: '450px', 
+                                position: 'relative',
+                                width: '100%'
+                              }}
+                              ref={chartRef}
+                            >
                               {evaluations.length > 0 ? (
                                 <Line
-                                  ref={chartRef}
                                   data={trendData}
                                   options={{
                                     responsive: true,
@@ -1084,17 +1441,33 @@ export default function TeacherStatisticalAnalysisPage() {
                                         min: 0,
                                         max: 5,
                                         ticks: {
-                                          stepSize: 1
+                                          stepSize: 1,
+                                          font: {
+                                            size: 12
+                                          }
                                         },
                                         title: {
                                           display: true,
-                                          text: '评分 (1-5分)'
+                                          text: '评分 (1-5分)',
+                                          font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                          }
                                         }
                                       },
                                       x: {
                                         title: {
                                           display: true,
-                                          text: '时间'
+                                          text: '时间',
+                                          font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                          }
+                                        },
+                                        ticks: {
+                                          font: {
+                                            size: 12
+                                          }
                                         }
                                       }
                                     },
@@ -1103,10 +1476,19 @@ export default function TeacherStatisticalAnalysisPage() {
                                         position: 'top',
                                         labels: {
                                           usePointStyle: true,
-                                          boxWidth: 6
+                                          boxWidth: 10,
+                                          font: {
+                                            size: 13
+                                          }
                                         }
                                       },
                                       tooltip: {
+                                        titleFont: {
+                                          size: 13
+                                        },
+                                        bodyFont: {
+                                          size: 13
+                                        },
                                         callbacks: {
                                           label: function(context) {
                                             let label = context.dataset.label || '';
@@ -1118,8 +1500,14 @@ export default function TeacherStatisticalAnalysisPage() {
                                             }
                                             return label;
                                           }
-                                        }
+                                        },
+                                        displayColors: true, // 确保显示颜色标记
+                                        boxPadding: 5 // 增加一些内边距
                                       }
+                                    },
+                                    interaction: {
+                                      intersect: false, // 允许鼠标悬停在线上任何位置时显示提示
+                                      mode: 'index' // 显示同一时间点上所有系列的数据
                                     }
                                   }}
                                 />
@@ -1133,13 +1521,24 @@ export default function TeacherStatisticalAnalysisPage() {
                                 <InfoCircleOutlined style={{ marginRight: 4 }} />
                                 趋势图显示了各维度评分随时间的变化，可通过选择不同维度进行比较分析
                               </Text>
+                              <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                {selectedDimensions.map(dim => (
+                                  <Tag 
+                                    key={dim} 
+                                    color={dimensionConfig[dim].color}
+                                    style={{ margin: '4px', padding: '2px 8px' }}
+                                  >
+                                    {dimensionConfig[dim].label}
+                                  </Tag>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </Card>
                       </Col>
                     </Row>
                   </div>
-                </>
+                </div>
               )}
             </Content>
           </Layout>
