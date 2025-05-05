@@ -7,7 +7,8 @@ import {
   UserOutlined, 
   BookOutlined, 
   CommentOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -60,6 +61,11 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
           key: '4',
           label: '课程评价',
           onClick: () => router.push('/teacherViewEvaluation')
+        },
+        {
+          key: '7',
+          label: '学生反馈',
+          onClick: () => router.push('/teacherViewFeedback')
         },
         {
           key: '6',
