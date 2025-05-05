@@ -969,7 +969,7 @@ export default function TeacherStatisticalAnalysisPage() {
       resolve(canvas.toDataURL('image/png', 1.0));
     });
   };
-
+  
   return (
     <ConfigProvider
       theme={{
