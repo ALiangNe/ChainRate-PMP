@@ -11,8 +11,8 @@ import ChainRate02Address from '../../contracts/ChainRate02-address.json';
 import { default as NextImage } from 'next/image';
 import { diffLines } from 'diff';
 import { jsPDF } from 'jspdf';
-// 修改导入方式，确保autoTable作为插件正确加载
-import 'jspdf-autotable';
+// 修改导入方式，确保autoTable作为函数正确加载
+import autoTable from 'jspdf-autotable';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -923,7 +923,7 @@ export default function TeacherViewFeedbackPage() {
       });
       
       // 检查autoTable插件是否正确加载
-      if (typeof doc.autoTable !== 'function') {
+      if (typeof autoTable !== 'function') {
         console.error('jsPDF-AutoTable 插件未正确加载');
         message.error('PDF插件加载失败，请刷新页面重试');
         setExportingAllFeedbacks(false);
@@ -1087,7 +1087,7 @@ export default function TeacherViewFeedbackPage() {
           
           try {
             // 使用autoTable创建表格
-            doc.autoTable({
+            autoTable(doc, {
               startY: yPos,
               head: [['版本', '修改时间', '内容摘要']],
               body: tableData,
@@ -1259,7 +1259,7 @@ export default function TeacherViewFeedbackPage() {
       });
       
       // 检查autoTable插件是否正确加载
-      if (typeof doc.autoTable !== 'function') {
+      if (typeof autoTable !== 'function') {
         console.error('jsPDF-AutoTable 插件未正确加载');
         message.error('PDF插件加载失败，请刷新页面重试');
         setExportLoading(false);
@@ -1360,7 +1360,7 @@ export default function TeacherViewFeedbackPage() {
         
         try {
           // 使用autoTable创建表格
-          doc.autoTable({
+          autoTable(doc, {
             startY: yPos,
             head: [['版本', '修改时间', '内容摘要']],
             body: tableData,
