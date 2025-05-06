@@ -449,6 +449,21 @@ export default function TeacherViewFeedbackPage() {
             if (currentContract && typeof currentContract.getUserInfo === 'function') {
               student = await currentContract.getUserInfo(feedback.student);
               console.log(`获取学生信息成功:`, student);
+              
+              // 从智能合约获取学生头像URL
+              try {
+                const studentProfile = await currentContract.getUserProfile(feedback.student);
+                if (studentProfile && studentProfile.avatar) {
+                  student.avatar = studentProfile.avatar;
+                  console.log(`获取到学生头像URL:`, student.avatar);
+                } else {
+                  // 如果合约中没有头像，尝试根据学生地址生成唯一颜色作为头像背景
+                  const address = feedback.student.toLowerCase();
+                  student.avatarColor = `#${address.substring(2, 8)}`;
+                }
+              } catch (avatarError) {
+                console.error(`获取学生头像失败:`, avatarError);
+              }
             } else {
               console.warn(`主合约未初始化或无法访问getUserInfo方法，无法获取学生 ${feedback.student} 的详细信息`);
             }
@@ -535,7 +550,9 @@ export default function TeacherViewFeedbackPage() {
               name: student.name,
               college: student.college,
               major: student.major,
-              grade: student.grade
+              grade: student.grade,
+              avatar: student.avatar || null,
+              avatarColor: student.avatarColor || null
             },
             timestamp: timestamp,
             formattedDate: timestamp.toLocaleString('zh-CN', {
@@ -1612,14 +1629,23 @@ export default function TeacherViewFeedbackPage() {
       >
         <List.Item.Meta
           avatar={
-            <Avatar 
-              style={{ 
-                backgroundColor: feedback.isAnonymous ? '#ccc' : colorPrimary,
-                verticalAlign: 'middle'
-              }}
-            >
-              {feedback.isAnonymous ? '匿' : feedback.student.name[0]}
-            </Avatar>
+            feedback.isAnonymous ? (
+              <Avatar style={{ backgroundColor: '#ccc', verticalAlign: 'middle' }}>
+                匿
+              </Avatar>
+            ) : (
+              <Avatar 
+                style={{ 
+                  backgroundColor: feedback.student.avatar ? 'transparent' : colorPrimary,
+                  verticalAlign: 'middle'
+                }}
+                src={feedback.student.avatar}
+                // 当头像加载失败时显示用户名首字母
+                onError={() => true}
+              >
+                {feedback.student.name ? feedback.student.name[0].toUpperCase() : 'U'}
+              </Avatar>
+            )
           }
           title={
             <Space>
@@ -1782,16 +1808,16 @@ export default function TeacherViewFeedbackPage() {
                           </Select>
                         </div>
                       </Col>
-                      <Col xs={24} md={16}>
+                      <Col xs={24} md={12}>
                         <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={8}>
+                          <Col xs={24} sm={12}>
                             <Statistic 
                               title="总反馈数" 
                               value={feedbackStats.total} 
                               prefix={<CommentOutlined className={styles.statIcon} />} 
                             />
                           </Col>
-                          <Col xs={24} sm={8}>
+                          <Col xs={24} sm={12}>
                             <Statistic 
                               title="待回复" 
                               value={feedbackStats.pending}
@@ -1799,14 +1825,14 @@ export default function TeacherViewFeedbackPage() {
                               suffix={feedbackStats.total > 0 ? `/${feedbackStats.total}` : ''}
                             />
                           </Col>
-                          <Col xs={24} sm={8}>
+                          {/* <Col xs={24} sm={8}>
                             <Statistic 
                               title="平均评分" 
                               value={feedbackStats.avgRating} 
                               prefix={<StarFilled className={styles.ratingIcon} />} 
                               suffix="/5"
                             />
-                          </Col>
+                          </Col> */}
                         </Row>
                       </Col>
                     </Row>
@@ -1950,7 +1976,6 @@ export default function TeacherViewFeedbackPage() {
                     <span>
                       {currentFeedback.isAnonymous ? '匿名学生' : currentFeedback.student.name}
                     </span>
-                    <Rate disabled value={currentFeedback.rating} style={{ fontSize: 14 }} />
                   </Space>
                 }
                 className={styles.modalFeedbackCard}

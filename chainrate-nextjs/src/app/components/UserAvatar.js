@@ -18,11 +18,21 @@ export default function UserAvatar({ color = '#1677ff', size = 'default' }) {
     const userName = localStorage.getItem('userName') || '';
     const userAvatar = localStorage.getItem('userAvatar') || '';
     const userRole = localStorage.getItem('userRole') || '';
+    const userAddress = localStorage.getItem('userAddress') || '';
+    
+    // 根据用户地址生成随机颜色
+    const generateColorFromAddress = (address) => {
+      if (!address) return '#1677ff';
+      const hash = address.slice(2, 8); // 使用地址的一部分
+      return `#${hash}`;
+    };
     
     setUserData({
       name: userName,
       avatar: userAvatar,
-      role: userRole
+      role: userRole,
+      address: userAddress,
+      color: generateColorFromAddress(userAddress)
     });
   }, []);
   
@@ -82,6 +92,12 @@ export default function UserAvatar({ color = '#1677ff', size = 'default' }) {
   // 头像大小
   const avatarSize = size === 'large' ? 40 : size === 'small' ? 28 : 32;
   
+  // 根据用户名创建默认头像
+  const getInitials = (name) => {
+    if (!name) return defaultIcon;
+    return name.charAt(0).toUpperCase();
+  };
+  
   return (
     <Dropdown menu={{ items }} placement="bottomRight" arrow>
       <div style={{ cursor: 'pointer' }}>
@@ -90,13 +106,21 @@ export default function UserAvatar({ color = '#1677ff', size = 'default' }) {
             size={avatarSize} 
             src={userData.avatar} 
             style={{ border: `1px solid ${color}` }}
-          />
+            // 添加备用显示方式，如果图片加载失败
+            onError={() => {
+              // 当头像加载失败时，返回true让它使用fallback内容
+              return true;
+            }}
+          >
+            {getInitials(userData.name)}
+          </Avatar>
         ) : (
           <Avatar 
             size={avatarSize} 
-            icon={defaultIcon} 
-            style={{ backgroundColor: color }} 
-          />
+            style={{ backgroundColor: userData.color || color }}
+          >
+            {getInitials(userData.name)}
+          </Avatar>
         )}
       </div>
     </Dropdown>
