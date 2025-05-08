@@ -21,7 +21,7 @@ import "./ChainRate.sol";
  */
 contract ChainRate02 {
     // 主合约引用
-    ChainRate public mainContract;
+    ChainRate public mainContract; // 地址
     
     // 教师评价维度
     enum TeacherEvaluationDimension {

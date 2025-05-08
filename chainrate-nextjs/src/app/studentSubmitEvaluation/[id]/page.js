@@ -1,3 +1,54 @@
+/**
+ * 学生课程评价提交页面 (Student Course Evaluation Submission Page)
+ * 
+ * 功能概述:
+ * - 允许学生对已加入的课程提交多维度评价
+ * - 支持文本评价内容和图片上传
+ * - 提供匿名评价选项
+ * - 实现多维度评分系统(总体、教学质量、内容设计、师生互动)
+ * - 评价提交到IPFS和区块链双重存储
+ * 
+ * 动态路由:
+ * - 使用[id]参数获取特定课程ID
+ * - 根据ID验证学生是否有权提交评价
+ * 
+ * 主要组件:
+ * - EvaluationForm: 评价提交表单，包含多个评分维度
+ * - ImageUploader: 图片上传组件，支持预览和删除
+ * - IPFS集成: 使用Pinata服务将图片上传到IPFS
+ * - RatingComponent: 星级评分组件，支持不同维度评分
+ * 
+ * 交互功能:
+ * 1. 用户可输入评价文本内容
+ * 2. 用户可对课程进行多维度评分
+ * 3. 用户可上传图片作为评价证明
+ * 4. 用户可选择是否匿名评价
+ * 5. 表单验证确保所有必填项都已填写
+ * 
+ * 数据流:
+ * 1. 从URL参数获取课程ID
+ * 2. 验证用户是否有权评价该课程(已加入且在评价期内)
+ * 3. 图片首先上传到IPFS获取哈希值
+ * 4. 评价内容和图片哈希提交到区块链
+ * 5. 评价成功后重定向回课程详情页
+ * 
+ * 安全措施:
+ * - 验证用户是否已登录且为学生角色
+ * - 验证用户是否已加入课程
+ * - 验证当前是否在评价期内
+ * - 防止重复评价提交
+ * - 评价内容上链前进行验证
+ * 
+ * 技术特性:
+ * - 使用IPFS(Pinata)存储评价图片
+ * - 使用智能合约记录评价数据
+ * - 实现上传进度显示和错误处理
+ * - 响应式界面设计适配不同设备
+ * 
+ * @author ChainRate Team
+ * @version 1.0
+ */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -115,6 +166,8 @@ export default function SubmitEvaluationPage({ params }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState('');
   
   // Web3相关
   const [provider, setProvider] = useState(null);
@@ -260,11 +313,24 @@ export default function SubmitEvaluationPage({ params }) {
   // 处理图片上传
   const handleImageUpload = (info) => {
     const { fileList } = info;
+    
+    // 检查每个文件的状态，过滤掉出错的文件
+    const validFileList = fileList.filter(file => file.status !== 'error');
+    
     // 限制最多上传5张图片
-    const filteredFileList = fileList.slice(0, 5);
+    const filteredFileList = validFileList.slice(0, 5);
     
     const newImages = filteredFileList.map(file => {
       if (file.originFileObj) {
+        // 验证图片大小
+        const isLt5M = file.size / 1024 / 1024 < 5 || (file.originFileObj && file.originFileObj.size / 1024 / 1024 < 5);
+        
+        if (!isLt5M) {
+          console.log('大图片被过滤：', file.name);
+          showErrorModal(`图片 ${file.name || '未命名'} 大小不能超过5MB`);
+          return null;
+        }
+        
         if (!file.url && !file.preview) {
           file.preview = URL.createObjectURL(file.originFileObj);
         }
@@ -275,12 +341,12 @@ export default function SubmitEvaluationPage({ params }) {
         };
       }
       return file;
-    });
+    }).filter(file => file !== null); // 过滤掉不符合条件的文件
     
     setImages(newImages);
     
     // 如果尝试上传超过5张
-    if (fileList.length > 5) {
+    if (validFileList.length > 5) {
       message.warning('最多只能上传5张图片');
     }
   };
@@ -311,6 +377,12 @@ export default function SubmitEvaluationPage({ params }) {
       throw new Error('Pinata JWT不存在，请配置环境变量');
     }
     
+    // 再次检查文件大小
+    if (file.size / 1024 / 1024 >= 5) {
+      showErrorModal('图片大小不能超过5MB');
+      throw new Error('图片大小不能超过5MB');
+    }
+    
     const formData = new FormData();
     formData.append('file', file);
     
@@ -339,6 +411,14 @@ export default function SubmitEvaluationPage({ params }) {
   const uploadImages = async () => {
     if (images.length === 0) {
       return []; // 如果没有图片，返回空数组
+    }
+    
+    // 在上传前再次验证所有图片大小
+    for (let image of images) {
+      if (image.file && image.file.size / 1024 / 1024 >= 5) {
+        showErrorModal(`图片 ${image.file.name || '未命名'} 大小不能超过5MB`);
+        return [];
+      }
     }
     
     setUploadingImages(true);
@@ -521,6 +601,12 @@ export default function SubmitEvaluationPage({ params }) {
     router.push('/login');
   };
 
+  // 显示错误弹窗
+  const showErrorModal = (content) => {
+    setErrorModalContent(content);
+    setErrorModalVisible(true);
+  };
+
   // 侧边栏菜单项
   // const siderItems = [
   //   {
@@ -583,22 +669,24 @@ export default function SubmitEvaluationPage({ params }) {
       const isLt5M = file.size / 1024 / 1024 < 5;
       
       if (!isImage) {
-        message.error('只能上传图片文件!');
-        return Upload.LIST_IGNORE;
+        showErrorModal('只能上传图片文件!');
+        return Promise.reject(new Error('只能上传图片文件!'));
       }
       
       if (!isLt5M) {
-        message.error('图片必须小于5MB!');
-        return Upload.LIST_IGNORE;
+        showErrorModal('图片大小不能超过5MB');
+        return Promise.reject(new Error('图片大小不能超过5MB'));
       }
       
-      return false; // 阻止自动上传
+      return false; // 阻止自动上传，但允许显示在列表中
     },
     showUploadList: {
       showPreviewIcon: true,
       showDownloadIcon: false,
       showRemoveIcon: true,
     },
+    accept: 'image/*', // 只接受图片类型
+    multiple: true, // 允许多选
   };
 
   if (loading) {
@@ -788,6 +876,9 @@ export default function SubmitEvaluationPage({ params }) {
                                   <div>
                                     <UploadOutlined />
                                     <div style={{ marginTop: 8 }}>上传</div>
+                                    <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
+                                      (限制5MB)
+                                    </div>
                                   </div>
                                 )}
                               </Upload>
@@ -822,7 +913,7 @@ export default function SubmitEvaluationPage({ params }) {
                               
                               <div style={{ marginTop: 12 }}>
                                 <Text type="secondary">
-                                  支持上传的图片格式：JPG, PNG, GIF等，单张图片不超过5MB，最多上传5张
+                                  支持上传的图片格式：JPG, PNG, GIF等，单张图片大小不能超过5MB，最多上传5张
                                 </Text>
                                 <br />
                                 <Text type="secondary">
@@ -870,12 +961,30 @@ export default function SubmitEvaluationPage({ params }) {
 
               {/* 图片预览模态框 */}
               <Modal
-                visible={previewVisible}
+                open={previewVisible}
                 title="图片预览"
                 footer={null}
                 onCancel={() => setPreviewVisible(false)}
               >
                 <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
+              </Modal>
+              
+              {/* 错误提示弹窗 */}
+              <Modal
+                open={errorModalVisible}
+                title="错误提示"
+                centered
+                okText="确定"
+                cancelButtonProps={{ style: { display: 'none' } }}
+                onOk={() => setErrorModalVisible(false)}
+                onCancel={() => setErrorModalVisible(false)}
+              >
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+                    <span role="img" aria-label="close-circle">❌</span>
+                  </div>
+                  <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
+                </div>
               </Modal>
             </Content>
           </Layout>
