@@ -39,7 +39,8 @@ import {
   LoadingOutlined,
   CheckCircleOutlined,
   FileTextOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import StudentSidebar from '../components/StudentSidebar';
 import UserAvatar from '../components/UserAvatar';
@@ -115,6 +116,10 @@ export default function StudentSubmitFeedbackPage() {
   const [documentFiles, setDocumentFiles] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  
+  // Modal状态
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState('');
   
   // 提交结果
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -334,12 +339,20 @@ export default function StudentSubmitFeedbackPage() {
   
   // 处理文档文件上传
   const handleDocumentUpload = ({ fileList }) => {
-    setDocumentFiles(fileList);
+    // 过滤掉状态为error或removed的文件
+    const validFileList = fileList.filter(file => 
+      file.status !== 'error' && file.status !== 'removed'
+    );
+    setDocumentFiles(validFileList);
   };
   
   // 处理图片上传
   const handleImageUpload = ({ fileList }) => {
-    setImageFiles(fileList);
+    // 过滤掉状态为error或removed的文件
+    const validFileList = fileList.filter(file => 
+      file.status !== 'error' && file.status !== 'removed'
+    );
+    setImageFiles(validFileList);
   };
   
   // 上传文件到IPFS并获取哈希
@@ -482,11 +495,40 @@ export default function StudentSubmitFeedbackPage() {
   
   // 上传文件之前的检查
   const beforeUpload = (file) => {
-    // 文件类型和大小检查
+    // 检查文件大小
     const isAllowedSize = file.size / 1024 / 1024 < 10; // 10MB 限制
-    
     if (!isAllowedSize) {
-      message.error('文件大小不能超过10MB!');
+      setErrorModalVisible(true);
+      setErrorModalContent('附件大小不能超过10MB');
+      return Upload.LIST_IGNORE;
+    }
+    
+    // 检查文件类型
+    const fileName = file.name || '';
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    
+    // 允许的MIME类型
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', // 图片
+      'application/pdf', // PDF
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+      'application/msword', // DOC
+      'application/vnd.ms-powerpoint', // PPT
+      'application/vnd.ms-excel', // XLS
+      'text/plain' // TXT
+    ];
+    
+    // 允许的文件扩展名
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'txt'];
+    
+    const isAllowedType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+    
+    if (!isAllowedType) {
+      console.log('不支持的文件类型:', file.type, '文件名:', file.name);
+      setErrorModalVisible(true);
+      setErrorModalContent('仅支持以下格式：JPG, PNG, PDF, DOCX, PPTX');
       return Upload.LIST_IGNORE;
     }
     
@@ -573,6 +615,24 @@ export default function StudentSubmitFeedbackPage() {
             </Content>
           </Layout>
         </Layout>
+        
+        {/* 错误提示弹窗 */}
+        <Modal
+          open={errorModalVisible}
+          title="提示"
+          centered
+          okText="确定"
+          cancelButtonProps={{ style: { display: 'none' } }}
+          onOk={() => setErrorModalVisible(false)}
+          onCancel={() => setErrorModalVisible(false)}
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+              <ExclamationCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
+          </div>
+        </Modal>
       </ConfigProvider>
     );
   }
@@ -689,6 +749,24 @@ export default function StudentSubmitFeedbackPage() {
             </Content>
           </Layout>
         </Layout>
+        
+        {/* 错误提示弹窗 */}
+        <Modal
+          open={errorModalVisible}
+          title="提示"
+          centered
+          okText="确定"
+          cancelButtonProps={{ style: { display: 'none' } }}
+          onOk={() => setErrorModalVisible(false)}
+          onCancel={() => setErrorModalVisible(false)}
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+              <ExclamationCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
+          </div>
+        </Modal>
       </ConfigProvider>
     );
   }
@@ -868,6 +946,24 @@ export default function StudentSubmitFeedbackPage() {
           </Content>
         </Layout>
       </Layout>
+      
+      {/* 错误提示弹窗 */}
+      <Modal
+        open={errorModalVisible}
+        title="提示"
+        centered
+        okText="确定"
+        cancelButtonProps={{ style: { display: 'none' } }}
+        onOk={() => setErrorModalVisible(false)}
+        onCancel={() => setErrorModalVisible(false)}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+            <ExclamationCircleOutlined />
+          </div>
+          <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
+        </div>
+      </Modal>
     </ConfigProvider>
   );
 } 

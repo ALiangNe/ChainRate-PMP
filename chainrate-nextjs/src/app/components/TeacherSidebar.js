@@ -38,7 +38,7 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
     {
       key: 'sub2',
       icon: <BookOutlined />,
-      label: '课程管理',
+      label: '课程评分管理',
       children: [
         {
           key: '2',
@@ -49,40 +49,43 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
           key: '3',
           label: '我的课程',
           onClick: () => router.push('/teacherViewCourse')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: <CommentOutlined />,
-      label: '评价管理',
-      children: [
+        },
         {
           key: '4',
           label: '课程评价',
           onClick: () => router.push('/teacherViewEvaluation')
         },
-        {
-          key: '7',
-          label: '学生反馈',
-          onClick: () => router.push('/teacherViewFeedback')
-        },
+      ],
+    },
+    {
+      key: 'sub3',
+      icon: <CommentOutlined />,
+      label: '教师评价管理',
+      children: [
+        
+        
         {
           key: '6',
           label: '教师评价',
           onClick: () => router.push('/teacherViewEvaluateTeacher')
+        },
+        {
+          key: '5',
+          label: '统计分析',
+          onClick: () => router.push('/teacherStatisticalAnalysis')
         }
       ],
     },
     {
       key: 'sub4',
       icon: <BarChartOutlined />,
-      label: '数据分析',
+      label: '课程反馈管理',
       children: [
+        
         {
-          key: '5',
-          label: '统计分析',
-          onClick: () => router.push('/teacherStatisticalAnalysis')
+          key: '7',
+          label: '学生反馈',
+          onClick: () => router.push('/teacherViewFeedback')
         }
       ],
     }

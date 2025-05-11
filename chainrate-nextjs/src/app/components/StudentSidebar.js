@@ -37,11 +37,16 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
     {
       key: 'sub2',
       icon: React.createElement(BookOutlined),
-      label: '课程管理',
+      label: '课程评分',
       children: [
         {
+          key: '3',
+          label: '评分管理',
+          onClick: () => router.push('/studentMyEvaluation')
+        },
+        {
           key: '2',
-          label: '查看课程',
+          label: '课程预览',
           onClick: () => router.push('/studentViewCourses')
         }
       ],
@@ -49,21 +54,17 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
     {
       key: 'sub3',
       icon: React.createElement(CommentOutlined),
-      label: '评价管理',
+      label: '教师评价',
       children: [
-        {
-          key: '3',
-          label: '查看课程评价',
-          onClick: () => router.push('/studentMyEvaluation')
-        },
+        
         {
           key: '5',
-          label: '进行教师评价',
+          label: '评价管理',
           onClick: () => router.push('/studentEvaluateTeacher')
         },
         {
           key: '6',
-          label: '查看教师评价',
+          label: '查看评价',
           onClick: () => router.push('/studentViewEvaluateTeacher')
         }
       ],
@@ -71,16 +72,16 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
     {
       key: 'sub4',
       icon: React.createElement(FileTextOutlined),
-      label: '反馈管理',
+      label: '课程反馈',
       children: [
         {
           key: '7',
-          label: '提交课程反馈',
+          label: '反馈管理',
           onClick: () => router.push('/studentSubmitFeedback')
         },
         {
           key: '8',
-          label: '查看课程反馈',
+          label: '查看反馈',
           onClick: () => router.push('/studentViewFeedback')
         }
       ],

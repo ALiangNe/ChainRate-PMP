@@ -105,12 +105,12 @@ export default function StudentEvaluateTeacherPage() {
   // 评价表单相关状态
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [evaluationContent, setEvaluationContent] = useState('');
-  const [overallRating, setOverallRating] = useState(5);
-  const [teachingAbilityRating, setTeachingAbilityRating] = useState(5);
-  const [teachingAttitudeRating, setTeachingAttitudeRating] = useState(5);
-  const [teachingMethodRating, setTeachingMethodRating] = useState(5);
-  const [academicLevelRating, setAcademicLevelRating] = useState(5);
-  const [guidanceAbilityRating, setGuidanceAbilityRating] = useState(5);
+  const [overallRating, setOverallRating] = useState(0);
+  const [teachingAbilityRating, setTeachingAbilityRating] = useState(0);
+  const [teachingAttitudeRating, setTeachingAttitudeRating] = useState(0);
+  const [teachingMethodRating, setTeachingMethodRating] = useState(0);
+  const [academicLevelRating, setAcademicLevelRating] = useState(0);
+  const [guidanceAbilityRating, setGuidanceAbilityRating] = useState(0);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -361,12 +361,12 @@ export default function StudentEvaluateTeacherPage() {
     setSelectedTeacher(teacher);
     // 重置评价表单
     setEvaluationContent('');
-    setOverallRating(5);
-    setTeachingAbilityRating(5);
-    setTeachingAttitudeRating(5);
-    setTeachingMethodRating(5);
-    setAcademicLevelRating(5);
-    setGuidanceAbilityRating(5);
+    setOverallRating(0);
+    setTeachingAbilityRating(0);
+    setTeachingAttitudeRating(0);
+    setTeachingMethodRating(0);
+    setAcademicLevelRating(0);
+    setGuidanceAbilityRating(0);
     setIsAnonymous(false);
     setImages([]);
     setUploadedImageHashes([]);
@@ -455,12 +455,53 @@ export default function StudentEvaluateTeacherPage() {
   // 提交评价
   const submitEvaluation = async () => {
     if (!selectedTeacher) {
-      message.error('请选择要评价的教师');
+      Modal.error({
+        title: '提示',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+              <ExclamationCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>请选择要评价的教师</p>
+          </div>
+        ),
+        centered: true,
+      });
+      return;
+    }
+
+    // 首先检查评价内容
+    if (!evaluationContent.trim()) {
+      Modal.error({
+        title: '提示',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+              <ExclamationCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>请输入评价内容</p>
+          </div>
+        ),
+        centered: true,
+      });
       return;
     }
     
-    if (!evaluationContent.trim()) {
-      message.error('请输入评价内容');
+    // 检查所有必填评分项
+    if (!overallRating || !teachingAbilityRating || !teachingAttitudeRating || 
+        !teachingMethodRating || !academicLevelRating || !guidanceAbilityRating) {
+      Modal.error({
+        title: '提示',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+              <ExclamationCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>请完成所有必填评分项</p>
+          </div>
+        ),
+        centered: true,
+      });
       return;
     }
     
@@ -549,12 +590,12 @@ export default function StudentEvaluateTeacherPage() {
       // 重置表单
       setSelectedTeacher(null);
       setEvaluationContent('');
-      setOverallRating(5);
-      setTeachingAbilityRating(5);
-      setTeachingAttitudeRating(5);
-      setTeachingMethodRating(5);
-      setAcademicLevelRating(5);
-      setGuidanceAbilityRating(5);
+      setOverallRating(0);
+      setTeachingAbilityRating(0);
+      setTeachingAttitudeRating(0);
+      setTeachingMethodRating(0);
+      setAcademicLevelRating(0);
+      setGuidanceAbilityRating(0);
       setIsAnonymous(false);
       setImages([]);
       setUploadedImageHashes([]);
@@ -770,7 +811,7 @@ export default function StudentEvaluateTeacherPage() {
                           character={<StarFilled />}
                         />
                         <Text type="secondary" style={{ marginLeft: 8 }}>
-                          {ratingDescriptions.overall[overallRating - 1]}
+                          {overallRating ? ratingDescriptions.overall[overallRating - 1] : '请评分'}
                         </Text>
                       </Form.Item>
                       
@@ -793,7 +834,7 @@ export default function StudentEvaluateTeacherPage() {
                               onChange={setTeachingAbilityRating}
                             />
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {ratingDescriptions.teachingAbility[teachingAbilityRating - 1]}
+                              {teachingAbilityRating ? ratingDescriptions.teachingAbility[teachingAbilityRating - 1] : '请评分'}
                             </Text>
                           </Form.Item>
                         </Col>
@@ -815,7 +856,7 @@ export default function StudentEvaluateTeacherPage() {
                               onChange={setTeachingAttitudeRating}
                             />
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {ratingDescriptions.teachingAttitude[teachingAttitudeRating - 1]}
+                              {teachingAttitudeRating ? ratingDescriptions.teachingAttitude[teachingAttitudeRating - 1] : '请评分'}
                             </Text>
                           </Form.Item>
                         </Col>
@@ -837,7 +878,7 @@ export default function StudentEvaluateTeacherPage() {
                               onChange={setTeachingMethodRating}
                             />
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {ratingDescriptions.teachingMethod[teachingMethodRating - 1]}
+                              {teachingMethodRating ? ratingDescriptions.teachingMethod[teachingMethodRating - 1] : '请评分'}
                             </Text>
                           </Form.Item>
                         </Col>
@@ -859,7 +900,7 @@ export default function StudentEvaluateTeacherPage() {
                               onChange={setAcademicLevelRating}
                             />
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {ratingDescriptions.academicLevel[academicLevelRating - 1]}
+                              {academicLevelRating ? ratingDescriptions.academicLevel[academicLevelRating - 1] : '请评分'}
                             </Text>
                           </Form.Item>
                         </Col>
@@ -881,7 +922,7 @@ export default function StudentEvaluateTeacherPage() {
                               onChange={setGuidanceAbilityRating}
                             />
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {ratingDescriptions.guidanceAbility[guidanceAbilityRating - 1]}
+                              {guidanceAbilityRating ? ratingDescriptions.guidanceAbility[guidanceAbilityRating - 1] : '请评分'}
                             </Text>
                           </Form.Item>
                         </Col>
@@ -935,7 +976,6 @@ export default function StudentEvaluateTeacherPage() {
                           icon={<SendOutlined />}
                           onClick={submitEvaluation}
                           loading={submitting}
-                          disabled={!evaluationContent.trim()}
                           block
                         >
                           提交评价
