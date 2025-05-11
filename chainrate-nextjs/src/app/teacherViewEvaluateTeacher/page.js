@@ -514,20 +514,8 @@ export default function TeacherViewEvaluateTeacherPage() {
           : a.timestamp - b.timestamp;
       } else if (sortConfig.key === 'rating') {
         // 评分排序
-        const ratingA = (
-          (a.teachingAbilityRating || 0) +
-          (a.teachingAttitudeRating || 0) +
-          (a.teachingMethodRating || 0) +
-          (a.academicLevelRating || 0) +
-          (a.guidanceAbilityRating || 0)
-        ) / 5;
-        const ratingB = (
-          (b.teachingAbilityRating || 0) +
-          (b.teachingAttitudeRating || 0) +
-          (b.teachingMethodRating || 0) +
-          (b.academicLevelRating || 0) +
-          (b.guidanceAbilityRating || 0)
-        ) / 5;
+        const ratingA = a.overallRating || 0;
+        const ratingB = b.overallRating || 0;
         return sortConfig.order === 'desc'
           ? ratingB - ratingA
           : ratingA - ratingB;
@@ -1024,7 +1012,11 @@ export default function TeacherViewEvaluateTeacherPage() {
                       pageSize={pagination.pageSize}
                       total={pagination.total}
                       onChange={handlePageChange}
-                      showSizeChanger={false}
+                      showSizeChanger={true}
+                      pageSizeOptions={[5, 10, 20, 50]}
+                      onShowSizeChange={(current, size) => {
+                        setPagination(prev => ({ ...prev, current: 1, pageSize: size }));
+                      }}
                       showQuickJumper
                       showTotal={(total) => `共 ${total} 条评价`}
                     />
