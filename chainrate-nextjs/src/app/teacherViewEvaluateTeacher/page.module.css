@@ -295,4 +295,61 @@
   color: #666;
   margin-left: 2px;
   font-weight: 400;
+}
+
+.evaluationList {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.listHeader {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.searchAndFilter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.paginationContainer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+/* 排序下拉框样式 */
+.selectWrapper :global(.ant-select-selector) {
+  border-radius: 4px !important;
+}
+
+.selectWrapper :global(.ant-select-selection-item) {
+  display: flex;
+  align-items: center;
+}
+
+/* 分页组件样式 */
+.paginationWrapper :global(.ant-pagination) {
+  margin: 0 !important;
+}
+
+.paginationWrapper :global(.ant-pagination-item) {
+  border-radius: 4px;
+}
+
+.paginationWrapper :global(.ant-pagination-item-active) {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.paginationWrapper :global(.ant-pagination-item-active a) {
+  color: white;
+}
+
+.paginationWrapper :global(.ant-pagination-options-quick-jumper) {
+  margin-left: 16px;
 } 

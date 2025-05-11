@@ -56,7 +56,8 @@ import {
   Progress,
   Drawer,
   Image as AntImage,
-  Modal
+  Modal,
+  Pagination
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
@@ -91,7 +92,7 @@ const RatingDisplay = ({ title, value, color, icon }) => (
         showInfo={false} 
         strokeColor={color} 
         trailColor="#f5f5f5" 
-        strokeWidth={8} 
+        size="small"
         className={styles.ratingProgress}
       />
     </div>
@@ -157,6 +158,25 @@ export default function TeacherViewEvaluateTeacherPage() {
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [contract02, setContract02] = useState(null);
+
+  // 分页和排序状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 5,
+    total: 0
+  });
+  const [sortConfig, setSortConfig] = useState({
+    key: 'timestamp',
+    order: 'desc'
+  });
+
+  // 排序选项
+  const sortOptions = [
+    { label: '最新评价', value: 'timestamp', order: 'desc' },
+    { label: '最早评价', value: 'timestamp', order: 'asc' },
+    { label: '评分最高', value: 'rating', order: 'desc' },
+    { label: '评分最低', value: 'rating', order: 'asc' }
+  ];
 
   useEffect(() => {
     // 检查用户是否已登录并且是教师角色
@@ -426,48 +446,96 @@ export default function TeacherViewEvaluateTeacherPage() {
     setPreviewVisible(false);
   };
   
-  // 搜索过滤
+  // 监听所有筛选相关状态，自动刷新列表
+  useEffect(() => {
+    filterEvaluations(searchText, filterType);
+    // eslint-disable-next-line
+  }, [searchText, filterType, sortConfig, pagination.current, pagination.pageSize, evaluations]);
+
   const handleSearch = (value) => {
     setSearchText(value);
-    filterEvaluations(value, filterType);
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
-  
-  // 类型过滤
+
   const handleFilterChange = (value) => {
     setFilterType(value);
-    filterEvaluations(searchText, value);
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
-  
-  // 过滤评价列表
+
+  const handleSortChange = (value) => {
+    const [key, order] = value.split('-');
+    setSortConfig({ key, order });
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handlePageChange = (page, pageSize) => {
+    setPagination(prev => ({ ...prev, current: page, pageSize }));
+  };
+
   const filterEvaluations = (search, type) => {
     let filtered = [...evaluations];
-    
-    // 按搜索文本过滤
+
+    // 搜索过滤
     if (search) {
-      filtered = filtered.filter(evaluation => 
-        !evaluation.isAnonymous && evaluation.studentName.toLowerCase().includes(search.toLowerCase())
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(evaluation =>
+        (evaluation.studentName && evaluation.studentName.toLowerCase().includes(searchLower)) ||
+        (evaluation.courseName && evaluation.courseName.toLowerCase().includes(searchLower)) ||
+        (evaluation.courseCode && evaluation.courseCode.toLowerCase().includes(searchLower)) ||
+        (evaluation.semester && evaluation.semester.toLowerCase().includes(searchLower))
       );
     }
-    
-    // 按类型过滤
-    switch (type) {
-      case 'anonymous':
-        filtered = filtered.filter(evaluation => evaluation.isAnonymous);
-        break;
-      case 'high-rating':
-        filtered = filtered.filter(evaluation => evaluation.overallRating >= 4);
-        break;
-      case 'recent':
-        filtered = [...filtered].sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
-        break;
-      default:
-        // 不做特殊处理
-        break;
+
+    // 类型过滤
+    if (type === 'anonymous') {
+      filtered = filtered.filter(evaluation => evaluation.isAnonymous);
+    } else if (type === 'named') {
+      filtered = filtered.filter(evaluation => !evaluation.isAnonymous);
     }
-    
-    setFilteredEvaluations(filtered);
+
+    // 排序
+    const sortedEvaluations = getSortedEvaluations(filtered);
+
+    // 分页
+    const start = (pagination.current - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    setFilteredEvaluations(sortedEvaluations.slice(start, end));
+    // 更新总数
+    setPagination(prev => ({ ...prev, total: filtered.length }));
   };
-  
+
+  // 获取排序后的评价列表
+  const getSortedEvaluations = (evaluations) => {
+    return [...evaluations].sort((a, b) => {
+      if (sortConfig.key === 'timestamp') {
+        // 时间戳排序
+        return sortConfig.order === 'desc'
+          ? b.timestamp - a.timestamp
+          : a.timestamp - b.timestamp;
+      } else if (sortConfig.key === 'rating') {
+        // 评分排序
+        const ratingA = (
+          (a.teachingAbilityRating || 0) +
+          (a.teachingAttitudeRating || 0) +
+          (a.teachingMethodRating || 0) +
+          (a.academicLevelRating || 0) +
+          (a.guidanceAbilityRating || 0)
+        ) / 5;
+        const ratingB = (
+          (b.teachingAbilityRating || 0) +
+          (b.teachingAttitudeRating || 0) +
+          (b.teachingMethodRating || 0) +
+          (b.academicLevelRating || 0) +
+          (b.guidanceAbilityRating || 0)
+        ) / 5;
+        return sortConfig.order === 'desc'
+          ? ratingB - ratingA
+          : ratingA - ratingB;
+      }
+      return 0;
+    });
+  };
+
   // 退出登录
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
@@ -782,17 +850,15 @@ export default function TeacherViewEvaluateTeacherPage() {
                   {/* 搜索和筛选 */}
                   <div className={styles.toolbarContainer}>
                     <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={12} md={10} lg={12}>
+                      <Col xs={24} sm={12} md={8} lg={10}>
                         <Search
-                          placeholder="搜索学生姓名（仅限非匿名评价）"
+                          placeholder="搜索课程名称、课程代码或学期"
                           allowClear
-                          enterButton="搜索"
-                          size="middle"
                           onSearch={handleSearch}
                           style={{ width: '100%' }}
                         />
                       </Col>
-                      <Col xs={24} sm={8} md={8} lg={8}>
+                      <Col xs={24} sm={8} md={6} lg={6}>
                         <Select
                           style={{ width: '100%' }}
                           placeholder="筛选评价类型"
@@ -801,11 +867,23 @@ export default function TeacherViewEvaluateTeacherPage() {
                         >
                           <Option value="all">全部评价</Option>
                           <Option value="anonymous">匿名评价</Option>
-                          <Option value="high-rating">高分评价 (≥4)</Option>
-                          <Option value="recent">最近评价</Option>
+                          <Option value="named">实名评价</Option>
                         </Select>
                       </Col>
-                      <Col xs={24} sm={4} md={6} lg={4}>
+                      <Col xs={24} sm={8} md={6} lg={4} className={styles.selectWrapper}>
+                        <Select
+                          defaultValue="timestamp-desc"
+                          style={{ width: '100%' }}
+                          onChange={handleSortChange}
+                        >
+                          {sortOptions.map(option => (
+                            <Option key={`${option.value}-${option.order}`} value={`${option.value}-${option.order}`}>
+                              {option.label}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Col>
+                      <Col xs={24} sm={8} md={4} lg={4}>
                         <Button
                           type="primary"
                           icon={<DownloadOutlined />}
@@ -821,7 +899,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                   </div>
 
                   {/* 评价列表 */}
-                  <div className={styles.evaluationListContainer}>
+                  <div className={styles.evaluationList}>
                     <List
                       dataSource={filteredEvaluations}
                       renderItem={(evaluation) => (
@@ -936,6 +1014,19 @@ export default function TeacherViewEvaluateTeacherPage() {
                           </Card>
                         </List.Item>
                       )}
+                    />
+                  </div>
+
+                  {/* 分页组件 */}
+                  <div className={`${styles.paginationContainer} ${styles.paginationWrapper}`}>
+                    <Pagination
+                      current={pagination.current}
+                      pageSize={pagination.pageSize}
+                      total={pagination.total}
+                      onChange={handlePageChange}
+                      showSizeChanger={false}
+                      showQuickJumper
+                      showTotal={(total) => `共 ${total} 条评价`}
                     />
                   </div>
                 </>
