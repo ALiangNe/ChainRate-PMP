@@ -347,11 +347,6 @@ export default function StudentEvaluateTeacherPage() {
   
   // 选择教师进行评价
   const selectTeacher = (teacher) => {
-    if (teacher.hasEvaluated) {
-      message.warning('您已经评价过这位教师了');
-      return;
-    }
-    
     // 检查教师是否有未结束的课程
     if (!teacher.hasActiveCourses) {
       message.warning('该教师的所有课程已经结束评价期，无法提交评价');
@@ -469,7 +464,7 @@ export default function StudentEvaluateTeacherPage() {
       });
       return;
     }
-
+    
     // 首先检查评价内容
     if (!evaluationContent.trim()) {
       Modal.error({
@@ -600,7 +595,7 @@ export default function StudentEvaluateTeacherPage() {
       setImages([]);
       setUploadedImageHashes([]);
       
-      // 重新加载教师列表
+      // 重新加载教师列表，但不再将此教师标记为不可评价
       await loadTeacherList(contract, contract02, userData.address);
       
     } catch (err) {
@@ -1009,7 +1004,7 @@ export default function StudentEvaluateTeacherPage() {
                                 <div className={styles.teacherName}>
                                   {teacher.name}
                                   {teacher.hasEvaluated && (
-                                    <Tag color="success" style={{ marginLeft: 8 }}>已评价</Tag>
+                                    <Tag color="success" style={{ marginLeft: 8 }}>可再次评价</Tag>
                                   )}
                                   {!teacher.hasActiveCourses && !teacher.hasEvaluated && (
                                     <Tag color="default" style={{ marginLeft: 8 }}>已截止</Tag>
@@ -1021,9 +1016,13 @@ export default function StudentEvaluateTeacherPage() {
                           }
                           actions={[
                             teacher.hasEvaluated ? (
-                              <Tooltip title="已评价">
-                                <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                              </Tooltip>
+                              <Button 
+                                type="primary" 
+                                onClick={() => selectTeacher(teacher)}
+                                icon={<CheckCircleOutlined />}
+                              >
+                                再次评价
+                              </Button>
                             ) : teacher.hasActiveCourses ? (
                               <Button 
                                 type="primary" 

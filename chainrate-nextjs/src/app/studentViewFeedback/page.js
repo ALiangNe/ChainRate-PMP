@@ -62,7 +62,6 @@ import axios from 'axios';
 
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
-const { TabPane } = Tabs;
 const { Option } = Select;
 const { Search } = Input;
 
@@ -78,19 +77,68 @@ const FEEDBACK_STATUS = {
   3: { text: '已删除', color: 'red', icon: <DeleteOutlined /> }
 };
 
-// 获取IPFS内容
+// 添加 IPFS Hash 验证函数
+const isValidIpfsHash = (hash) => {
+  // 合法的IPFS CID v0以Qm开头，是base58编码的46个字符
+  // 合法的IPFS CID v1通常是base32编码的字符串
+  return hash && 
+         typeof hash === 'string' && 
+         (
+           (hash.startsWith('Qm') && hash.length >= 46) || 
+           /^[a-zA-Z0-9]{46,}$/.test(hash) ||
+           /^ba[a-zA-Z0-9]{57,}$/.test(hash)
+         ) &&
+         !/[\u4e00-\u9fa5]/.test(hash); // 不包含中文字符
+};
+
+// 修改 getIPFSContent 函数，更好地处理各种内容类型
 const getIPFSContent = async (contentHash) => {
   if (!contentHash || contentHash === '') {
     return { success: false, data: null, error: '内容哈希为空' };
   }
   
-  // 如果已经是完整URL，直接使用
+  // 1. 首先检查是否是JSON字符串，这可能是直接存储的内容
+  try {
+    const parsedContent = JSON.parse(contentHash);
+    if (parsedContent && typeof parsedContent === 'object') {
+      console.log('内容是有效的JSON对象，直接使用:', parsedContent);
+      // 如果包含content字段，优先返回
+      if (parsedContent.content) {
+        return { success: true, data: parsedContent.content };
+      }
+      return { success: true, data: parsedContent };
+    }
+  } catch (e) {
+    // 不是JSON，继续其他检查
+  }
+  
+  // 2. 如果内容看起来像普通文本而不是哈希（包含中文字符或多于几个句子），直接将其视为内容
+  if (
+    /[\u4e00-\u9fa5]/.test(contentHash) || // 包含中文字符
+    contentHash.split(/[.!?。！？]/).length > 2 || // 包含多个句子
+    contentHash.length > 100 // 长文本
+  ) {
+    console.log('内容看起来是普通文本，直接显示:', contentHash);
+    return { success: true, data: contentHash };
+  }
+  
+  // 3. 如果不是有效的IPFS Hash，也直接返回内容
+  if (!isValidIpfsHash(contentHash)) {
+    console.log('非IPFS Hash格式，直接显示内容:', contentHash);
+    return { success: true, data: contentHash };
+  }
+  
+  // 4. 如果已经是完整URL，直接使用
   if (contentHash.startsWith('http')) {
     try {
       const response = await fetch(contentHash);
       if (response.ok) {
         try {
           const data = await response.json();
+          // 如果返回的是一个包含content字段的对象，直接返回content
+          if (data && typeof data === 'object' && data.content) {
+            return { success: true, data: data.content };
+          }
           return { success: true, data };
         } catch (jsonErr) {
           const text = await response.text();
@@ -104,24 +152,34 @@ const getIPFSContent = async (contentHash) => {
     }
   }
   
-  // 使用IPFS网关
+  // 5. 使用IPFS网关
   try {
     const gateway = 'https://gateway.pinata.cloud/ipfs/';
     const url = `${gateway}${contentHash}`;
     
+    console.log('IPFS请求URL:', url);
     const response = await fetch(url);
     if (response.ok) {
       try {
         const data = await response.json();
+        console.log('IPFS返回数据:', data);
+        // 如果返回的是一个包含content字段的对象，直接返回content
+        if (data && typeof data === 'object' && data.content) {
+          return { success: true, data: data.content };
+        }
         return { success: true, data };
       } catch (jsonErr) {
+        console.error('JSON解析错误:', jsonErr);
         const text = await response.text();
+        console.log('IPFS返回文本:', text);
         return { success: true, data: text };
       }
     } else {
+      console.error('IPFS响应错误:', response.status);
       return { success: false, error: `HTTP错误: ${response.status}` };
     }
   } catch (error) {
+    console.error('IPFS请求异常:', error);
     return { success: false, error: error.message };
   }
 };
@@ -132,6 +190,44 @@ const createIPFSUrl = (hash) => {
   if (hash.startsWith('http')) return hash;
   
   return `https://gateway.pinata.cloud/ipfs/${hash}`;
+};
+
+// 改进辅助函数，确保显示的内容不是IPFS链接
+const ensureContentNotLink = (content) => {
+  // 如果内容为空或不是字符串，返回默认文本
+  if (!content || typeof content !== 'string') {
+    return '未提供内容';
+  }
+  
+  // 如果内容看起来像IPFS链接但不是有效的内容，尝试提取最后部分
+  if (content.includes('gateway.pinata.cloud/ipfs/') || 
+      content.startsWith('https://ipfs.io/') || 
+      content.startsWith('ipfs://')) {
+    // 提取IPFS hash
+    const matches = content.match(/ipfs\/([a-zA-Z0-9]+)/);
+    if (matches && matches[1]) {
+      // 标记为加载失败，前端会自动重新加载
+      return `[内容需要加载: ${matches[1]}]`;
+    }
+  }
+  
+  // 尝试解析可能是JSON字符串的内容
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === 'object') {
+      // 如果是对象并且有content字段，显示content字段
+      if (parsed.content) {
+        return parsed.content;
+      }
+      // 如果是对象但没有content字段，格式化显示
+      return JSON.stringify(parsed, null, 2);
+    }
+    // 如果解析结果不是对象，直接返回原内容
+    return content;
+  } catch (e) {
+    // 不是JSON，返回原内容
+    return content;
+  }
 };
 
 export default function StudentViewFeedbackPage() {
@@ -349,21 +445,25 @@ export default function StudentViewFeedbackPage() {
         try {
           const feedback = await extensionContract.getCourseFeedbackDetails(id);
           
-          // 获取内容
+          // 获取内容 - 确保正确处理
           let contentText = "";
           try {
-            const contentResult = await getIPFSContent(feedback.contentHash);
-            if (contentResult.success) {
-              if (typeof contentResult.data === 'object' && contentResult.data !== null) {
-                contentText = contentResult.data.content || JSON.stringify(contentResult.data);
-              } else {
+            // 先检查contentHash是否是有效的IPFS hash
+            if (isValidIpfsHash(feedback.contentHash)) {
+              // 如果是有效的IPFS hash，从IPFS获取内容
+              const contentResult = await getIPFSContent(feedback.contentHash);
+              if (contentResult.success) {
+                // 直接使用处理后的结果 
                 contentText = contentResult.data;
+              } else {
+                contentText = "内容加载失败: " + contentResult.error;
               }
             } else {
-              contentText = "内容加载失败";
+              // 如果不是有效的IPFS hash，直接使用它作为内容
+              contentText = feedback.contentHash;
             }
           } catch (err) {
-            contentText = "内容处理错误";
+            contentText = "内容处理错误: " + err.message;
           }
           
           // 获取反馈回复
@@ -374,19 +474,23 @@ export default function StudentViewFeedbackPage() {
             // 如果有回复，获取回复内容
             if (reply && reply.contentHash && reply.contentHash !== '') {
               let replyText = "";
-              try {
-                const replyResult = await getIPFSContent(reply.contentHash);
-                if (replyResult.success) {
-                  if (typeof replyResult.data === 'object' && replyResult.data !== null) {
-                    replyText = replyResult.data.content || JSON.stringify(replyResult.data);
-                  } else {
+              
+              // 验证contentHash是否为有效的IPFS hash
+              if (!isValidIpfsHash(reply.contentHash)) {
+                // 不是有效IPFS hash，直接使用它作为内容
+                replyText = reply.contentHash;
+              } else {
+                // 是有效IPFS hash，从IPFS获取内容
+                try {
+                  const replyResult = await getIPFSContent(reply.contentHash);
+                  if (replyResult.success) {
                     replyText = replyResult.data;
+                  } else {
+                    replyText = `回复内容加载失败: ${replyResult.error}`;
                   }
-                } else {
-                  replyText = `回复内容加载失败`;
+                } catch (err) {
+                  replyText = "回复内容加载失败: " + err.message;
                 }
-              } catch (err) {
-                replyText = "回复内容加载失败";
               }
               
               reply.content = replyText;
@@ -408,7 +512,7 @@ export default function StudentViewFeedbackPage() {
             id: id.toString(),
             courseId: feedback.courseId.toString(),
             student: feedback.student,
-            content: contentText,
+            content: contentText, // 使用处理后的文本内容
             contentHash: feedback.contentHash,
             timestamp: Number(feedback.timestamp),
             status: Number(feedback.status),
@@ -479,23 +583,71 @@ export default function StudentViewFeedbackPage() {
       const versionsCount = feedback.versions;
       console.log('反馈版本数量:', versionsCount);
       
-      // 即使只有一个版本也加载
       if (versionsCount <= 0) {
         setFeedbackVersions([]);
         setLoadingVersions(false);
         return;
       }
       
-      // 查询所有版本
+      // 查询所有版本，并为每个版本加载教师回复
       const versionPromises = [];
       for (let i = 0; i < versionsCount; i++) {
-        versionPromises.push(loadFeedbackVersion(feedbackId, i));
+        versionPromises.push((async () => {
+          try {
+            const version = await loadFeedbackVersion(feedbackId, i);
+            
+            // 尝试加载该版本的教师回复
+            try {
+              const reply = await extensionContract.getTeacherReplyDetails(feedbackId);
+              if (reply && reply.contentHash && reply.contentHash !== '') {
+                let replyText = '';
+                
+                // 处理回复内容
+                const replyResult = await getIPFSContent(reply.contentHash);
+                if (replyResult.success) {
+                  replyText = replyResult.data;
+                } else {
+                  replyText = '回复内容加载失败: ' + replyResult.error;
+                }
+                
+                version.reply = {
+                  teacher: reply.teacher,
+                  content: replyText,
+                  contentHash: reply.contentHash,
+                  timestamp: Number(reply.timestamp)
+                };
+              } else {
+                version.reply = null;
+              }
+            } catch (err) {
+              console.log(`版本 ${i} 无教师回复或获取回复失败:`, err);
+              version.reply = null;
+            }
+            
+            return version;
+          } catch (error) {
+            console.error(`加载版本 ${i} 失败:`, error);
+            return {
+              id: i,
+              feedbackId: feedbackId,
+              timestamp: 0,
+              content: `[版本 ${i} 加载失败: ${error.message}]`,
+              contentHash: "",
+              documentUrls: [],
+              imageUrls: [],
+              documentHashes: [],
+              imageHashes: [],
+              date: new Date(),
+              formattedDate: '未知时间',
+              versionLabel: i === 0 ? '原始版本' : `修改版本 ${i}`
+            };
+          }
+        })());
       }
       
       const versions = await Promise.all(versionPromises);
-      // 按照时间降序排序，最新的在前面
+      // 按时间从新到旧排序
       versions.sort((a, b) => b.timestamp - a.timestamp);
-      
       setFeedbackVersions(versions);
       setLoadingVersions(false);
     } catch (error) {
@@ -515,19 +667,22 @@ export default function StudentViewFeedbackPage() {
       // 获取内容
       let contentText = "";
       try {
-        const contentResult = await getIPFSContent(version.contentHash);
-        console.log(`获取到IPFS内容结果:`, contentResult);
-        
-        if (contentResult.success) {
-          if (typeof contentResult.data === 'object' && contentResult.data !== null) {
-            contentText = contentResult.data.content || JSON.stringify(contentResult.data);
-          } else {
-            contentText = contentResult.data;
-          }
-          console.log(`成功解析反馈 ${feedbackId} 的版本 ${versionId} 内容`);
+        // 首先尝试直接处理contentHash作为内容
+        if (!isValidIpfsHash(version.contentHash)) {
+          contentText = version.contentHash;
+          console.log(`反馈 ${feedbackId} 的版本 ${versionId} 内容不是IPFS哈希，直接使用`);
         } else {
-          console.error(`IPFS内容获取失败: ${contentResult.message}`);
-          contentText = `[无法加载版本 ${versionId} 的内容: ${contentResult.message}]`;
+          // 是IPFS哈希，获取内容
+          const contentResult = await getIPFSContent(version.contentHash);
+          console.log(`获取到IPFS内容结果:`, contentResult);
+          
+          if (contentResult.success) {
+            contentText = contentResult.data;
+            console.log(`成功解析反馈 ${feedbackId} 的版本 ${versionId} 内容`);
+          } else {
+            console.error(`IPFS内容获取失败: ${contentResult.error}`);
+            contentText = `[无法加载版本 ${versionId} 的内容: ${contentResult.error}]`;
+          }
         }
       } catch (err) {
         console.error(`处理反馈 ${feedbackId} 的版本 ${versionId} 内容时出错:`, err);
@@ -981,7 +1136,7 @@ export default function StudentViewFeedbackPage() {
                               }
                             />
                             <Paragraph ellipsis={{ rows: 2 }} style={{ marginTop: 16 }}>
-                              {feedback.content}
+                              {ensureContentNotLink(feedback.content)}
                             </Paragraph>
                             <div>
                               {feedback.imageUrls.length > 0 && (
@@ -1039,192 +1194,163 @@ export default function StudentViewFeedbackPage() {
                         </div>
                       </div>
                       
-                      <Tabs defaultActiveKey="content">
-                        <TabPane tab="反馈内容" key="content">
-                          <div className={styles.feedbackBody}>
-                            <div className={styles.feedbackTime}>
-                              <CalendarOutlined /> 提交时间: {dayjs(selectedFeedback.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                            </div>
-                            
-                            <div className={styles.feedbackContentDetail}>
-                              {selectedFeedback.content}
-                            </div>
-                            
-                            {/* 显示附件信息 */}
-                            {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
-                              <div className={styles.attachments}>
-                                {selectedFeedback.imageUrls.length > 0 && (
-                                  <div className={styles.attachmentSection}>
-                                    <Title level={5}>
-                                      <PictureOutlined /> 图片附件 ({selectedFeedback.imageUrls.length})
-                                    </Title>
-                                    <Row gutter={[16, 16]}>
-                                      {selectedFeedback.imageUrls.map((url, index) => (
-                                        <Col span={8} key={index}>
-                                          <div className={styles.imagePreview}>
-                                            <img 
-                                              src={url} 
-                                              alt={`图片 ${index + 1}`} 
-                                              className={styles.previewImg}
-                                            />
-                                          </div>
-                                        </Col>
-                                      ))}
-                                    </Row>
-                                  </div>
-                                )}
-                                
-                                {selectedFeedback.documentHashes.length > 0 && (
-                                  <div className={styles.attachmentSection}>
-                                    <Title level={5}>
-                                      <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
-                                    </Title>
-                                    <List
-                                      dataSource={selectedFeedback.documentHashes}
-                                      renderItem={(hash, index) => (
-                                        <List.Item>
-                                          <a 
-                                            href={createIPFSUrl(hash)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.documentLink}
-                                          >
-                                            <FileTextOutlined /> 文档 {index + 1}
-                                          </a>
-                                        </List.Item>
-                                      )}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TabPane>
-                        
-                        <TabPane tab="版本历史" key="versions">
-                          {loadingVersions ? (
-                            <div className={styles.loadingContainer} style={{ height: '200px' }}>
-                              <Spin size="small" />
-                              <div>加载版本历史...</div>
-                            </div>
-                          ) : feedbackVersions.length > 0 ? (
-                            <div className={styles.versionsContainer}>
-                              <Alert
-                                message="版本历史记录"
-                                description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
-                                type="info"
-                                showIcon
-                                style={{ marginBottom: 16 }}
-                              />
-                              <Timeline mode="left">
-                                {feedbackVersions.map((version, index) => (
-                                  <Timeline.Item 
-                                    key={version.id} 
-                                    color={index === 0 ? 'green' : 'blue'} 
-                                    label={dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                                  >
-                                    <Card 
-                                      size="small" 
-                                      title={
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
-                                          <Tag color={index === 0 ? "green" : "blue"}>
-                                            {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
-                                          </Tag>
-                                        </div>
-                                      }
-                                      className={styles.versionCard}
-                                    >
-                                      <div className={styles.versionContent}>
-                                        {version.content}
-                                      </div>
-                                      
-                                      {/* 增强版本附件显示 */}
-                                      {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
-                                        <div className={styles.versionAttachments}>
-                                          {/* 图片附件展示 */}
-                                          {version.imageUrls.length > 0 && (
-                                            <div style={{ marginTop: 12 }}>
-                                              <Divider orientation="left" plain>
-                                                <Text type="secondary">
-                                                  <PictureOutlined /> 图片附件 ({version.imageUrls.length})
-                                                </Text>
-                                              </Divider>
-                                              <Row gutter={[8, 8]}>
-                                                {version.imageUrls.map((url, imgIndex) => (
-                                                  <Col span={8} key={imgIndex}>
-                                                    <div className={styles.versionImagePreview}>
-                                                      <img 
-                                                        src={url} 
-                                                        alt={`版本 ${feedbackVersions.length - index} 图片 ${imgIndex + 1}`} 
-                                                        className={styles.previewImg}
-                                                        onClick={() => window.open(url, '_blank')}
-                                                      />
-                                                    </div>
-                                                  </Col>
-                                                ))}
-                                              </Row>
-                                            </div>
-                                          )}
-                                          
-                                          {/* 文档附件展示 */}
-                                          {version.documentHashes.length > 0 && (
-                                            <div style={{ marginTop: 12 }}>
-                                              <Divider orientation="left" plain>
-                                                <Text type="secondary">
-                                                  <FileOutlined /> 文档附件 ({version.documentHashes.length})
-                                                </Text>
-                                              </Divider>
-                                              <List
-                                                size="small"
-                                                dataSource={version.documentHashes}
-                                                renderItem={(hash, docIndex) => (
-                                                  <List.Item>
-                                                    <a 
-                                                      href={createIPFSUrl(hash)}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className={styles.documentLink}
-                                                    >
-                                                      <FileTextOutlined /> 文档 {docIndex + 1}
-                                                    </a>
-                                                  </List.Item>
-                                                )}
-                                              />
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </Card>
-                                  </Timeline.Item>
-                                ))}
-                              </Timeline>
-                            </div>
-                          ) : (
-                            <Empty description="没有找到版本历史记录" />
-                          )}
-                        </TabPane>
-                        
-                        <TabPane tab="教师回复" key="reply" disabled={!selectedFeedback.hasReply}>
-                          {selectedFeedback.hasReply && selectedFeedback.reply && (
-                            <div className={styles.replyContainer}>
-                              <div className={styles.replyHeader}>
-                                <div className={styles.replyTeacher}>
-                                  <Avatar icon={<UserOutlined />} />
-                                  <span>{getTeacherInfo(selectedFeedback.reply.teacher).name}</span>
-                                </div>
-                                <div className={styles.replyTime}>
-                                  <CalendarOutlined /> {dayjs(selectedFeedback.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                                </div>
+                      <Tabs defaultActiveKey="content" items={[
+                        {
+                          key: 'content',
+                          label: '反馈内容',
+                          children: (
+                            <div className={styles.feedbackBody}>
+                              <div className={styles.feedbackTime}>
+                                <CalendarOutlined /> 提交时间: {dayjs(selectedFeedback.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
                               </div>
                               
-                              <div className={styles.replyContent}>
-                                {selectedFeedback.reply.content}
+                              <div className={styles.feedbackContentDetail}>
+                                {ensureContentNotLink(selectedFeedback.content)}
                               </div>
+                              
+                              {/* 显示附件信息 */}
+                              {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
+                                <div className={styles.attachments}>
+                                  {selectedFeedback.imageUrls.length > 0 && (
+                                    <div className={styles.attachmentSection}>
+                                      <Title level={5}>
+                                        <PictureOutlined /> 图片附件 ({selectedFeedback.imageUrls.length})
+                                      </Title>
+                                      <Row gutter={[16, 16]}>
+                                        {selectedFeedback.imageUrls.map((url, index) => (
+                                          <Col span={8} key={index}>
+                                            <div className={styles.imagePreview}>
+                                              <img 
+                                                src={url} 
+                                                alt={`图片 ${index + 1}`} 
+                                                className={styles.previewImg}
+                                              />
+                                            </div>
+                                          </Col>
+                                        ))}
+                                      </Row>
+                                    </div>
+                                  )}
+                                  
+                                  {selectedFeedback.documentHashes.length > 0 && (
+                                    <div className={styles.attachmentSection}>
+                                      <Title level={5}>
+                                        <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
+                                      </Title>
+                                      <List
+                                        dataSource={selectedFeedback.documentHashes}
+                                        renderItem={(hash, index) => (
+                                          <List.Item>
+                                            <a 
+                                              href={createIPFSUrl(hash)}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className={styles.documentLink}
+                                            >
+                                              <FileTextOutlined /> 文档 {index + 1}
+                                            </a>
+                                          </List.Item>
+                                        )}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </TabPane>
-                      </Tabs>
+                          )
+                        },
+                        {
+                          key: 'versions',
+                          label: '版本历史',
+                          children: (
+                            loadingVersions ? (
+                              <div className={styles.loadingContainer} style={{ height: '200px' }}>
+                                <Spin size="small" />
+                                <div>加载版本历史...</div>
+                              </div>
+                            ) : feedbackVersions.length > 0 ? (
+                              <div className={styles.versionsContainer}>
+                                <Alert
+                                  message="版本历史记录"
+                                  description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
+                                  type="info"
+                                  showIcon
+                                  style={{ marginBottom: 16 }}
+                                />
+                                <Timeline
+                                  mode="left"
+                                  items={feedbackVersions.map((version, index) => ({
+                                    key: `${version.id}-${index}`, // 使用version.id和index的组合确保唯一
+                                    color: index === 0 ? 'green' : 'blue',
+                                    label: dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss'),
+                                    children: (
+                                      <Card
+                                        size="small"
+                                        title={
+                                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
+                                            <Tag color={index === 0 ? "green" : "blue"}>
+                                              {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
+                                            </Tag>
+                                          </div>
+                                        }
+                                        className={styles.versionCard}
+                                      >
+                                        <div className={styles.versionContent}>
+                                          {version.content}
+                                        </div>
+                                        {/* 教师回复 */}
+                                        {version.reply && (
+                                          <div className={styles.replyContainer}>
+                                            <div className={styles.replyHeader}>
+                                              <div className={styles.replyTeacher}>
+                                                <Avatar icon={<UserOutlined />} />
+                                                <span>{getTeacherInfo(version.reply.teacher).name}</span>
+                                              </div>
+                                              <div className={styles.replyTime}>
+                                                <CalendarOutlined /> {dayjs(version.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                              </div>
+                                            </div>
+                                            <div className={styles.replyContent}>
+                                              {version.reply.content}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </Card>
+                                    )
+                                  }))}
+                                />
+                              </div>
+                            ) : (
+                              <Empty description="没有找到版本历史记录" />
+                            )
+                          )
+                        },
+                        {
+                          key: 'reply',
+                          label: '教师回复',
+                          disabled: !selectedFeedback.hasReply,
+                          children: (
+                            selectedFeedback.hasReply && selectedFeedback.reply && (
+                              <div className={styles.replyContainer}>
+                                <div className={styles.replyHeader}>
+                                  <div className={styles.replyTeacher}>
+                                    <Avatar icon={<UserOutlined />} />
+                                    <span>{getTeacherInfo(selectedFeedback.reply.teacher).name}</span>
+                                  </div>
+                                  <div className={styles.replyTime}>
+                                    <CalendarOutlined /> {dayjs(selectedFeedback.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                  </div>
+                                </div>
+                                
+                                <div className={styles.replyContent}>
+                                  {selectedFeedback.reply.content}
+                                </div>
+                              </div>
+                            )
+                          )
+                        }
+                      ]} />
                     </div>
                   </Modal>
                 )}
