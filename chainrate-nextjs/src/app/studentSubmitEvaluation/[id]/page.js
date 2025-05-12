@@ -106,7 +106,8 @@ import {
   Space,
   message,
   Progress,
-  Modal
+  Modal,
+  App
 } from 'antd';
 
 const { Header, Content, Sider } = Layout;
@@ -118,16 +119,18 @@ const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY || '';
 const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY || '';
 const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT || '';
 
-export default function SubmitEvaluationPage({ params }) {
-  const router = useRouter();
-  
-  // 使用React.use()解包params参数，避免警告
+// 创建一个内部组件以使用App上下文
+function SubmitEvaluationContent({ params, router }) {
+  // 解包params参数
   const resolvedParams = React.use(params);
   const courseId = resolvedParams.id;
   
   // 提前调用 useToken，确保Hook顺序一致
   const { token } = theme.useToken();
   const { colorBgContainer, borderRadiusLG, colorPrimary } = token;
+  
+  // 添加App.useApp调用
+  const { message: appMessage, modal, notification } = App.useApp();
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -168,6 +171,7 @@ export default function SubmitEvaluationPage({ params }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState('');
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
   
   // Web3相关
   const [provider, setProvider] = useState(null);
@@ -347,7 +351,7 @@ export default function SubmitEvaluationPage({ params }) {
     
     // 如果尝试上传超过5张
     if (validFileList.length > 5) {
-      message.warning('最多只能上传5张图片');
+      appMessage.warning('最多只能上传5张图片');
     }
   };
   
@@ -436,11 +440,11 @@ export default function SubmitEvaluationPage({ params }) {
       }
       
       setUploadedImageHashes(hashes);
-      message.success('图片上传成功！');
+      appMessage.success('图片上传成功！');
       return hashes;
     } catch (error) {
       console.error('上传图片失败:', error);
-      message.error(`上传图片失败: ${error.message}`);
+      appMessage.error(`上传图片失败: ${error.message}`);
       return [];
     } finally {
       setUploadingImages(false);
@@ -457,26 +461,50 @@ export default function SubmitEvaluationPage({ params }) {
     try {
       // 验证输入
       if (!content.trim()) {
-        setError('请输入评价内容');
+        modal.error({
+          title: '表单验证错误',
+          content: '请输入评价内容',
+          centered: true
+        });
         setSubmitting(false);
         return;
       }
 
       // 检查评价内容长度
       if (content.trim().length < 10) {
-        setError('评价内容至少需要 10 个字');
+        modal.error({
+          title: '表单验证错误',
+          content: '评价内容至少需要10个字',
+          centered: true
+        });
         setSubmitting(false);
         return;
       }
       
+      // 显示处理中模态框
+      const processingModal = modal.info({
+        title: '处理中',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Spin size="large" />
+            <p style={{ marginTop: '16px' }}>正在提交您的评价到区块链...</p>
+            <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>请稍候，区块链交易需要一些时间确认</p>
+          </div>
+        ),
+        icon: null,
+        centered: true,
+        footer: null,
+        closable: false,
+        maskClosable: false
+      });
+      
       // 上传图片到IPFS并获取哈希值
       let imageHashes = [];
       if (images.length > 0) {
-        message.loading('正在上传图片到IPFS...', 0);
         imageHashes = await uploadImages();
-        message.destroy();
         
         if (imageHashes.length === 0 && images.length > 0) {
+          processingModal.destroy();
           setError('图片上传失败，请重试');
           setSubmitting(false);
           return;
@@ -499,8 +527,8 @@ export default function SubmitEvaluationPage({ params }) {
       console.log("提交参数:", {
         courseIdNumber,
         content,
-        imageHashes,     // 真实的IPFS哈希值数组
-        ratingValue,     // 第4个参数是rating (1-5)
+        imageHashes,
+        ratingValue,
         teachingRatingValue,
         contentRatingValue,
         interactionRatingValue,
@@ -511,8 +539,8 @@ export default function SubmitEvaluationPage({ params }) {
       const tx = await contract.submitEvaluation(
         courseIdNumber,
         content,
-        imageHashes,     // 真实的IPFS哈希值数组
-        ratingValue,     // 第4个参数是rating (1-5)
+        imageHashes,
+        ratingValue,
         teachingRatingValue,
         contentRatingValue,
         interactionRatingValue,
@@ -521,35 +549,47 @@ export default function SubmitEvaluationPage({ params }) {
       
       // 立即打印交易哈希作为存证凭证
       console.log('评价提交成功! 交易哈希(存证凭证):', tx.hash);
-      message.success('评价提交成功，正在等待区块链确认...');
         
       // 等待交易确认
       const receipt = await tx.wait();
+      
+      // 关闭处理中模态框
+      processingModal.destroy();
       
       // 打印交易收据信息
       console.log('交易已确认! 区块号:', receipt.blockNumber);
       console.log('交易收据:', receipt);
       console.log('Gas使用量:', receipt.gasUsed.toString());
         
-      // 显示成功消息
+      // 显示成功消息 - 改为打开成功弹窗而不是设置消息
       setSuccessMessage('评价提交成功！交易已确认');
-        
-      // 3秒后重定向回课程详情页
-      setTimeout(() => {
-        router.push(`/studentCourseDetail/${courseId}`);
-      }, 3000);
+      setSuccessModalVisible(true);
     } catch (err) {
       console.error("提交评价失败:", err);
       
       // 特殊处理用户拒绝的情况
       if (err.code === 4001 || (err.message && err.message.includes('user rejected'))) {
-        setError('您取消了交易。如需提交评价，请重新填写并在MetaMask中确认。');
+        modal.warning({
+          title: '交易已取消',
+          content: '您取消了交易。如需提交评价，请重新填写并在MetaMask中确认。',
+          centered: true
+        });
       } else {
-        setError('提交评价失败: ' + (err.message || err));
+        modal.error({
+          title: '提交失败',
+          content: '提交评价失败: ' + (err.message || err),
+          centered: true
+        });
       }
       
       setSubmitting(false);
     }
+  };
+
+  // 添加处理确认跳转的函数
+  const handleSuccessConfirm = () => {
+    setSuccessModalVisible(false);
+    router.push(`/studentCourseDetail/${courseId}`);
   };
 
   // 处理评分变化
@@ -607,51 +647,6 @@ export default function SubmitEvaluationPage({ params }) {
     setErrorModalVisible(true);
   };
 
-  // 侧边栏菜单项
-  // const siderItems = [
-  //   {
-  //     key: 'sub1',
-  //     icon: React.createElement(UserOutlined),
-  //     label: '个人中心',
-  //     children: [
-  //       {
-  //         key: '1',
-  //         label: '个人信息',
-  //         onClick: () => router.push('/studentIndex')
-  //       }
-  //     ],
-  //   },
-  //   {
-  //     key: 'sub2',
-  //     icon: React.createElement(BookOutlined),
-  //     label: '课程管理',
-  //     children: [
-  //       {
-  //         key: '2',
-  //         label: '查看课程',
-  //         onClick: () => router.push('/studentViewCourses')
-  //       }
-  //     ],
-  //   },
-  //   {
-  //     key: 'sub3',
-  //     icon: React.createElement(CommentOutlined),
-  //     label: '评价管理',
-  //     children: [
-  //       {
-  //         key: '3',
-  //         label: '我的评价',
-  //         onClick: () => router.push('/studentMyEvaluation')
-  //       },
-  //       {
-  //         key: '4',
-  //         label: '提交评价',
-  //         onClick: () => router.push('/submit-evaluation')
-  //       }
-  //     ],
-  //   }
-  // ];
-
   // 上传组件的配置
   const uploadProps = {
     listType: "picture-card",
@@ -692,11 +687,324 @@ export default function SubmitEvaluationPage({ params }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="加载中，请稍候..." />
+        <div style={{ textAlign: 'center' }}>
+          <Spin size="large" />
+          <p style={{ marginTop: '16px' }}>加载中，请稍候...</p>
+        </div>
       </div>
     );
   }
 
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className={styles.logo}>
+            <Image 
+              src="/images/logo1.png" 
+              alt="链评系统Logo" 
+              width={40} 
+              height={40}
+              style={{ borderRadius: '6px' }}
+            />
+          </div>
+          <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+            链评系统（ChainRate）- 学生端
+          </div>
+        </div>
+        <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+          <UserAvatar color="#fff" />
+        </div>
+      </Header>
+      <Layout>
+        <Sider width={200} style={{ background: colorBgContainer }}>
+          <StudentSidebar defaultSelectedKey="4" defaultOpenKey="sub3" />
+        </Sider>
+        <Layout style={{ padding: '0 24px 24px' }}>
+          <Breadcrumb
+            items={[
+              { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
+              { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
+              { title: course?.name, onClick: () => router.push(`/studentCourseDetail/${courseId}`), className: 'clickable-breadcrumb' },
+              { title: '提交评价' }
+            ]}
+            style={{ margin: '16px 0' }}
+          />
+          <Content
+            style={{
+              padding: 24,
+              margin: 0,
+              minHeight: 280,
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+            }}
+          >
+            {!course ? (
+              <Empty 
+                description="未找到课程" 
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ) : (
+              <>
+                <Card
+                  title={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <FormOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
+                      <span>提交课程评价</span>
+                    </div>
+                  }
+                  style={{ marginBottom: '20px' }}
+                >
+                  <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                      <Card 
+                        type="inner" 
+                        title="课程信息" 
+                        style={{ marginBottom: '20px' }}
+                      >
+                        <Row gutter={[16, 16]}>
+                          <Col xs={24} md={12}>
+                            <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                              <BookOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                              <Text strong>{course.name}</Text>
+                            </div>
+                            <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                              <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                              <Text>教师: {course.teacherName}</Text>
+                            </div>
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                              <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                              <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
+                            </div>
+                          </Col>
+                        </Row>
+                      </Card>
+                    </Col>
+                    
+                    <Col span={24}>
+                      <Form layout="vertical" onFinish={handleSubmitEvaluation}>
+                        <Card type="inner" title="评分" style={{ marginBottom: '20px' }}>
+                          <Row gutter={[32, 16]}>
+                            <Col xs={24} md={12} lg={6}>
+                              <Form.Item label="总体评分">
+                                <Rate 
+                                  defaultValue={rating}
+                                  onChange={(value) => handleRatingChange('overall', value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12} lg={6}>
+                              <Form.Item label="教学质量">
+                                <Rate 
+                                  defaultValue={teachingRating}
+                                  onChange={(value) => handleRatingChange('teaching', value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12} lg={6}>
+                              <Form.Item label="内容设计">
+                                <Rate 
+                                  defaultValue={contentRating}
+                                  onChange={(value) => handleRatingChange('content', value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12} lg={6}>
+                              <Form.Item label="师生互动">
+                                <Rate 
+                                  defaultValue={interactionRating}
+                                  onChange={(value) => handleRatingChange('interaction', value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                        </Card>
+                        
+                        <Card type="inner" title="评价内容" style={{ marginBottom: '20px' }}>
+                          <Form.Item>
+                            <TextArea
+                              value={content}
+                              onChange={(e) => setContent(e.target.value)}
+                              placeholder="请输入您对该课程的评价..."
+                              rows={6}
+                              showCount
+                              maxLength={1000}
+                            />
+                          </Form.Item>
+                        </Card>
+                        
+                        <Card type="inner" title="上传图片（可选）" style={{ marginBottom: '20px' }}>
+                          <Form.Item>
+                            <Upload {...uploadProps}>
+                              {images.length < 5 && (
+                                <div>
+                                  <UploadOutlined />
+                                  <div style={{ marginTop: 8 }}>上传</div>
+                                  <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
+                                    (限制5MB)
+                                  </div>
+                                </div>
+                              )}
+                            </Upload>
+                            
+                            {uploadingImages && (
+                              <div style={{ marginTop: 16 }}>
+                                <Progress percent={uploadProgress} status="active" />
+                                <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
+                                  <LoadingOutlined style={{ marginRight: 8 }} />
+                                  正在上传图片到IPFS...
+                                </Text>
+                              </div>
+                            )}
+                            
+                            {uploadedImageHashes.length > 0 && (
+                              <div style={{ marginTop: 16 }}>
+                                <Text strong style={{ marginBottom: 8, display: 'block' }}>
+                                  <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                                  图片已上传到IPFS:
+                                </Text>
+                                {uploadedImageHashes.map((hash, index) => (
+                                  <Tag 
+                                    key={index}
+                                    color="success" 
+                                    style={{ margin: '4px', wordBreak: 'break-all' }}
+                                  >
+                                    {hash.substring(0, 10)}...{hash.substring(hash.length - 10)}
+                                  </Tag>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div style={{ marginTop: 12 }}>
+                              <Text type="secondary">
+                                支持上传的图片格式：JPG, PNG, GIF等，单张图片大小不能超过5MB，最多上传5张
+                              </Text>
+                              <br />
+                              <Text type="secondary">
+                                图片将上传到IPFS分布式存储网络，上传后将永久保存且不可篡改
+                              </Text>
+                            </div>
+                          </Form.Item>
+                        </Card>
+                        
+                        <Card type="inner" title="隐私设置" style={{ marginBottom: '20px' }}>
+                          <Form.Item>
+                            <Checkbox 
+                              checked={isAnonymous}
+                              onChange={(e) => setIsAnonymous(e.target.checked)}
+                            >
+                              匿名评价（教师将无法看到您的姓名）
+                            </Checkbox>
+                          </Form.Item>
+                        </Card>
+                        
+                        <Form.Item>
+                          <Space>
+                            <Button 
+                              onClick={goBack}
+                            >
+                              取消
+                            </Button>
+                            <Button 
+                              type="primary" 
+                              htmlType="submit"
+                              loading={submitting}
+                              disabled={!content.trim() || uploadingImages}
+                              icon={<SendOutlined />}
+                              size="large"
+                              style={{ 
+                                height: '48px', 
+                                fontSize: '16px', 
+                                width: '180px',
+                                background: content.trim() && !uploadingImages ? '#1a73e8' : undefined,
+                                boxShadow: content.trim() && !uploadingImages ? '0 4px 12px rgba(26, 115, 232, 0.4)' : 'none'
+                              }}
+                            >
+                              提交评价
+                            </Button>
+                          </Space>
+                        </Form.Item>
+                      </Form>
+                    </Col>
+                  </Row>
+                </Card>
+              </>
+            )}
+
+            {/* 图片预览模态框 */}
+            <Modal
+              open={previewVisible}
+              title="图片预览"
+              footer={null}
+              onCancel={() => setPreviewVisible(false)}
+            >
+              <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
+            </Modal>
+            
+            {/* 错误提示弹窗 */}
+            <Modal
+              open={errorModalVisible}
+              title="错误提示"
+              centered
+              okText="确定"
+              cancelButtonProps={{ style: { display: 'none' } }}
+              onOk={() => setErrorModalVisible(false)}
+              onCancel={() => setErrorModalVisible(false)}
+            >
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+                  <span role="img" aria-label="close-circle">❌</span>
+                </div>
+                <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
+              </div>
+            </Modal>
+
+            {/* 添加成功提示弹窗 */}
+            <Modal
+              open={successModalVisible}
+              title={<div style={{ textAlign: 'center', fontSize: '18px' }}>提交成功</div>}
+              centered
+              closable={false}
+              maskClosable={false}
+              footer={[
+                <Button 
+                  key="confirm" 
+                  type="primary" 
+                  onClick={handleSuccessConfirm}
+                  icon={<CheckCircleOutlined />}
+                  size="large"
+                  style={{ width: '120px' }}
+                >
+                  确定
+                </Button>
+              ]}
+              styles={{ body: { padding: '24px' } }}
+            >
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ fontSize: '60px', color: '#52c41a', marginBottom: '24px' }}>
+                  <CheckCircleOutlined />
+                </div>
+                <p style={{ fontSize: '18px', marginBottom: '16px' }}>评价提交成功！</p>
+                <p style={{ fontSize: '14px', color: '#888', marginTop: '16px' }}>您的评价已成功提交到区块链，点击确定返回课程详情</p>
+              </div>
+            </Modal>
+          </Content>
+        </Layout>
+      </Layout>
+      <div className={styles.footer}>
+        <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+      </div>
+    </Layout>
+  );
+}
+
+// 主页面组件，包装ConfigProvider和App上下文
+export default function SubmitEvaluationPage({ params }) {
+  const router = useRouter();
+  
   return (
     <ConfigProvider
       theme={{
@@ -705,294 +1013,9 @@ export default function SubmitEvaluationPage({ params }) {
         },
       }}
     >
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className={styles.logo}>
-              <Image 
-                src="/images/logo1.png" 
-                alt="链评系统Logo" 
-                width={40} 
-                height={40}
-                style={{ borderRadius: '6px' }}
-              />
-            </div>
-            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-              链评系统（ChainRate）- 学生端
-            </div>
-          </div>
-          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-            <UserAvatar color="#fff" />
-          </div>
-        </Header>
-        <Layout>
-          <Sider width={200} style={{ background: colorBgContainer }}>
-            <StudentSidebar defaultSelectedKey="4" defaultOpenKey="sub3" />
-          </Sider>
-          <Layout style={{ padding: '0 24px 24px' }}>
-            <Breadcrumb
-              items={[
-                { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
-                { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
-                { title: course?.name, onClick: () => router.push(`/studentCourseDetail/${courseId}`), className: 'clickable-breadcrumb' },
-                { title: '提交评价' }
-              ]}
-              style={{ margin: '16px 0' }}
-            />
-            <Content
-              style={{
-                padding: 24,
-                margin: 0,
-                minHeight: 280,
-                background: colorBgContainer,
-                borderRadius: borderRadiusLG,
-              }}
-            >
-              {error && (
-                <Alert
-                  message="错误"
-                  description={error}
-                  type="error"
-                  showIcon
-                  style={{ marginBottom: '20px' }}
-                  closable
-                  onClose={() => setError('')}
-                />
-              )}
-              
-              {successMessage && (
-                <Alert
-                  message="成功"
-                  description={successMessage}
-                  type="success"
-                  showIcon
-                  style={{ marginBottom: '20px' }}
-                  closable
-                  onClose={() => setSuccessMessage('')}
-                />
-              )}
-              
-              {!course ? (
-                <Empty 
-                  description="未找到课程" 
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ) : (
-                <>
-                  <Card
-                    title={
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <FormOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
-                        <span>提交课程评价</span>
-                      </div>
-                    }
-                    style={{ marginBottom: '20px' }}
-                  >
-                    <Row gutter={[16, 16]}>
-                      <Col span={24}>
-                        <Card 
-                          type="inner" 
-                          title="课程信息" 
-                          style={{ marginBottom: '20px' }}
-                        >
-                          <Row gutter={[16, 16]}>
-                            <Col xs={24} md={12}>
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <BookOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text strong>{course.name}</Text>
-                              </div>
-                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                                <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text>教师: {course.teacherName}</Text>
-                              </div>
-                            </Col>
-                            <Col xs={24} md={12}>
-                              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                                <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                                <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
-                              </div>
-                            </Col>
-                          </Row>
-                        </Card>
-                      </Col>
-                      
-                      <Col span={24}>
-                        <Form layout="vertical" onFinish={handleSubmitEvaluation}>
-                          <Card type="inner" title="评分" style={{ marginBottom: '20px' }}>
-                            <Row gutter={[32, 16]}>
-                              <Col xs={24} md={12} lg={6}>
-                                <Form.Item label="总体评分">
-                                  <Rate 
-                                    defaultValue={rating}
-                                    onChange={(value) => handleRatingChange('overall', value)}
-                                  />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12} lg={6}>
-                                <Form.Item label="教学质量">
-                                  <Rate 
-                                    defaultValue={teachingRating}
-                                    onChange={(value) => handleRatingChange('teaching', value)}
-                                  />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12} lg={6}>
-                                <Form.Item label="内容设计">
-                                  <Rate 
-                                    defaultValue={contentRating}
-                                    onChange={(value) => handleRatingChange('content', value)}
-                                  />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12} lg={6}>
-                                <Form.Item label="师生互动">
-                                  <Rate 
-                                    defaultValue={interactionRating}
-                                    onChange={(value) => handleRatingChange('interaction', value)}
-                                  />
-                                </Form.Item>
-                              </Col>
-                            </Row>
-                          </Card>
-                          
-                          <Card type="inner" title="评价内容" style={{ marginBottom: '20px' }}>
-                            <Form.Item>
-                              <TextArea
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="请输入您对该课程的评价..."
-                                rows={6}
-                                showCount
-                                maxLength={1000}
-                              />
-                            </Form.Item>
-                          </Card>
-                          
-                          <Card type="inner" title="上传图片（可选）" style={{ marginBottom: '20px' }}>
-                            <Form.Item>
-                              <Upload {...uploadProps}>
-                                {images.length < 5 && (
-                                  <div>
-                                    <UploadOutlined />
-                                    <div style={{ marginTop: 8 }}>上传</div>
-                                    <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
-                                      (限制5MB)
-                                    </div>
-                                  </div>
-                                )}
-                              </Upload>
-                              
-                              {uploadingImages && (
-                                <div style={{ marginTop: 16 }}>
-                                  <Progress percent={uploadProgress} status="active" />
-                                  <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
-                                    <LoadingOutlined style={{ marginRight: 8 }} />
-                                    正在上传图片到IPFS...
-                                  </Text>
-                                </div>
-                              )}
-                              
-                              {uploadedImageHashes.length > 0 && (
-                                <div style={{ marginTop: 16 }}>
-                                  <Text strong style={{ marginBottom: 8, display: 'block' }}>
-                                    <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-                                    图片已上传到IPFS:
-                                  </Text>
-                                  {uploadedImageHashes.map((hash, index) => (
-                                    <Tag 
-                                      key={index}
-                                      color="success" 
-                                      style={{ margin: '4px', wordBreak: 'break-all' }}
-                                    >
-                                      {hash.substring(0, 10)}...{hash.substring(hash.length - 10)}
-                                    </Tag>
-                                  ))}
-                                </div>
-                              )}
-                              
-                              <div style={{ marginTop: 12 }}>
-                                <Text type="secondary">
-                                  支持上传的图片格式：JPG, PNG, GIF等，单张图片大小不能超过5MB，最多上传5张
-                                </Text>
-                                <br />
-                                <Text type="secondary">
-                                  图片将上传到IPFS分布式存储网络，上传后将永久保存且不可篡改
-                                </Text>
-                              </div>
-                            </Form.Item>
-                          </Card>
-                          
-                          <Card type="inner" title="隐私设置" style={{ marginBottom: '20px' }}>
-                            <Form.Item>
-                              <Checkbox 
-                                checked={isAnonymous}
-                                onChange={(e) => setIsAnonymous(e.target.checked)}
-                              >
-                                匿名评价（教师将无法看到您的姓名）
-                              </Checkbox>
-                            </Form.Item>
-                          </Card>
-                          
-                          <Form.Item>
-                            <Space>
-                              <Button 
-                                onClick={goBack}
-                              >
-                                取消
-                              </Button>
-                              <Button 
-                                type="primary" 
-                                htmlType="submit"
-                                loading={submitting}
-                                disabled={!content.trim() || uploadingImages}
-                                icon={<SendOutlined />}
-                              >
-                                提交评价
-                              </Button>
-                            </Space>
-                          </Form.Item>
-                        </Form>
-                      </Col>
-                    </Row>
-                  </Card>
-                </>
-              )}
-
-              {/* 图片预览模态框 */}
-              <Modal
-                open={previewVisible}
-                title="图片预览"
-                footer={null}
-                onCancel={() => setPreviewVisible(false)}
-              >
-                <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
-              </Modal>
-              
-              {/* 错误提示弹窗 */}
-              <Modal
-                open={errorModalVisible}
-                title="错误提示"
-                centered
-                okText="确定"
-                cancelButtonProps={{ style: { display: 'none' } }}
-                onOk={() => setErrorModalVisible(false)}
-                onCancel={() => setErrorModalVisible(false)}
-              >
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
-                    <span role="img" aria-label="close-circle">❌</span>
-                  </div>
-                  <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
-                </div>
-              </Modal>
-            </Content>
-          </Layout>
-        </Layout>
-        <div className={styles.footer}>
-          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
-        </div>
-      </Layout>
+      <App>
+        <SubmitEvaluationContent params={params} router={router} />
+      </App>
     </ConfigProvider>
   );
 } 

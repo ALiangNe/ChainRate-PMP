@@ -456,7 +456,7 @@ export default function TeacherViewEvaluateTeacherPage() {
     setSearchText(value);
     setPagination(prev => ({ ...prev, current: 1 }));
   };
-
+  
   const handleFilterChange = (value) => {
     setFilterType(value);
     setPagination(prev => ({ ...prev, current: 1 }));
@@ -471,24 +471,24 @@ export default function TeacherViewEvaluateTeacherPage() {
   const handlePageChange = (page, pageSize) => {
     setPagination(prev => ({ ...prev, current: page, pageSize }));
   };
-
+  
   const filterEvaluations = (search, type) => {
     let filtered = [...evaluations];
-
+    
     // 搜索过滤
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(evaluation =>
+      filtered = filtered.filter(evaluation => 
         (evaluation.studentName && evaluation.studentName.toLowerCase().includes(searchLower)) ||
         (evaluation.courseName && evaluation.courseName.toLowerCase().includes(searchLower)) ||
         (evaluation.courseCode && evaluation.courseCode.toLowerCase().includes(searchLower)) ||
         (evaluation.semester && evaluation.semester.toLowerCase().includes(searchLower))
       );
     }
-
+    
     // 类型过滤
     if (type === 'anonymous') {
-      filtered = filtered.filter(evaluation => evaluation.isAnonymous);
+        filtered = filtered.filter(evaluation => evaluation.isAnonymous);
     } else if (type === 'named') {
       filtered = filtered.filter(evaluation => !evaluation.isAnonymous);
     }
@@ -523,7 +523,7 @@ export default function TeacherViewEvaluateTeacherPage() {
       return 0;
     });
   };
-
+  
   // 退出登录
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
