@@ -13,7 +13,7 @@ export function checkSession(router) {
     return false;
   }
 
-  const expiryTime = parseInt(loginTime) + 3 * 60 * 1000; // 3分钟过期
+  const expiryTime = parseInt(loginTime) + 60 * 60 * 1000; // 1小时过期
   
   if (Date.now() > expiryTime) {
     // 会话已过期，清除登录信息
