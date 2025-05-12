@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
@@ -31,12 +31,7 @@ import {
   List,
   Divider,
   Timeline,
-  Alert,
-  App,
-  theme as antTheme,
-  Badge,
-  Image,
-  Switch
+  Alert
 } from 'antd';
 import { 
   HomeFilled, 
@@ -54,8 +49,7 @@ import {
   FileOutlined,
   PictureOutlined,
   CalendarOutlined,
-  UserOutlined,
-  PlusOutlined
+  UserOutlined
 } from '@ant-design/icons';
 import StudentSidebar from '../components/StudentSidebar';
 import UserAvatar from '../components/UserAvatar';
@@ -68,6 +62,7 @@ import axios from 'axios';
 
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
 const { Option } = Select;
 const { Search } = Input;
 
@@ -83,68 +78,19 @@ const FEEDBACK_STATUS = {
   3: { text: '已删除', color: 'red', icon: <DeleteOutlined /> }
 };
 
-// 添加 IPFS Hash 验证函数
-const isValidIpfsHash = (hash) => {
-  // 合法的IPFS CID v0以Qm开头，是base58编码的46个字符
-  // 合法的IPFS CID v1通常是base32编码的字符串
-  return hash && 
-         typeof hash === 'string' && 
-         (
-           (hash.startsWith('Qm') && hash.length >= 46) || 
-           /^[a-zA-Z0-9]{46,}$/.test(hash) ||
-           /^ba[a-zA-Z0-9]{57,}$/.test(hash)
-         ) &&
-         !/[\u4e00-\u9fa5]/.test(hash); // 不包含中文字符
-};
-
-// 修改 getIPFSContent 函数，更好地处理各种内容类型
+// 获取IPFS内容
 const getIPFSContent = async (contentHash) => {
   if (!contentHash || contentHash === '') {
     return { success: false, data: null, error: '内容哈希为空' };
   }
   
-  // 1. 首先检查是否是JSON字符串，这可能是直接存储的内容
-  try {
-    const parsedContent = JSON.parse(contentHash);
-    if (parsedContent && typeof parsedContent === 'object') {
-      console.log('内容是有效的JSON对象，直接使用:', parsedContent);
-      // 如果包含content字段，优先返回
-      if (parsedContent.content) {
-        return { success: true, data: parsedContent.content };
-      }
-      return { success: true, data: parsedContent };
-    }
-  } catch (e) {
-    // 不是JSON，继续其他检查
-  }
-  
-  // 2. 如果内容看起来像普通文本而不是哈希（包含中文字符或多于几个句子），直接将其视为内容
-  if (
-    /[\u4e00-\u9fa5]/.test(contentHash) || // 包含中文字符
-    contentHash.split(/[.!?。！？]/).length > 2 || // 包含多个句子
-    contentHash.length > 100 // 长文本
-  ) {
-    console.log('内容看起来是普通文本，直接显示:', contentHash);
-    return { success: true, data: contentHash };
-  }
-  
-  // 3. 如果不是有效的IPFS Hash，也直接返回内容
-  if (!isValidIpfsHash(contentHash)) {
-    console.log('非IPFS Hash格式，直接显示内容:', contentHash);
-    return { success: true, data: contentHash };
-  }
-  
-  // 4. 如果已经是完整URL，直接使用
+  // 如果已经是完整URL，直接使用
   if (contentHash.startsWith('http')) {
     try {
       const response = await fetch(contentHash);
       if (response.ok) {
         try {
           const data = await response.json();
-          // 如果返回的是一个包含content字段的对象，直接返回content
-          if (data && typeof data === 'object' && data.content) {
-            return { success: true, data: data.content };
-          }
           return { success: true, data };
         } catch (jsonErr) {
           const text = await response.text();
@@ -158,34 +104,24 @@ const getIPFSContent = async (contentHash) => {
     }
   }
   
-  // 5. 使用IPFS网关
+  // 使用IPFS网关
   try {
     const gateway = 'https://gateway.pinata.cloud/ipfs/';
     const url = `${gateway}${contentHash}`;
     
-    console.log('IPFS请求URL:', url);
     const response = await fetch(url);
     if (response.ok) {
       try {
         const data = await response.json();
-        console.log('IPFS返回数据:', data);
-        // 如果返回的是一个包含content字段的对象，直接返回content
-        if (data && typeof data === 'object' && data.content) {
-          return { success: true, data: data.content };
-        }
         return { success: true, data };
       } catch (jsonErr) {
-        console.error('JSON解析错误:', jsonErr);
         const text = await response.text();
-        console.log('IPFS返回文本:', text);
         return { success: true, data: text };
       }
     } else {
-      console.error('IPFS响应错误:', response.status);
       return { success: false, error: `HTTP错误: ${response.status}` };
     }
   } catch (error) {
-    console.error('IPFS请求异常:', error);
     return { success: false, error: error.message };
   }
 };
@@ -198,49 +134,10 @@ const createIPFSUrl = (hash) => {
   return `https://gateway.pinata.cloud/ipfs/${hash}`;
 };
 
-// 改进辅助函数，确保显示的内容不是IPFS链接
-const ensureContentNotLink = (content) => {
-  // 如果内容为空或不是字符串，返回默认文本
-  if (!content || typeof content !== 'string') {
-    return '未提供内容';
-  }
-  
-  // 如果内容看起来像IPFS链接但不是有效的内容，尝试提取最后部分
-  if (content.includes('gateway.pinata.cloud/ipfs/') || 
-      content.startsWith('https://ipfs.io/') || 
-      content.startsWith('ipfs://')) {
-    // 提取IPFS hash
-    const matches = content.match(/ipfs\/([a-zA-Z0-9]+)/);
-    if (matches && matches[1]) {
-      // 标记为加载失败，前端会自动重新加载
-      return `[内容需要加载: ${matches[1]}]`;
-    }
-  }
-  
-  // 尝试解析可能是JSON字符串的内容
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === 'object') {
-      // 如果是对象并且有content字段，显示content字段
-      if (parsed.content) {
-        return parsed.content;
-      }
-      // 如果是对象但没有content字段，格式化显示
-      return JSON.stringify(parsed, null, 2);
-    }
-    // 如果解析结果不是对象，直接返回原内容
-    return content;
-  } catch (e) {
-    // 不是JSON，返回原内容
-    return content;
-  }
-};
-
 export default function StudentViewFeedbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const feedbackId = searchParams.get('id');
-  const { message: appMessage, modal } = App.useApp();
   
   const [userData, setUserData] = useState({
     isLoggedIn: false,
@@ -325,10 +222,11 @@ export default function StudentViewFeedbackPage() {
     // 初始化Web3连接
     const initWeb3 = async () => {
       try {
-        // 检查MetaMask是否已安装
-        if (window.ethereum === undefined) {
-          appMessage.error('请安装 MetaMask 钱包以使用此应用');
-          return null;
+        // 检查是否有 MetaMask
+        if (typeof window.ethereum === 'undefined') {
+          message.error('请安装 MetaMask 钱包以使用此应用');
+          setLoading(false);
+          return;
         }
         
         // 请求用户连接钱包
@@ -369,8 +267,8 @@ export default function StudentViewFeedbackPage() {
           }
         }
       } catch (err) {
-        console.error('初始化Web3失败:', err);
-        appMessage.error('初始化Web3失败: ' + err.message);
+        console.error("初始化Web3失败:", err);
+        message.error('初始化Web3失败: ' + err.message);
         setLoading(false);
       }
     };
@@ -451,25 +349,21 @@ export default function StudentViewFeedbackPage() {
         try {
           const feedback = await extensionContract.getCourseFeedbackDetails(id);
           
-          // 获取内容 - 确保正确处理
+          // 获取内容
           let contentText = "";
           try {
-            // 先检查contentHash是否是有效的IPFS hash
-            if (isValidIpfsHash(feedback.contentHash)) {
-              // 如果是有效的IPFS hash，从IPFS获取内容
-              const contentResult = await getIPFSContent(feedback.contentHash);
-              if (contentResult.success) {
-                // 直接使用处理后的结果 
-                contentText = contentResult.data;
+            const contentResult = await getIPFSContent(feedback.contentHash);
+            if (contentResult.success) {
+              if (typeof contentResult.data === 'object' && contentResult.data !== null) {
+                contentText = contentResult.data.content || JSON.stringify(contentResult.data);
               } else {
-                contentText = "内容加载失败: " + contentResult.error;
+                contentText = contentResult.data;
               }
             } else {
-              // 如果不是有效的IPFS hash，直接使用它作为内容
-              contentText = feedback.contentHash;
+              contentText = "内容加载失败";
             }
           } catch (err) {
-            contentText = "内容处理错误: " + err.message;
+            contentText = "内容处理错误";
           }
           
           // 获取反馈回复
@@ -480,23 +374,19 @@ export default function StudentViewFeedbackPage() {
             // 如果有回复，获取回复内容
             if (reply && reply.contentHash && reply.contentHash !== '') {
               let replyText = "";
-              
-              // 验证contentHash是否为有效的IPFS hash
-              if (!isValidIpfsHash(reply.contentHash)) {
-                // 不是有效IPFS hash，直接使用它作为内容
-                replyText = reply.contentHash;
-              } else {
-                // 是有效IPFS hash，从IPFS获取内容
-                try {
-                  const replyResult = await getIPFSContent(reply.contentHash);
-                  if (replyResult.success) {
-                    replyText = replyResult.data;
+              try {
+                const replyResult = await getIPFSContent(reply.contentHash);
+                if (replyResult.success) {
+                  if (typeof replyResult.data === 'object' && replyResult.data !== null) {
+                    replyText = replyResult.data.content || JSON.stringify(replyResult.data);
                   } else {
-                    replyText = `回复内容加载失败: ${replyResult.error}`;
+                    replyText = replyResult.data;
                   }
-                } catch (err) {
-                  replyText = "回复内容加载失败: " + err.message;
+                } else {
+                  replyText = `回复内容加载失败`;
                 }
+              } catch (err) {
+                replyText = "回复内容加载失败";
               }
               
               reply.content = replyText;
@@ -518,7 +408,7 @@ export default function StudentViewFeedbackPage() {
             id: id.toString(),
             courseId: feedback.courseId.toString(),
             student: feedback.student,
-            content: contentText, // 使用处理后的文本内容
+            content: contentText,
             contentHash: feedback.contentHash,
             timestamp: Number(feedback.timestamp),
             status: Number(feedback.status),
@@ -561,8 +451,8 @@ export default function StudentViewFeedbackPage() {
       setFeedbacks(feedbackDetails);
       setLoading(false);
     } catch (error) {
-      console.error('加载反馈数据失败:', error);
-      appMessage.error('加载反馈数据失败: ' + error.message);
+      console.error("加载反馈数据失败:", error);
+      message.error('加载反馈数据失败: ' + error.message);
       setLoading(false);
     }
   };
@@ -572,7 +462,7 @@ export default function StudentViewFeedbackPage() {
     try {
       setLoadingVersions(true);
       if (!extensionContract) {
-        appMessage.error('合约未初始化');
+        message.error('合约未初始化');
         setLoadingVersions(false);
         return;
       }
@@ -580,7 +470,7 @@ export default function StudentViewFeedbackPage() {
       console.log('正在加载反馈历史版本...', feedbackId);
       const feedback = feedbacks.find(f => f.id === feedbackId);
       if (!feedback) {
-        appMessage.error('未找到反馈信息');
+        message.error('未找到反馈信息');
         setLoadingVersions(false);
         return;
       }
@@ -589,76 +479,28 @@ export default function StudentViewFeedbackPage() {
       const versionsCount = feedback.versions;
       console.log('反馈版本数量:', versionsCount);
       
+      // 即使只有一个版本也加载
       if (versionsCount <= 0) {
         setFeedbackVersions([]);
         setLoadingVersions(false);
         return;
       }
       
-      // 查询所有版本，并为每个版本加载教师回复
+      // 查询所有版本
       const versionPromises = [];
       for (let i = 0; i < versionsCount; i++) {
-        versionPromises.push((async () => {
-          try {
-            const version = await loadFeedbackVersion(feedbackId, i);
-            
-            // 尝试加载该版本的教师回复
-            try {
-              const reply = await extensionContract.getTeacherReplyDetails(feedbackId);
-              if (reply && reply.contentHash && reply.contentHash !== '') {
-                let replyText = '';
-                
-                // 处理回复内容
-                const replyResult = await getIPFSContent(reply.contentHash);
-                if (replyResult.success) {
-                  replyText = replyResult.data;
-                } else {
-                  replyText = '回复内容加载失败: ' + replyResult.error;
-                }
-                
-                version.reply = {
-                  teacher: reply.teacher,
-                  content: replyText,
-                  contentHash: reply.contentHash,
-                  timestamp: Number(reply.timestamp)
-                };
-              } else {
-                version.reply = null;
-              }
-            } catch (err) {
-              console.log(`版本 ${i} 无教师回复或获取回复失败:`, err);
-              version.reply = null;
-            }
-            
-            return version;
-          } catch (error) {
-            console.error(`加载版本 ${i} 失败:`, error);
-            return {
-              id: i,
-              feedbackId: feedbackId,
-              timestamp: 0,
-              content: `[版本 ${i} 加载失败: ${error.message}]`,
-              contentHash: "",
-              documentUrls: [],
-              imageUrls: [],
-              documentHashes: [],
-              imageHashes: [],
-              date: new Date(),
-              formattedDate: '未知时间',
-              versionLabel: i === 0 ? '原始版本' : `修改版本 ${i}`
-            };
-          }
-        })());
+        versionPromises.push(loadFeedbackVersion(feedbackId, i));
       }
       
       const versions = await Promise.all(versionPromises);
-      // 按时间从新到旧排序
+      // 按照时间降序排序，最新的在前面
       versions.sort((a, b) => b.timestamp - a.timestamp);
+      
       setFeedbackVersions(versions);
       setLoadingVersions(false);
     } catch (error) {
       console.error('加载反馈版本历史失败:', error);
-      appMessage.error('加载反馈版本历史失败: ' + error.message);
+      message.error('加载反馈版本历史失败: ' + error.message);
       setLoadingVersions(false);
     }
   };
@@ -673,22 +515,19 @@ export default function StudentViewFeedbackPage() {
       // 获取内容
       let contentText = "";
       try {
-        // 首先尝试直接处理contentHash作为内容
-        if (!isValidIpfsHash(version.contentHash)) {
-          contentText = version.contentHash;
-          console.log(`反馈 ${feedbackId} 的版本 ${versionId} 内容不是IPFS哈希，直接使用`);
-        } else {
-          // 是IPFS哈希，获取内容
-          const contentResult = await getIPFSContent(version.contentHash);
-          console.log(`获取到IPFS内容结果:`, contentResult);
-          
-          if (contentResult.success) {
-            contentText = contentResult.data;
-            console.log(`成功解析反馈 ${feedbackId} 的版本 ${versionId} 内容`);
+        const contentResult = await getIPFSContent(version.contentHash);
+        console.log(`获取到IPFS内容结果:`, contentResult);
+        
+        if (contentResult.success) {
+          if (typeof contentResult.data === 'object' && contentResult.data !== null) {
+            contentText = contentResult.data.content || JSON.stringify(contentResult.data);
           } else {
-            console.error(`IPFS内容获取失败: ${contentResult.error}`);
-            contentText = `[无法加载版本 ${versionId} 的内容: ${contentResult.error}]`;
+            contentText = contentResult.data;
           }
+          console.log(`成功解析反馈 ${feedbackId} 的版本 ${versionId} 内容`);
+        } else {
+          console.error(`IPFS内容获取失败: ${contentResult.message}`);
+          contentText = `[无法加载版本 ${versionId} 的内容: ${contentResult.message}]`;
         }
       } catch (err) {
         console.error(`处理反馈 ${feedbackId} 的版本 ${versionId} 内容时出错:`, err);
@@ -761,7 +600,7 @@ export default function StudentViewFeedbackPage() {
     // 检查反馈是否已收到教师回复
     if (feedback.hasReply) {
       // 显示警告提示
-      modal.warning({
+      Modal.warning({
         title: '无法修改',
         content: '已收到回复的反馈不可修改，但可以提交新的补充反馈',
         okText: '知道了'
@@ -795,10 +634,10 @@ export default function StudentViewFeedbackPage() {
       );
       
       // 等待交易确认
-      appMessage.loading('正在更新反馈，请等待区块链确认...');
+      message.loading('正在更新反馈，请等待区块链确认...');
       await tx.wait();
       
-      appMessage.success('反馈已成功修改');
+      message.success('反馈已成功修改');
       
       // 关闭模态框
       setEditModalVisible(false);
@@ -841,7 +680,7 @@ export default function StudentViewFeedbackPage() {
         }
       }
       
-      appMessage.error(errorMessage);
+      message.error(errorMessage);
     } finally {
       setSubmittingEdit(false);
     }
@@ -935,403 +774,477 @@ export default function StudentViewFeedbackPage() {
   
   // 渲染页面
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: isDarkMode ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
-        components: {
-          Card: {
-            colorBgContainer: isDarkMode ? '#1f1f1f' : '#ffffff',
-          },
-        },
-      }}
-    >
-      <App>
-        <Layout className={styles.pageLayout}>
-          <Layout.Header className={styles.header}>
-            <div className={styles.headerContent}>
-              <Typography.Title level={3} style={{ margin: 0, color: isDarkMode ? '#fff' : '#001529' }}>
-                我的反馈记录
-              </Typography.Title>
-              <Space>
-                <Switch
-                  checkedChildren="暗色"
-                  unCheckedChildren="亮色"
-                  checked={isDarkMode}
-                  onChange={setIsDarkMode}
-                  className={styles.themeSwitch}
-                />
-              </Space>
+    <ConfigProvider>
+      <Layout style={{ minHeight: '100vh' }}>
+        <StudentSidebar selectedKey="8" />
+        
+        <Layout>
+          <Header className={styles.pageHeader}>
+            <div>
+              <Breadcrumb
+                items={[
+                  { title: '首页', href: '/student' },
+                  { title: '我的反馈' }
+                ]}
+              />
             </div>
-          </Layout.Header>
+            <UserAvatar userData={userData} />
+          </Header>
           
-          <Layout.Content className={styles.content}>
+          <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
             {loading ? (
               <div className={styles.loadingContainer}>
                 <Spin size="large" />
-                <p>加载数据中...</p>
+                <div>加载中...</div>
               </div>
             ) : (
               <>
-                <div className={styles.topControls}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Card bordered={false} className={styles.toolCard}>
-                      <Space direction="horizontal" size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
-                        <div className={styles.searchContainer}>
-                          <Input.Search
-                            placeholder="搜索反馈内容或课程"
-                            onSearch={handleSearch}
-                            style={{ width: 300 }}
-                            allowClear
-                          />
-                        </div>
-                        
-                        <Space>
-                          <Select
-                            placeholder="状态筛选"
-                            style={{ width: 150 }}
-                            onChange={handleStatusFilter}
-                            defaultValue="all"
-                          >
-                            <Select.Option value="all">全部状态</Select.Option>
-                            <Select.Option value="replied">已回复</Select.Option>
-                            <Select.Option value="unreplied">未回复</Select.Option>
-                            <Select.Option value="0">待审核</Select.Option>
-                            <Select.Option value="1">已审核</Select.Option>
-                            <Select.Option value="2">需修改</Select.Option>
-                            <Select.Option value="3">已删除</Select.Option>
-                          </Select>
-                          
-                          <Select
-                            placeholder="排序方式"
-                            style={{ width: 150 }}
-                            onChange={handleSort}
-                            defaultValue="newest"
-                          >
-                            <Select.Option value="newest">最新优先</Select.Option>
-                            <Select.Option value="oldest">最早优先</Select.Option>
-                            <Select.Option value="statusAsc">状态升序</Select.Option>
-                            <Select.Option value="statusDesc">状态降序</Select.Option>
-                          </Select>
-                          
-                          <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={handleCreateFeedback}
-                          >
-                            创建新反馈
-                          </Button>
-                        </Space>
-                      </Space>
+                {/* 数据统计卡片 */}
+                <Row gutter={16} style={{ marginBottom: 24 }}>
+                  <Col span={6}>
+                    <Card className={styles.statCard}>
+                      <Statistic 
+                        title="总反馈数" 
+                        value={statistics.total} 
+                        prefix={<CommentOutlined />} 
+                        valueStyle={{ color: '#1890ff' }}
+                      />
                     </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card className={styles.statCard}>
+                      <Statistic 
+                        title="已回复" 
+                        value={statistics.replied} 
+                        prefix={<CheckCircleOutlined />} 
+                        valueStyle={{ color: '#52c41a' }}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card className={styles.statCard}>
+                      <Statistic 
+                        title="未回复" 
+                        value={statistics.unreplied} 
+                        prefix={<ClockCircleOutlined />} 
+                        valueStyle={{ color: '#faad14' }}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card className={styles.statCard}>
+                      <Statistic 
+                        title="已删除" 
+                        value={statistics.deleted} 
+                        prefix={<DeleteOutlined />} 
+                        valueStyle={{ color: '#ff4d4f' }}
+                      />
+                    </Card>
+                  </Col>
+                </Row>
+                
+                {/* 筛选和搜索栏 */}
+                <div className={styles.toolBar}>
+                  <div className={styles.filterGroup}>
+                    <Space>
+                      <Select 
+                        defaultValue="all" 
+                        style={{ width: 120 }} 
+                        onChange={handleStatusFilter}
+                        placeholder="状态筛选"
+                        suffixIcon={<FilterOutlined />}
+                      >
+                        <Option value="all">所有状态</Option>
+                        <Option value="unreplied">未回复</Option>
+                        <Option value="replied">已回复</Option>
+                        <Option value="2">已修改</Option>
+                        <Option value="3">已删除</Option>
+                      </Select>
+                      
+                      <Select 
+                        defaultValue="newest" 
+                        style={{ width: 120 }} 
+                        onChange={handleSort}
+                        placeholder="排序方式"
+                        suffixIcon={<SortAscendingOutlined />}
+                      >
+                        <Option value="newest">最新优先</Option>
+                        <Option value="oldest">最早优先</Option>
+                        <Option value="statusAsc">状态升序</Option>
+                        <Option value="statusDesc">状态降序</Option>
+                      </Select>
+                    </Space>
+                  </div>
+                  
+                  <Space>
+                    <Button 
+                      type="primary" 
+                      onClick={handleCreateFeedback}
+                    >
+                      新建反馈
+                    </Button>
+                    
+                    <Search
+                      placeholder="搜索反馈内容、课程名称..."
+                      allowClear
+                      enterButton
+                      onSearch={handleSearch}
+                      style={{ width: 300 }}
+                    />
                   </Space>
                 </div>
                 
-                <div className={styles.feedbackList}>
+                {/* 反馈列表 */}
+                <div className={styles.feedbacksContainer}>
                   {filteredFeedbacks.length === 0 ? (
-                    <Empty
+                    <Empty 
                       description={
-                        <div>
-                          <p>没有找到符合条件的反馈</p>
-                          <Button type="primary" onClick={handleCreateFeedback}>
-                            创建新反馈
-                          </Button>
-                        </div>
+                        <span>
+                          {searchText || filterStatus !== 'all' 
+                            ? '没有符合条件的反馈' 
+                            : '你还没有提交过任何课程反馈'}
+                        </span>
                       }
-                    />
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    >
+                      {!(searchText || filterStatus !== 'all') && (
+                        <Button 
+                          type="primary" 
+                          onClick={handleCreateFeedback}
+                        >
+                          去提交反馈
+                        </Button>
+                      )}
+                    </Empty>
                   ) : (
                     <List
+                      itemLayout="vertical"
                       dataSource={filteredFeedbacks}
-                      renderItem={(feedback) => (
-                        <List.Item key={feedback.id}>
-                          <Card
-                            bordered={true}
-                            className={styles.feedbackCard}
-                            hoverable
-                            style={{ width: '100%' }}
+                      renderItem={feedback => {
+                        const courseInfo = getCourseInfo(feedback.courseId);
+                        const statusInfo = FEEDBACK_STATUS[feedback.status];
+                        
+                        return (
+                          <List.Item
+                            key={feedback.id}
+                            actions={[
+                              <Button 
+                                key="view" 
+                                type="link" 
+                                icon={<EyeOutlined />}
+                                onClick={() => handleViewFeedback(feedback)}
+                              >
+                                查看详情
+                              </Button>,
+                              <Button 
+                                key="edit" 
+                                type="link" 
+                                icon={<EditOutlined />}
+                                onClick={() => handleEditFeedback(feedback)}
+                                disabled={feedback.status === 3 || feedback.hasReply}
+                              >
+                                编辑反馈
+                              </Button>
+                            ]}
+                            extra={
+                              <Space>
+                                {feedback.hasReply && (
+                                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                                    已回复
+                                  </Tag>
+                                )}
+                                <Tag color={statusInfo.color} icon={statusInfo.icon}>
+                                  {statusInfo.text}
+                                </Tag>
+                              </Space>
+                            }
                           >
-                            <div className={styles.cardContent}>
-                              <div className={styles.feedbackMeta}>
-                                <div className={styles.courseInfo}>
-                                  <h3>{getCourseInfo(feedback.courseId).name}</h3>
-                                  <div>{getCourseInfo(feedback.courseId).department}</div>
-                                  <div className={styles.teacherInfo}>
-                                    <span>授课教师: {getTeacherInfo(feedback.teacherAddress).name}</span>
-                                  </div>
+                            <List.Item.Meta
+                              title={
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                  <Text strong>{courseInfo.name}</Text>
+                                  <Text type="secondary">
+                                    {feedback.hasReply ? '教师已回复' : '等待回复'}
+                                  </Text>
                                 </div>
-                                
-                                <div className={styles.statusInfo}>
-                                  <Badge 
-                                    status={getFeedbackStatusBadge(feedback.status)} 
-                                    text={getFeedbackStatusText(feedback.status)} 
-                                  />
-                                  {feedback.hasReply && (
-                                    <Tag color="green" style={{ marginLeft: 8 }}>已回复</Tag>
-                                  )}
-                                  {feedback.versionCount > 1 && (
-                                    <Tag color="blue" style={{ marginLeft: 8 }}>
-                                      有 {feedback.versionCount - 1} 次修订
-                                    </Tag>
-                                  )}
+                              }
+                              description={
+                                <div>
+                                  <Text type="secondary">
+                                    <CalendarOutlined /> 提交时间: {dayjs(feedback.timestamp * 1000).format('YYYY-MM-DD HH:mm')}
+                                  </Text>
+                                  <br />
+                                  <Text type="secondary">
+                                    <UserOutlined /> 教师: {getTeacherInfo(courseInfo.teacher).name}
+                                  </Text>
                                 </div>
-                              </div>
-                              
-                              <div className={styles.feedbackContent}>
-                                <div className={styles.contentPreview}>
-                                  {feedback.content.length > 100 
-                                    ? `${feedback.content.substring(0, 100)}...` 
-                                    : feedback.content
-                                  }
-                                </div>
-                                
-                                <div className={styles.attachments}>
-                                  {feedback.imageUrls && feedback.imageUrls.length > 0 && (
-                                    <div className={styles.imagesPreview}>
-                                      <Tooltip title="包含图片附件">
-                                        <Space>
-                                          <PictureOutlined />
-                                          <span>{feedback.imageUrls.length}张图片</span>
-                                        </Space>
-                                      </Tooltip>
-                                    </div>
-                                  )}
-                                  
-                                  {feedback.documentHashes && feedback.documentHashes.length > 0 && (
-                                    <div className={styles.documentsPreview}>
-                                      <Tooltip title="包含文档附件">
-                                        <Space>
-                                          <FileOutlined />
-                                          <span>{feedback.documentHashes.length}个文档</span>
-                                        </Space>
-                                      </Tooltip>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className={styles.feedbackFooter}>
-                                <div className={styles.timestamp}>
-                                  提交于: {formatDate(feedback.timestamp)}
-                                </div>
-                                
-                                <div className={styles.actionButtons}>
-                                  <Space>
-                                    <Button type="primary" onClick={() => handleViewFeedback(feedback)}>
-                                      查看详情
-                                    </Button>
-                                    <Button onClick={() => handleEditFeedback(feedback)} disabled={feedback.hasReply}>
-                                      修改反馈
-                                    </Button>
-                                  </Space>
-                                </div>
-                              </div>
+                              }
+                            />
+                            <Paragraph ellipsis={{ rows: 2 }} style={{ marginTop: 16 }}>
+                              {feedback.content}
+                            </Paragraph>
+                            <div>
+                              {feedback.imageUrls.length > 0 && (
+                                <Text type="secondary">
+                                  <PictureOutlined /> 图片附件: {feedback.imageUrls.length} 个
+                                </Text>
+                              )}
+                              {feedback.imageUrls.length > 0 && feedback.documentHashes.length > 0 && (
+                                <Divider type="vertical" />
+                              )}
+                              {feedback.documentHashes.length > 0 && (
+                                <Text type="secondary">
+                                  <FileOutlined /> 文档附件: {feedback.documentHashes.length} 个
+                                </Text>
+                              )}
                             </div>
-                          </Card>
-                        </List.Item>
-                      )}
+                          </List.Item>
+                        );
+                      }}
                     />
                   )}
                 </div>
-              </>
-            )}
-          </Layout.Content>
-        </Layout>
-        
-        {/* 详情模态框 */}
-        <Modal
-          title={
-            <div className={styles.modalTitle}>
-              {selectedFeedback && (
-                <>
-                  <div>反馈详情 - {getCourseInfo(selectedFeedback.courseId).name}</div>
-                  <div className={styles.modalSubtitle}>
-                    <Badge 
-                      status={selectedFeedback ? getFeedbackStatusBadge(selectedFeedback.status) : 'default'} 
-                      text={selectedFeedback ? getFeedbackStatusText(selectedFeedback.status) : '未知状态'} 
-                    />
-                    {selectedFeedback && selectedFeedback.hasReply && (
-                      <Tag color="green" style={{ marginLeft: 8 }}>已回复</Tag>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          }
-          open={detailModalVisible}
-          onCancel={handleCloseDetail}
-          width={800}
-          footer={null}
-          className={`${styles.detailModal} ${isDarkMode ? styles.darkModal : ''}`}
-        >
-          {loadingVersions ? (
-            <div style={{ textAlign: 'center', padding: '30px' }}>
-              <Spin size="large" />
-              <p>加载反馈版本历史...</p>
-            </div>
-          ) : (
-            selectedFeedback && (
-              <div className={styles.feedbackDetail}>
-                <Tabs 
-                  defaultActiveKey="content" 
-                  className={styles.detailTabs}
-                  items={[
-                    {
-                      key: 'content',
-                      label: '反馈内容',
-                      children: (
-                        <div className={styles.feedbackDetailContent}>
-                          {feedbackVersions.length > 0 && (
-                            <div className={styles.versionSelector}>
-                              <div className={styles.versionSelectorLabel}>
-                                <span>查看版本:</span>
-                              </div>
-                              <Select
-                                style={{ width: 200 }}
-                                value={selectedVersionId}
-                                onChange={(value) => setSelectedVersionId(value)}
-                              >
-                                {feedbackVersions.map((version) => (
-                                  <Select.Option key={version.versionId} value={version.versionId}>
-                                    {version.versionLabel} - {version.formattedDate}
-                                  </Select.Option>
-                                ))}
-                              </Select>
-                            </div>
-                          )}
-                          
-                          <div className={styles.contentSection}>
-                            <Typography.Title level={4}>反馈详情</Typography.Title>
-                            <div className={styles.feedbackMetaInfo}>
-                              <p><strong>课程:</strong> {getCourseInfo(selectedFeedback.courseId).name}</p>
-                              <p><strong>教师:</strong> {getTeacherInfo(selectedFeedback.teacherAddress).name}</p>
-                              <p><strong>提交时间:</strong> {formatDate(selectedFeedback.timestamp)}</p>
-                              {currentVersionData && currentVersionData.date && (
-                                <p><strong>版本时间:</strong> {formatDate(currentVersionData.date)}</p>
-                              )}
+                
+                {/* 反馈详情模态框 */}
+                {selectedFeedback && (
+                  <Modal
+                    title={
+                      <div className={styles.modalTitle}>
+                        <span>反馈详情</span>
+                        <Tag color={FEEDBACK_STATUS[selectedFeedback.status].color} icon={FEEDBACK_STATUS[selectedFeedback.status].icon}>
+                          {FEEDBACK_STATUS[selectedFeedback.status].text}
+                        </Tag>
+                      </div>
+                    }
+                    open={detailModalVisible}
+                    onCancel={handleCloseDetail}
+                    footer={[
+                      <Button key="close" onClick={handleCloseDetail}>关闭</Button>,
+                      <Button
+                        key="edit"
+                        type="primary"
+                        onClick={() => handleEditFeedback(selectedFeedback)}
+                        disabled={selectedFeedback.status === 3 || selectedFeedback.hasReply}
+                      >
+                        编辑反馈
+                      </Button>
+                    ]}
+                    width={800}
+                  >
+                    <div className={styles.feedbackDetail}>
+                      <div className={styles.courseInfo}>
+                        <Title level={4}>{getCourseInfo(selectedFeedback.courseId).name}</Title>
+                        <div className={styles.teacherInfo}>
+                          <UserOutlined /> 授课教师: {getTeacherInfo(getCourseInfo(selectedFeedback.courseId).teacher).name}
+                        </div>
+                      </div>
+                      
+                      <Tabs defaultActiveKey="content">
+                        <TabPane tab="反馈内容" key="content">
+                          <div className={styles.feedbackBody}>
+                            <div className={styles.feedbackTime}>
+                              <CalendarOutlined /> 提交时间: {dayjs(selectedFeedback.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
                             </div>
                             
-                            <div className={styles.feedbackText}>
-                              <Typography.Title level={5}>反馈内容</Typography.Title>
-                              <div className={styles.contentText}>
-                                {currentVersionData ? currentVersionData.content : selectedFeedback.content}
-                              </div>
+                            <div className={styles.feedbackContentDetail}>
+                              {selectedFeedback.content}
                             </div>
                             
-                            {/* 图片附件 */}
-                            {((currentVersionData && currentVersionData.imageUrls && currentVersionData.imageUrls.length > 0) || 
-                              (!currentVersionData && selectedFeedback.imageUrls && selectedFeedback.imageUrls.length > 0)) && (
-                              <div className={styles.imageAttachments}>
-                                <Typography.Title level={5}>图片附件</Typography.Title>
-                                <div className={styles.imageGrid}>
-                                  {(currentVersionData ? currentVersionData.imageUrls : selectedFeedback.imageUrls).map((url, index) => (
-                                    <div className={styles.imageContainer} key={`img-${index}`}>
-                                      <Image
-                                        src={url}
-                                        alt={`附件图片 ${index + 1}`}
-                                        style={{ maxHeight: '200px' }}
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* 文档附件 */}
-                            {((currentVersionData && currentVersionData.documentUrls && currentVersionData.documentUrls.length > 0) || 
-                              (!currentVersionData && selectedFeedback.documentHashes && selectedFeedback.documentHashes.length > 0)) && (
-                              <div className={styles.docAttachments}>
-                                <Typography.Title level={5}>文档附件</Typography.Title>
-                                <List
-                                  dataSource={currentVersionData ? currentVersionData.documentUrls : selectedFeedback.documentHashes}
-                                  renderItem={(url, index) => {
-                                    const docUrl = url.startsWith('http') ? url : `https://gateway.pinata.cloud/ipfs/${url}`;
-                                    return (
-                                      <List.Item>
-                                        <a href={docUrl} target="_blank" rel="noopener noreferrer">
-                                          <Space>
-                                            <FileOutlined />
-                                            <span>文档 {index + 1}</span>
-                                          </Space>
-                                        </a>
-                                      </List.Item>
-                                    );
-                                  }}
-                                />
+                            {/* 显示附件信息 */}
+                            {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
+                              <div className={styles.attachments}>
+                                {selectedFeedback.imageUrls.length > 0 && (
+                                  <div className={styles.attachmentSection}>
+                                    <Title level={5}>
+                                      <PictureOutlined /> 图片附件 ({selectedFeedback.imageUrls.length})
+                                    </Title>
+                                    <Row gutter={[16, 16]}>
+                                      {selectedFeedback.imageUrls.map((url, index) => (
+                                        <Col span={8} key={index}>
+                                          <div className={styles.imagePreview}>
+                                            <img 
+                                              src={url} 
+                                              alt={`图片 ${index + 1}`} 
+                                              className={styles.previewImg}
+                                            />
+                                          </div>
+                                        </Col>
+                                      ))}
+                                    </Row>
+                                  </div>
+                                )}
+                                
+                                {selectedFeedback.documentHashes.length > 0 && (
+                                  <div className={styles.attachmentSection}>
+                                    <Title level={5}>
+                                      <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
+                                    </Title>
+                                    <List
+                                      dataSource={selectedFeedback.documentHashes}
+                                      renderItem={(hash, index) => (
+                                        <List.Item>
+                                          <a 
+                                            href={createIPFSUrl(hash)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={styles.documentLink}
+                                          >
+                                            <FileTextOutlined /> 文档 {index + 1}
+                                          </a>
+                                        </List.Item>
+                                      )}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                          
-                          {/* 教师回复 */}
-                          {selectedFeedback.hasReply && selectedFeedback.replyContent && (
-                            <div className={styles.replySection}>
-                              <Divider orientation="left">教师回复</Divider>
+                        </TabPane>
+                        
+                        <TabPane tab="版本历史" key="versions">
+                          {loadingVersions ? (
+                            <div className={styles.loadingContainer} style={{ height: '200px' }}>
+                              <Spin size="small" />
+                              <div>加载版本历史...</div>
+                            </div>
+                          ) : feedbackVersions.length > 0 ? (
+                            <div className={styles.versionsContainer}>
+                              <Alert
+                                message="版本历史记录"
+                                description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
+                                type="info"
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                              />
+                              <Timeline mode="left">
+                                {feedbackVersions.map((version, index) => (
+                                  <Timeline.Item 
+                                    key={version.id} 
+                                    color={index === 0 ? 'green' : 'blue'} 
+                                    label={dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                  >
+                                    <Card 
+                                      size="small" 
+                                      title={
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                          <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
+                                          <Tag color={index === 0 ? "green" : "blue"}>
+                                            {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
+                                          </Tag>
+                                        </div>
+                                      }
+                                      className={styles.versionCard}
+                                    >
+                                      <div className={styles.versionContent}>
+                                        {version.content}
+                                      </div>
+                                      
+                                      {/* 增强版本附件显示 */}
+                                      {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
+                                        <div className={styles.versionAttachments}>
+                                          {/* 图片附件展示 */}
+                                          {version.imageUrls.length > 0 && (
+                                            <div style={{ marginTop: 12 }}>
+                                              <Divider orientation="left" plain>
+                                                <Text type="secondary">
+                                                  <PictureOutlined /> 图片附件 ({version.imageUrls.length})
+                                                </Text>
+                                              </Divider>
+                                              <Row gutter={[8, 8]}>
+                                                {version.imageUrls.map((url, imgIndex) => (
+                                                  <Col span={8} key={imgIndex}>
+                                                    <div className={styles.versionImagePreview}>
+                                                      <img 
+                                                        src={url} 
+                                                        alt={`版本 ${feedbackVersions.length - index} 图片 ${imgIndex + 1}`} 
+                                                        className={styles.previewImg}
+                                                        onClick={() => window.open(url, '_blank')}
+                                                      />
+                                                    </div>
+                                                  </Col>
+                                                ))}
+                                              </Row>
+                                            </div>
+                                          )}
+                                          
+                                          {/* 文档附件展示 */}
+                                          {version.documentHashes.length > 0 && (
+                                            <div style={{ marginTop: 12 }}>
+                                              <Divider orientation="left" plain>
+                                                <Text type="secondary">
+                                                  <FileOutlined /> 文档附件 ({version.documentHashes.length})
+                                                </Text>
+                                              </Divider>
+                                              <List
+                                                size="small"
+                                                dataSource={version.documentHashes}
+                                                renderItem={(hash, docIndex) => (
+                                                  <List.Item>
+                                                    <a 
+                                                      href={createIPFSUrl(hash)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className={styles.documentLink}
+                                                    >
+                                                      <FileTextOutlined /> 文档 {docIndex + 1}
+                                                    </a>
+                                                  </List.Item>
+                                                )}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </Card>
+                                  </Timeline.Item>
+                                ))}
+                              </Timeline>
+                            </div>
+                          ) : (
+                            <Empty description="没有找到版本历史记录" />
+                          )}
+                        </TabPane>
+                        
+                        <TabPane tab="教师回复" key="reply" disabled={!selectedFeedback.hasReply}>
+                          {selectedFeedback.hasReply && selectedFeedback.reply && (
+                            <div className={styles.replyContainer}>
+                              <div className={styles.replyHeader}>
+                                <div className={styles.replyTeacher}>
+                                  <Avatar icon={<UserOutlined />} />
+                                  <span>{getTeacherInfo(selectedFeedback.reply.teacher).name}</span>
+                                </div>
+                                <div className={styles.replyTime}>
+                                  <CalendarOutlined /> {dayjs(selectedFeedback.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                </div>
+                              </div>
+                              
                               <div className={styles.replyContent}>
-                                <div className={styles.replyHeader}>
-                                  <p><strong>回复时间:</strong> {formatDate(selectedFeedback.replyTimestamp)}</p>
-                                  <p><strong>回复教师:</strong> {getTeacherInfo(selectedFeedback.teacherAddress).name}</p>
-                                </div>
-                                <div className={styles.replyText}>
-                                  {selectedFeedback.replyContent}
-                                </div>
+                                {selectedFeedback.reply.content}
                               </div>
                             </div>
                           )}
-                        </div>
-                      )
-                    },
-                    {
-                      key: 'history',
-                      label: '版本历史',
-                      children: (
-                        <div className={styles.historyTab}>
-                          {feedbackVersions.length <= 1 ? (
-                            <Empty description="没有修订历史记录" />
-                          ) : (
-                            <div className={styles.versionHistory}>
-                              <Typography.Title level={4}>修订历史</Typography.Title>
-                              <Timeline
-                                mode="left"
-                                items={feedbackVersions.map((version) => ({
-                                  dot: version.versionId === 0 ? <div className={styles.timelineDotFirst} /> : <div className={styles.timelineDot} />,
-                                  color: version.versionId === selectedVersionId ? 'blue' : 'gray',
-                                  children: (
-                                    <div 
-                                      className={`${styles.timelineItem} ${version.versionId === selectedVersionId ? styles.selectedVersion : ''}`}
-                                      onClick={() => setSelectedVersionId(version.versionId)}
-                                    >
-                                      <div className={styles.versionHeader}>
-                                        <strong>{version.versionLabel}</strong>
-                                        <span>{version.formattedDate}</span>
-                                      </div>
-                                      <div className={styles.versionPreview}>
-                                        {version.content && version.content.length > 100 
-                                          ? `${version.content.substring(0, 100)}...` 
-                                          : version.content}
-                                      </div>
-                                    </div>
-                                  )
-                                }))}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    }
-                  ]}
-                />
-              </div>
-            )
-          )}
-        </Modal>
-        
-        {/* 编辑反馈模态框 */}
-        <EditFeedbackModal
-          visible={editModalVisible}
-          feedback={editingFeedback}
-          onCancel={() => setEditModalVisible(false)}
-          onSubmit={handleSubmitEdit}
-          loading={submittingEdit}
-        />
-      </App>
+                        </TabPane>
+                      </Tabs>
+                    </div>
+                  </Modal>
+                )}
+              </>
+            )}
+          </Content>
+        </Layout>
+      </Layout>
+      
+      {/* 在最后添加EditFeedbackModal组件 */}
+      <EditFeedbackModal
+        visible={editModalVisible}
+        feedback={editingFeedback}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingFeedback(null);
+        }}
+        onSubmit={handleSubmitEdit}
+        loading={submittingEdit}
+      />
     </ConfigProvider>
   );
 } 
