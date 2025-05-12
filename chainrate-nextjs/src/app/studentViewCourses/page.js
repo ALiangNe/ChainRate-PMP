@@ -695,8 +695,9 @@ export default function StudentViewCoursesPage() {
                                   onClick={() => handleJoinCourse(course.id)}
                                   icon={<TeamOutlined />}
                                   className={`${styles.actionButton} ${styles.joinButton}`}
+                                  disabled={new Date() > course.endTime}
                                 >
-                                  加入课程
+                                  {new Date() > course.endTime ? '已结束' : '加入课程'}
                                 </Button>
                               )}
                             </div>

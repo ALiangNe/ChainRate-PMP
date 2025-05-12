@@ -517,8 +517,8 @@ export default function CourseDetailPage({ params }) {
                     title={
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Title level={3} style={{ margin: 0 }}>{course.name}</Title>
-                        <Tag color={course.isActive ? 'success' : 'default'}>
-                          {course.isActive ? '进行中' : '已结束'}
+                        <Tag color={new Date() > course.endTime ? 'default' : 'success'}>
+                          {new Date() > course.endTime ? '已结束' : '进行中'}
                         </Tag>
                       </div>
                     }
@@ -562,8 +562,9 @@ export default function CourseDetailPage({ params }) {
                               icon={<TeamOutlined />}
                               loading={joinCoursePending}
                               onClick={handleJoinCourse}
+                              disabled={new Date() > course.endTime}
                             >
-                              加入课程
+                              {new Date() > course.endTime ? '已结束' : '加入课程'}
                             </Button>
                           ) : hasEvaluated ? (
                             <Alert
