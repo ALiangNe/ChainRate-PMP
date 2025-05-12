@@ -1883,7 +1883,7 @@ export default function TeacherViewFeedbackPage() {
                           >
                             <Option value="newest">最新优先</Option>
                             <Option value="oldest">最早优先</Option>
-                            <Option value="rating">评分排序</Option>
+                            {/* <Option value="rating">评分排序</Option> */}
                           </Select>
                         </div>
                       </Col>
