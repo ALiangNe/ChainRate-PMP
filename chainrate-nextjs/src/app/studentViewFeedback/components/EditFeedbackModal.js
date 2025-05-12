@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Upload, Button, message, Progress, Space, Divider } from 'antd';
+import { Modal, Form, Input, Upload, Button, Progress, Space, Divider, App } from 'antd';
 import { UploadOutlined, PictureOutlined, FileOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import styles from './EditFeedbackModal.module.css';
@@ -45,6 +45,7 @@ const EditFeedbackModal = ({
   loading
 }) => {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [imageList, setImageList] = useState([]);
   const [docList, setDocList] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);

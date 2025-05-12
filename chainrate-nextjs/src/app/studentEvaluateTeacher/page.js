@@ -67,7 +67,8 @@ import {
   Modal,
   List,
   Avatar,
-  Select
+  Select,
+  App
 } from 'antd';
 
 const { Header, Content, Sider } = Layout;
@@ -80,8 +81,27 @@ const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY || '';
 const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY || '';
 const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT || '';
 
-export default function StudentEvaluateTeacherPage() {
+// 创建一个包装组件，用于提供App上下文
+export default function StudentEvaluateTeacherPageWrapper() {
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1a73e8',
+        },
+      }}
+    >
+      <App>
+        <StudentEvaluateTeacherPage />
+      </App>
+    </ConfigProvider>
+  );
+}
+
+// 主要组件，使用App.useApp()获取message实例
+function StudentEvaluateTeacherPage() {
   const router = useRouter();
+  const { message, modal } = App.useApp();
   
   // 用户身份信息
   const [userData, setUserData] = useState({
@@ -101,6 +121,7 @@ export default function StudentEvaluateTeacherPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [hasJoinedCourses, setHasJoinedCourses] = useState(false);
+  const [allCoursesEnded, setAllCoursesEnded] = useState(false);
   
   // 评价表单相关状态
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -131,7 +152,7 @@ export default function StudentEvaluateTeacherPage() {
   
   // 评价状态
   const [evaluatedTeachers, setEvaluatedTeachers] = useState([]);
-
+  
   useEffect(() => {
     // 检查用户是否已登录并且是学生角色
     const checkUserAuth = () => {
@@ -241,6 +262,7 @@ export default function StudentEvaluateTeacherPage() {
 
       // 获取当前时间戳
       const currentTime = Math.floor(Date.now() / 1000);
+      let hasActiveCourse = false;
       
       for (let i = 0; i < studentCourses.length; i++) {
         const courseId = studentCourses[i];
@@ -264,6 +286,7 @@ export default function StudentEvaluateTeacherPage() {
         
         // 记录教师的未结束课程
         if (endTime > currentTime) {
+          hasActiveCourse = true;
           if (!teacherActiveCourses.has(teacherAddress)) {
             teacherActiveCourses.set(teacherAddress, []);
           }
@@ -274,6 +297,9 @@ export default function StudentEvaluateTeacherPage() {
           });
         }
       }
+      
+      // 设置是否所有课程都已结束
+      setAllCoursesEnded(!hasActiveCourse);
       
       console.log("所有教师地址:", Array.from(teacherAddresses));
       console.log("教师的所有课程:", teacherAllCourses);
@@ -345,11 +371,28 @@ export default function StudentEvaluateTeacherPage() {
   // 关闭预览
   const handleCancel = () => setPreviewVisible(false);
   
+  // 函数：显示课程结束的错误提示
+  const showCourseEndedModal = () => {
+    modal.error({
+      title: '课程已经结束，评价入口关闭',
+      content: (
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <div style={{ fontSize: '48px', color: '#ff4d4f', marginBottom: '16px' }}>
+            <ExclamationCircleOutlined />
+          </div>
+          <p style={{ fontSize: '16px' }}>已结束评价期，无法提交评价</p>
+        </div>
+      ),
+      centered: true,
+      okText: '我知道了'
+    });
+  };
+  
   // 选择教师进行评价
   const selectTeacher = (teacher) => {
     // 检查教师是否有未结束的课程
     if (!teacher.hasActiveCourses) {
-      message.warning('该教师的所有课程已经结束评价期，无法提交评价');
+      showCourseEndedModal();
       return;
     }
     
@@ -450,7 +493,7 @@ export default function StudentEvaluateTeacherPage() {
   // 提交评价
   const submitEvaluation = async () => {
     if (!selectedTeacher) {
-      Modal.error({
+      modal.error({
         title: '提示',
         content: (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -467,7 +510,7 @@ export default function StudentEvaluateTeacherPage() {
     
     // 首先检查评价内容
     if (!evaluationContent.trim()) {
-      Modal.error({
+      modal.error({
         title: '提示',
         content: (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -485,7 +528,7 @@ export default function StudentEvaluateTeacherPage() {
     // 检查所有必填评分项
     if (!overallRating || !teachingAbilityRating || !teachingAttitudeRating || 
         !teachingMethodRating || !academicLevelRating || !guidanceAbilityRating) {
-      Modal.error({
+      modal.error({
         title: '提示',
         content: (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -505,7 +548,7 @@ export default function StudentEvaluateTeacherPage() {
     const activeCourses = selectedTeacher.activeCourses.filter(course => Number(course.endTime) > currentTime);
     
     if (activeCourses.length === 0) {
-      message.error('该教师的所有课程已经结束评价期，无法提交评价');
+      showCourseEndedModal();
       return;
     }
     
@@ -638,444 +681,437 @@ export default function StudentEvaluateTeacherPage() {
   } = theme.useToken();
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#1a73e8',
-        },
-      }}
-    >
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div className={styles.logo}>
-              <Image 
-                src="/images/logo1.png" 
-                alt="链评系统Logo" 
-                width={40} 
-                height={40}
-                style={{ borderRadius: '6px' }}
-              />
-            </div>
-            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-              链评系统（ChainRate）- 学生端
-            </div>
-          </div>
-          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-            <UserAvatar color="#fff" />
-          </div>
-        </Header>
-        <Layout>
-          <Sider width={200} style={{ background: colorBgContainer }}>
-            <StudentSidebar defaultSelectedKey="5" defaultOpenKey="sub3" />
-          </Sider>
-          <Layout style={{ padding: '0 24px 24px' }}>
-            <Breadcrumb
-              items={[
-                { title: '首页' },
-                { title: '评价管理' },
-                { title: '教师评价' },
-              ]}
-              style={{ margin: '16px 0' }}
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className={styles.logo}>
+            <Image 
+              src="/images/logo1.png" 
+              alt="链评系统Logo" 
+              width={40} 
+              height={40}
+              style={{ borderRadius: '6px' }}
             />
-            <Content
-              style={{
-                padding: 24,
-                margin: 0,
-                minHeight: 280,
-                background: colorBgContainer,
-                borderRadius: borderRadiusLG,
-              }}
-            >
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '50px 0' }}>
-                  <Spin size="large" />
-                  <div style={{ marginTop: 16 }}>加载中...</div>
-                </div>
-              ) : error ? (
-                <Alert
-                  message="错误"
-                  description={error}
-                  type="error"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-              ) : successMessage ? (
-                <Alert
-                  message="成功"
-                  description={successMessage}
-                  type="success"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  action={
-                    <Button type="primary" onClick={() => setSuccessMessage('')}>
-                      确定
-                    </Button>
-                  }
-                />
-              ) : !hasJoinedCourses ? (
-                <Empty
-                  description={
-                    <span>
-                      您还没有加入任何课程，无法评价教师。
-                      <br />
-                      请先加入课程后再进行教师评价。
-                    </span>
-                  }
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+          </div>
+          <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+            链评系统（ChainRate）- 学生端
+          </div>
+        </div>
+        <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+          <UserAvatar color="#fff" />
+        </div>
+      </Header>
+      <Layout>
+        <Sider width={200} style={{ background: colorBgContainer }}>
+          <StudentSidebar defaultSelectedKey="5" defaultOpenKey="sub3" />
+        </Sider>
+        <Layout style={{ padding: '0 24px 24px' }}>
+          <Breadcrumb
+            items={[
+              { title: '首页' },
+              { title: '评价管理' },
+              { title: '教师评价' },
+            ]}
+            style={{ margin: '16px 0' }}
+          />
+          <Content
+            style={{
+              padding: 24,
+              margin: 0,
+              minHeight: 280,
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+            }}
+          >
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: 16 }}>加载中...</div>
+              </div>
+            ) : error ? (
+              <Alert
+                message="错误"
+                description={error}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            ) : successMessage ? (
+              <Alert
+                message="成功"
+                description={successMessage}
+                type="success"
+                showIcon
+                style={{ marginBottom: 16 }}
+                action={
+                  <Button type="primary" onClick={() => setSuccessMessage('')}>
+                    确定
+                  </Button>
+                }
+              />
+            ) : !hasJoinedCourses ? (
+              <Empty
+                description={
+                  <span>
+                    您还没有加入任何课程，无法评价教师。
+                    <br />
+                    请先加入课程后再进行教师评价。
+                  </span>
+                }
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              >
+                <Button 
+                  type="primary" 
+                  icon={<BookOutlined />}
+                  onClick={() => router.push('/studentViewCourses')}
                 >
-                  <Button 
-                    type="primary" 
-                    icon={<BookOutlined />}
-                    onClick={() => router.push('/studentViewCourses')}
-                  >
-                    浏览课程
-                  </Button>
-                </Empty>
-              ) : selectedTeacher ? (
-                <div>
-                  <Button 
-                    type="link" 
-                    icon={<ArrowLeftOutlined />} 
-                    onClick={cancelSelectTeacher}
-                    style={{ marginBottom: 16, padding: 0 }}
-                  >
-                    返回教师列表
-                  </Button>
-                  
-                  <Card title={`评价教师: ${selectedTeacher.name}`} style={{ marginBottom: 16 }}>
-                    <Row gutter={[16, 16]}>
-                      <Col span={24} md={8}>
-                        <Card bordered={false}>
-                          <div style={{ textAlign: 'center' }}>
-                            <Avatar 
-                              size={80} 
-                              src={selectedTeacher.avatar ? `${selectedTeacher.avatar}` : null}
-                              icon={!selectedTeacher.avatar && <UserOutlined />} 
-                            />
-                            <div style={{ marginTop: 16 }}>
-                              <Title level={4}>{selectedTeacher.name}</Title>
-                              <Paragraph>所属学院: {selectedTeacher.college}</Paragraph>
-                              <div style={{ marginTop: 8 }}>
-                                <Tag color="blue">{selectedTeacher.email}</Tag>
-                              </div>
+                  浏览课程
+                </Button>
+              </Empty>
+            ) : selectedTeacher ? (
+              <div>
+                <Button 
+                  type="link" 
+                  icon={<ArrowLeftOutlined />} 
+                  onClick={cancelSelectTeacher}
+                  style={{ marginBottom: 16, padding: 0 }}
+                >
+                  返回教师列表
+                </Button>
+                
+                <Card title={`评价教师: ${selectedTeacher.name}`} style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 16]}>
+                    <Col span={24} md={8}>
+                      <Card bordered={false}>
+                        <div style={{ textAlign: 'center' }}>
+                          <Avatar 
+                            size={80} 
+                            src={selectedTeacher.avatar ? `${selectedTeacher.avatar}` : null}
+                            icon={!selectedTeacher.avatar && <UserOutlined />} 
+                          />
+                          <div style={{ marginTop: 16 }}>
+                            <Title level={4}>{selectedTeacher.name}</Title>
+                            <Paragraph>所属学院: {selectedTeacher.college}</Paragraph>
+                            <div style={{ marginTop: 8 }}>
+                              <Tag color="blue">{selectedTeacher.email}</Tag>
                             </div>
                           </div>
-                        </Card>
-                      </Col>
-                      <Col span={24} md={16}>
-                        <Card title="您学习的相关课程" bordered={false}>
-                          <List
-                            dataSource={selectedTeacher.courses}
-                            renderItem={item => (
-                              <List.Item>
-                                <List.Item.Meta
-                                  avatar={<BookOutlined style={{ fontSize: 24, color: colorPrimary }} />}
-                                  title={item.name}
-                                  description={`课程ID: ${item.id}`}
-                                />
-                              </List.Item>
-                            )}
+                        </div>
+                      </Card>
+                    </Col>
+                    <Col span={24} md={16}>
+                      <Card title="您学习的相关课程" bordered={false}>
+                        <List
+                          dataSource={selectedTeacher.courses}
+                          renderItem={item => (
+                            <List.Item>
+                              <List.Item.Meta
+                                avatar={<BookOutlined style={{ fontSize: 24, color: colorPrimary }} />}
+                                title={item.name}
+                                description={`课程ID: ${item.id}`}
+                              />
+                            </List.Item>
+                          )}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card>
+                
+                <Card title="多维度评价表单" style={{ marginBottom: 16 }}>
+                  <Form layout="vertical">
+                    <Form.Item label="评价内容" required tooltip="请详细描述您对该教师的评价">
+                      <TextArea 
+                        rows={6} 
+                        placeholder="请输入您对该教师的评价内容..." 
+                        value={evaluationContent}
+                        onChange={e => setEvaluationContent(e.target.value)}
+                      />
+                    </Form.Item>
+                    
+                    <Form.Item 
+                      label="总体评分" 
+                      tooltip="综合考虑所有因素，对该教师的总体评价"
+                      required
+                    >
+                      <Rate 
+                        tooltips={ratingDescriptions.overall}
+                        value={overallRating}
+                        onChange={setOverallRating}
+                        character={<StarFilled />}
+                      />
+                      <Text type="secondary" style={{ marginLeft: 8 }}>
+                        {overallRating ? ratingDescriptions.overall[overallRating - 1] : '请评分'}
+                      </Text>
+                    </Form.Item>
+                    
+                    <Row gutter={[16, 16]}>
+                      <Col span={24} md={12}>
+                        <Form.Item 
+                          label={
+                            <span>
+                              <BulbOutlined /> 教学能力
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                (讲课清晰度、知识掌握程度等)
+                              </Text>
+                            </span>
+                          }
+                          required
+                        >
+                          <Rate 
+                            tooltips={ratingDescriptions.teachingAbility}
+                            value={teachingAbilityRating}
+                            onChange={setTeachingAbilityRating}
                           />
-                        </Card>
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {teachingAbilityRating ? ratingDescriptions.teachingAbility[teachingAbilityRating - 1] : '请评分'}
+                          </Text>
+                        </Form.Item>
+                      </Col>
+                      <Col span={24} md={12}>
+                        <Form.Item 
+                          label={
+                            <span>
+                              <HeartOutlined /> 教学态度
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                (认真负责、关注学生)
+                              </Text>
+                            </span>
+                          }
+                          required
+                        >
+                          <Rate 
+                            tooltips={ratingDescriptions.teachingAttitude}
+                            value={teachingAttitudeRating}
+                            onChange={setTeachingAttitudeRating}
+                          />
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {teachingAttitudeRating ? ratingDescriptions.teachingAttitude[teachingAttitudeRating - 1] : '请评分'}
+                          </Text>
+                        </Form.Item>
+                      </Col>
+                      <Col span={24} md={12}>
+                        <Form.Item 
+                          label={
+                            <span>
+                              <ExperimentOutlined /> 教学方法
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                (教学手段多样性、互动性)
+                              </Text>
+                            </span>
+                          }
+                          required
+                        >
+                          <Rate 
+                            tooltips={ratingDescriptions.teachingMethod}
+                            value={teachingMethodRating}
+                            onChange={setTeachingMethodRating}
+                          />
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {teachingMethodRating ? ratingDescriptions.teachingMethod[teachingMethodRating - 1] : '请评分'}
+                          </Text>
+                        </Form.Item>
+                      </Col>
+                      <Col span={24} md={12}>
+                        <Form.Item 
+                          label={
+                            <span>
+                              <ReadOutlined /> 学术水平
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                (学术研究能力、前沿知识掌握)
+                              </Text>
+                            </span>
+                          }
+                          required
+                        >
+                          <Rate 
+                            tooltips={ratingDescriptions.academicLevel}
+                            value={academicLevelRating}
+                            onChange={setAcademicLevelRating}
+                          />
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {academicLevelRating ? ratingDescriptions.academicLevel[academicLevelRating - 1] : '请评分'}
+                          </Text>
+                        </Form.Item>
+                      </Col>
+                      <Col span={24} md={12}>
+                        <Form.Item 
+                          label={
+                            <span>
+                              <TrophyOutlined /> 指导能力
+                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                                (指导学生解决问题的能力)
+                              </Text>
+                            </span>
+                          }
+                          required
+                        >
+                          <Rate 
+                            tooltips={ratingDescriptions.guidanceAbility}
+                            value={guidanceAbilityRating}
+                            onChange={setGuidanceAbilityRating}
+                          />
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {guidanceAbilityRating ? ratingDescriptions.guidanceAbility[guidanceAbilityRating - 1] : '请评分'}
+                          </Text>
+                        </Form.Item>
                       </Col>
                     </Row>
-                  </Card>
-                  
-                  <Card title="多维度评价表单" style={{ marginBottom: 16 }}>
-                    <Form layout="vertical">
-                      <Form.Item label="评价内容" required tooltip="请详细描述您对该教师的评价">
-                        <TextArea 
-                          rows={6} 
-                          placeholder="请输入您对该教师的评价内容..." 
-                          value={evaluationContent}
-                          onChange={e => setEvaluationContent(e.target.value)}
-                        />
-                      </Form.Item>
-                      
-                      <Form.Item 
-                        label="总体评分" 
-                        tooltip="综合考虑所有因素，对该教师的总体评价"
-                        required
+                    
+                    <Form.Item label="上传图片(可选)" tooltip="上传图片可以更好地说明您的评价">
+                      <Upload
+                        listType="picture-card"
+                        fileList={images}
+                        beforeUpload={beforeUpload}
+                        onChange={handleUploadChange}
+                        onPreview={handlePreview}
+                        customRequest={({ file, onSuccess }) => {
+                          setTimeout(() => {
+                            onSuccess("ok");
+                          }, 0);
+                        }}
                       >
-                        <Rate 
-                          tooltips={ratingDescriptions.overall}
-                          value={overallRating}
-                          onChange={setOverallRating}
-                          character={<StarFilled />}
-                        />
-                        <Text type="secondary" style={{ marginLeft: 8 }}>
-                          {overallRating ? ratingDescriptions.overall[overallRating - 1] : '请评分'}
-                        </Text>
-                      </Form.Item>
-                      
-                      <Row gutter={[16, 16]}>
-                        <Col span={24} md={12}>
-                          <Form.Item 
-                            label={
-                              <span>
-                                <BulbOutlined /> 教学能力
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  (讲课清晰度、知识掌握程度等)
-                                </Text>
-                              </span>
-                            }
-                            required
-                          >
-                            <Rate 
-                              tooltips={ratingDescriptions.teachingAbility}
-                              value={teachingAbilityRating}
-                              onChange={setTeachingAbilityRating}
-                            />
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {teachingAbilityRating ? ratingDescriptions.teachingAbility[teachingAbilityRating - 1] : '请评分'}
-                            </Text>
-                          </Form.Item>
-                        </Col>
-                        <Col span={24} md={12}>
-                          <Form.Item 
-                            label={
-                              <span>
-                                <HeartOutlined /> 教学态度
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  (认真负责、关注学生)
-                                </Text>
-                              </span>
-                            }
-                            required
-                          >
-                            <Rate 
-                              tooltips={ratingDescriptions.teachingAttitude}
-                              value={teachingAttitudeRating}
-                              onChange={setTeachingAttitudeRating}
-                            />
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {teachingAttitudeRating ? ratingDescriptions.teachingAttitude[teachingAttitudeRating - 1] : '请评分'}
-                            </Text>
-                          </Form.Item>
-                        </Col>
-                        <Col span={24} md={12}>
-                          <Form.Item 
-                            label={
-                              <span>
-                                <ExperimentOutlined /> 教学方法
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  (教学手段多样性、互动性)
-                                </Text>
-                              </span>
-                            }
-                            required
-                          >
-                            <Rate 
-                              tooltips={ratingDescriptions.teachingMethod}
-                              value={teachingMethodRating}
-                              onChange={setTeachingMethodRating}
-                            />
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {teachingMethodRating ? ratingDescriptions.teachingMethod[teachingMethodRating - 1] : '请评分'}
-                            </Text>
-                          </Form.Item>
-                        </Col>
-                        <Col span={24} md={12}>
-                          <Form.Item 
-                            label={
-                              <span>
-                                <ReadOutlined /> 学术水平
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  (学术研究能力、前沿知识掌握)
-                                </Text>
-                              </span>
-                            }
-                            required
-                          >
-                            <Rate 
-                              tooltips={ratingDescriptions.academicLevel}
-                              value={academicLevelRating}
-                              onChange={setAcademicLevelRating}
-                            />
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {academicLevelRating ? ratingDescriptions.academicLevel[academicLevelRating - 1] : '请评分'}
-                            </Text>
-                          </Form.Item>
-                        </Col>
-                        <Col span={24} md={12}>
-                          <Form.Item 
-                            label={
-                              <span>
-                                <TrophyOutlined /> 指导能力
-                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
-                                  (指导学生解决问题的能力)
-                                </Text>
-                              </span>
-                            }
-                            required
-                          >
-                            <Rate 
-                              tooltips={ratingDescriptions.guidanceAbility}
-                              value={guidanceAbilityRating}
-                              onChange={setGuidanceAbilityRating}
-                            />
-                            <Text type="secondary" style={{ marginLeft: 8 }}>
-                              {guidanceAbilityRating ? ratingDescriptions.guidanceAbility[guidanceAbilityRating - 1] : '请评分'}
-                            </Text>
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                      
-                      <Form.Item label="上传图片(可选)" tooltip="上传图片可以更好地说明您的评价">
-                        <Upload
-                          listType="picture-card"
-                          fileList={images}
-                          beforeUpload={beforeUpload}
-                          onChange={handleUploadChange}
-                          onPreview={handlePreview}
-                          customRequest={({ file, onSuccess }) => {
-                            setTimeout(() => {
-                              onSuccess("ok");
-                            }, 0);
-                          }}
-                        >
-                          {images.length >= 5 ? null : (
-                            <div>
-                              <PictureOutlined />
-                              <div style={{ marginTop: 8 }}>上传</div>
-                            </div>
-                          )}
-                        </Upload>
-                        <Modal open={previewVisible} footer={null} onCancel={handleCancel}>
-                          <img alt="评价图片" style={{ width: '100%' }} src={previewImage} />
-                        </Modal>
-                        {uploadingImages && (
-                          <div style={{ marginTop: 16 }}>
-                            <Progress percent={uploadProgress} status="active" />
+                        {images.length >= 5 ? null : (
+                          <div>
+                            <PictureOutlined />
+                            <div style={{ marginTop: 8 }}>上传</div>
                           </div>
                         )}
-                      </Form.Item>
-                      
-                      <Form.Item>
-                        <Checkbox 
-                          checked={isAnonymous} 
-                          onChange={e => setIsAnonymous(e.target.checked)}
-                        >
-                          匿名评价
-                        </Checkbox>
-                        <Text type="secondary" style={{ marginLeft: 8 }}>
-                          (选择匿名后，其他用户将无法看到您的个人信息)
-                        </Text>
-                      </Form.Item>
-                      
-                      <Form.Item>
-                        <Button 
-                          type="primary" 
-                          icon={<SendOutlined />}
-                          onClick={submitEvaluation}
-                          loading={submitting}
-                          block
-                        >
-                          提交评价
-                        </Button>
-                      </Form.Item>
-                    </Form>
-                  </Card>
-                </div>
-              ) : (
-                <div>
-                  <Title level={4}>选择要评价的教师</Title>
-                  <Paragraph type="secondary">
-                    以下是您学习课程的教师列表，请选择一位教师进行多维度评价。
-                  </Paragraph>
-                  
-                  <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-                    {teachers.map((teacher) => (
-                      <Col xs={24} sm={12} md={8} key={teacher.address}>
-                        <Card
-                          hoverable
-                          className={`${styles.teacherCard} ${!teacher.hasActiveCourses && !teacher.hasEvaluated ? styles.expiredCard : ''}`}
-                          cover={
-                            <div className={styles.teacherCardCover}>
-                              <Avatar 
-                                size={64} 
-                                src={teacher.avatar || null}
-                                icon={!teacher.avatar && <UserOutlined />} 
-                                className={styles.teacherAvatar}
-                              />
-                              <div className={styles.teacherInfo}>
-                                <div className={styles.teacherName}>
-                                  {teacher.name}
-                                  {teacher.hasEvaluated && (
-                                    <Tag color="success" style={{ marginLeft: 8 }}>可再次评价</Tag>
-                                  )}
-                                  {!teacher.hasActiveCourses && !teacher.hasEvaluated && (
-                                    <Tag color="default" style={{ marginLeft: 8 }}>已截止</Tag>
-                                  )}
-                                </div>
-                                <div className={styles.teacherCollege}>{teacher.college}</div>
+                      </Upload>
+                      <Modal open={previewVisible} footer={null} onCancel={handleCancel}>
+                        <img alt="评价图片" style={{ width: '100%' }} src={previewImage} />
+                      </Modal>
+                      {uploadingImages && (
+                        <div style={{ marginTop: 16 }}>
+                          <Progress percent={uploadProgress} status="active" />
+                        </div>
+                      )}
+                    </Form.Item>
+                    
+                    <Form.Item>
+                      <Checkbox 
+                        checked={isAnonymous} 
+                        onChange={e => setIsAnonymous(e.target.checked)}
+                      >
+                        匿名评价
+                      </Checkbox>
+                      <Text type="secondary" style={{ marginLeft: 8 }}>
+                        (选择匿名后，其他用户将无法看到您的个人信息)
+                      </Text>
+                    </Form.Item>
+                    
+                    <Form.Item>
+                      <Button 
+                        type="primary" 
+                        icon={<SendOutlined />}
+                        onClick={submitEvaluation}
+                        loading={submitting}
+                        block
+                      >
+                        提交评价
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </Card>
+              </div>
+            ) : (
+              <div>
+                <Title level={4}>选择要评价的教师</Title>
+                <Paragraph type="secondary">
+                  以下是您学习课程的教师列表，请选择一位教师进行多维度评价。
+                </Paragraph>
+                
+                <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+                  {teachers.map((teacher) => (
+                    <Col xs={24} sm={12} md={8} key={teacher.address}>
+                      <Card
+                        hoverable
+                        className={`${styles.teacherCard} ${!teacher.hasActiveCourses && !teacher.hasEvaluated ? styles.expiredCard : ''}`}
+                        cover={
+                          <div className={styles.teacherCardCover}>
+                            <Avatar 
+                              size={64} 
+                              src={teacher.avatar || null}
+                              icon={!teacher.avatar && <UserOutlined />} 
+                              className={styles.teacherAvatar}
+                            />
+                            <div className={styles.teacherInfo}>
+                              <div className={styles.teacherName}>
+                                {teacher.name}
+                                {teacher.hasEvaluated && (
+                                  <Tag color="success" style={{ marginLeft: 8 }}>可再次评价</Tag>
+                                )}
+                                {!teacher.hasActiveCourses && !teacher.hasEvaluated && (
+                                  <Tag color="error" style={{ marginLeft: 8 }}>评价已截止</Tag>
+                                )}
                               </div>
+                              <div className={styles.teacherCollege}>{teacher.college}</div>
                             </div>
-                          }
-                          actions={[
-                            teacher.hasEvaluated ? (
-                              <Button 
-                                type="primary" 
-                                onClick={() => selectTeacher(teacher)}
-                                icon={<CheckCircleOutlined />}
-                              >
-                                再次评价
-                              </Button>
-                            ) : teacher.hasActiveCourses ? (
-                              <Button 
-                                type="primary" 
-                                onClick={() => selectTeacher(teacher)}
-                              >
-                                评价教师
-                              </Button>
-                            ) : (
-                              <Tooltip title="课程评价期已结束，无法评价">
-                                <Button 
-                                  disabled
-                                  onClick={() => message.warning('该教师的所有课程已经结束评价期，无法提交评价')}
-                                >
-                                  已结束评价
-                                </Button>
-                              </Tooltip>
-                            )
-                          ]}
-                        >
-                          <div className={styles.courseList}>
-                            <h4>教授课程：</h4>
-                            <ul>
-                              {teacher.courses.map((course) => {
-                                // 检查课程是否已过评价期
-                                const currentTime = Math.floor(Date.now() / 1000);
-                                const isExpired = Number(course.endTime) <= currentTime;
-                                
-                                return (
-                                  <li key={course.id}>
-                                    {course.name}
-                                    <div className={isExpired ? styles.courseEndTimeExpired : styles.courseEndTime}>
-                                      <ClockCircleOutlined style={{ marginRight: 4 }} />
-                                      {isExpired ? '评价已截止: ' : '评价截止时间: '}
-                                      {new Date(Number(course.endTime) * 1000).toLocaleString()}
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                            </ul>
                           </div>
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
-              )}
-            </Content>
-          </Layout>
+                        }
+                        actions={[
+                          teacher.hasEvaluated ? (
+                            <Button 
+                              type="primary" 
+                              onClick={() => selectTeacher(teacher)}
+                              icon={<CheckCircleOutlined />}
+                            >
+                              再次评价
+                            </Button>
+                          ) : teacher.hasActiveCourses ? (
+                            <Button 
+                              type="primary" 
+                              onClick={() => selectTeacher(teacher)}
+                            >
+                              评价教师
+                            </Button>
+                          ) : (
+                            <Tooltip title="点击查看详情">
+                              <Button 
+                                danger
+                                icon={<ExclamationCircleOutlined />}
+                                onClick={() => showCourseEndedModal()}
+                              >
+                                评价已截止
+                              </Button>
+                            </Tooltip>
+                          )
+                        ]}
+                      >
+                        <div className={styles.courseList}>
+                          <h4>教授课程：</h4>
+                          <ul>
+                            {teacher.courses.map((course) => {
+                              // 检查课程是否已过评价期
+                              const currentTime = Math.floor(Date.now() / 1000);
+                              const isExpired = Number(course.endTime) <= currentTime;
+                              
+                              return (
+                                <li key={course.id}>
+                                  {course.name}
+                                  <div className={isExpired ? styles.courseEndTimeExpired : styles.courseEndTime}>
+                                    <ClockCircleOutlined style={{ marginRight: 4 }} />
+                                    {isExpired ? '评价已截止: ' : '评价截止时间: '}
+                                    {new Date(Number(course.endTime) * 1000).toLocaleString()}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+            )}
+          </Content>
         </Layout>
-        <div className={styles.footer}>
-          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
-        </div>
       </Layout>
-    </ConfigProvider>
+      <div className={styles.footer}>
+        <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+      </div>
+    </Layout>
   );
 } 
