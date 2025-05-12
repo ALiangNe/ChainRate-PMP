@@ -57,7 +57,9 @@ import {
   Drawer,
   Image as AntImage,
   Modal,
-  Pagination
+  Pagination,
+  DatePicker,
+  message
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
@@ -135,6 +137,7 @@ export default function TeacherViewEvaluateTeacherPage() {
   // 搜索筛选状态
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [noDataInDateRange, setNoDataInDateRange] = useState(false);
   
   // 图片预览状态
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -177,6 +180,20 @@ export default function TeacherViewEvaluateTeacherPage() {
     { label: '评分最高', value: 'rating', order: 'desc' },
     { label: '评分最低', value: 'rating', order: 'asc' }
   ];
+
+  // 时间筛选状态
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [dateError, setDateError] = useState('');
+  const [showDateWarning, setShowDateWarning] = useState(false);
+
+  // 日期无效时，阻止日期选择并提示错误
+  const disabledDate = (current) => {
+    // 如果已经选择了开始日期，禁用所有早于开始日期的日期
+    if (dateRange && dateRange[0]) {
+      return current && current < dateRange[0].startOf('day');
+    }
+    return false;
+  };
 
   useEffect(() => {
     // 检查用户是否已登录并且是教师角色
@@ -450,7 +467,7 @@ export default function TeacherViewEvaluateTeacherPage() {
   useEffect(() => {
     filterEvaluations(searchText, filterType);
     // eslint-disable-next-line
-  }, [searchText, filterType, sortConfig, pagination.current, pagination.pageSize, evaluations]);
+  }, [searchText, filterType, dateRange, sortConfig, pagination.current, pagination.pageSize, evaluations]);
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -472,6 +489,44 @@ export default function TeacherViewEvaluateTeacherPage() {
     setPagination(prev => ({ ...prev, current: page, pageSize }));
   };
   
+  // 处理日期范围变化
+  const handleDateRangeChange = (dates, dateStrings) => {
+    console.log("日期变化:", dates, dateStrings);
+    
+    // 关闭之前可能显示的警告
+    setShowDateWarning(false);
+    
+    // 日期被清空的情况
+    if (!dates || !dates[0] || !dates[1]) {
+      setDateRange([null, null]);
+      setDateError('');
+      return;
+    }
+    
+    const [startDate, endDate] = dates;
+    
+    // 严格验证：确保结束日期不早于开始日期
+    if (endDate.isBefore(startDate, 'day')) {
+      console.error("无效的日期范围:", startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'));
+      
+      // 显示错误提示
+      Modal.error({
+        title: '日期范围错误',
+        content: '结束日期不能早于开始日期，请重新选择有效的日期范围。',
+        okText: '知道了'
+      });
+      
+      // 保持原状态，不更新日期范围
+      setDateError('结束日期不能早于开始日期');
+      return;
+    }
+    
+    console.log("有效日期范围:", startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'));
+    setDateError('');
+    setDateRange(dates);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
   const filterEvaluations = (search, type) => {
     let filtered = [...evaluations];
     
@@ -491,6 +546,29 @@ export default function TeacherViewEvaluateTeacherPage() {
         filtered = filtered.filter(evaluation => evaluation.isAnonymous);
     } else if (type === 'named') {
       filtered = filtered.filter(evaluation => !evaluation.isAnonymous);
+    }
+    
+    // 是否应用了日期筛选
+    let hasDateFilter = false;
+    
+    // 日期范围过滤
+    if (dateRange[0] && dateRange[1]) {
+      hasDateFilter = true;
+      const startDate = dateRange[0].startOf('day');
+      const endDate = dateRange[1].endOf('day');
+      filtered = filtered.filter(evaluation => {
+        const evalDate = new Date(evaluation.timestamp);
+        return evalDate >= startDate && evalDate <= endDate;
+      });
+      
+      // 检查日期范围筛选后是否有数据
+      if (filtered.length === 0) {
+        setNoDataInDateRange(true);
+      } else {
+        setNoDataInDateRange(false);
+      }
+    } else {
+      setNoDataInDateRange(false);
     }
 
     // 排序
@@ -838,7 +916,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                   {/* 搜索和筛选 */}
                   <div className={styles.toolbarContainer}>
                     <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={12} md={8} lg={10}>
+                      <Col xs={24} sm={12} md={8} lg={8}>
                         <Search
                           placeholder="搜索课程名称、课程代码或学期"
                           allowClear
@@ -846,7 +924,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                           style={{ width: '100%' }}
                         />
                       </Col>
-                      <Col xs={24} sm={8} md={6} lg={6}>
+                      <Col xs={24} sm={8} md={6} lg={5}>
                         <Select
                           style={{ width: '100%' }}
                           placeholder="筛选评价类型"
@@ -858,7 +936,26 @@ export default function TeacherViewEvaluateTeacherPage() {
                           <Option value="named">实名评价</Option>
                         </Select>
                       </Col>
-                      <Col xs={24} sm={8} md={6} lg={4} className={styles.selectWrapper}>
+                      <Col xs={24} sm={8} md={6} lg={5}>
+                        <DatePicker.RangePicker
+                          style={{ width: '100%' }}
+                          placeholder={['开始日期', '结束日期']}
+                          onChange={handleDateRangeChange}
+                          onCalendarChange={(dates) => {
+                            if (dates && dates[0] && dates[1] && dates[1].isBefore(dates[0])) {
+                              // 设置一个状态来触发显示警告，而不是直接调用message
+                              setShowDateWarning(true);
+                              setDateError('结束日期不能早于开始日期');
+                            } else {
+                              setShowDateWarning(false);
+                            }
+                          }}
+                          disabledDate={disabledDate}
+                          value={dateRange}
+                          status={dateError ? 'error' : ''}
+                        />
+                      </Col>
+                      <Col xs={24} sm={8} md={6} lg={3} className={styles.selectWrapper}>
                         <Select
                           defaultValue="timestamp-desc"
                           style={{ width: '100%' }}
@@ -871,7 +968,7 @@ export default function TeacherViewEvaluateTeacherPage() {
                           ))}
                         </Select>
                       </Col>
-                      <Col xs={24} sm={8} md={4} lg={4}>
+                      <Col xs={24} sm={8} md={4} lg={3}>
                         <Button
                           type="primary"
                           icon={<DownloadOutlined />}
@@ -884,143 +981,175 @@ export default function TeacherViewEvaluateTeacherPage() {
                         </Button>
                       </Col>
                     </Row>
+                    {dateError && (
+                      <Row>
+                        <Col span={24}>
+                          <Alert
+                            message={dateError}
+                            type="error"
+                            showIcon
+                            style={{ marginTop: 8 }}
+                          />
+                        </Col>
+                      </Row>
+                    )}
                   </div>
+
+                  {/* 添加警告信息显示 */}
+                  {showDateWarning && (
+                    <div style={{ color: '#faad14', marginTop: '8px', fontSize: '14px' }}>
+                      <span>⚠️ 结束日期不能早于开始日期</span>
+                    </div>
+                  )}
 
                   {/* 评价列表 */}
                   <div className={styles.evaluationList}>
-                    <List
-                      dataSource={filteredEvaluations}
-                      renderItem={(evaluation) => (
-                        <List.Item>
-                          <Card 
-                            hoverable 
-                            className={styles.evaluationCard}
-                            style={{ width: '100%' }}
-                          >
-                            <Row gutter={[16, 16]}>
-                              <Col xs={24} sm={6}>
-                                <div className={styles.evaluationHeader}>
-                                  <Avatar 
-                                    size={64} 
-                                    icon={<UserOutlined />} 
-                                    src={evaluation.avatarUrl}
-                                    style={{ backgroundColor: evaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
-                                  />
-                                  <div className={styles.evaluationMeta}>
-                                    <div className={styles.studentName}>
-                                      {evaluation.studentName}
-                                      {evaluation.isAnonymous && (
-                                        <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
-                                      )}
-                                    </div>
-                                    <div className={styles.evaluationTime}>
-                                      <ClockCircleOutlined style={{ marginRight: 4 }} />
-                                      {evaluation.formattedDate}
-                                    </div>
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col xs={24} sm={18}>
-                                <div className={styles.ratingsContainer}>
-                                  <div className={styles.overallRating}>
-                                    <div>总体评分</div>
-                                    <Rate 
-                                      disabled 
-                                      value={evaluation.overallRating} 
-                                      style={{ fontSize: 18 }}
+                    {noDataInDateRange ? (
+                      <Empty
+                        description={
+                          <span>
+                            该日期范围没有数据，请更换日期进行筛选
+                          </span>
+                        }
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    ) : (
+                      <List
+                        dataSource={filteredEvaluations}
+                        renderItem={(evaluation) => (
+                          <List.Item>
+                            <Card 
+                              hoverable 
+                              className={styles.evaluationCard}
+                              style={{ width: '100%' }}
+                            >
+                              <Row gutter={[16, 16]}>
+                                <Col xs={24} sm={6}>
+                                  <div className={styles.evaluationHeader}>
+                                    <Avatar 
+                                      size={64} 
+                                      icon={<UserOutlined />} 
+                                      src={evaluation.avatarUrl}
+                                      style={{ backgroundColor: evaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
                                     />
-                                    <span className={styles.ratingText}>
-                                      {evaluation.overallRating}.0
-                                    </span>
+                                    <div className={styles.evaluationMeta}>
+                                      <div className={styles.studentName}>
+                                        {evaluation.studentName}
+                                        {evaluation.isAnonymous && (
+                                          <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
+                                        )}
+                                      </div>
+                                      <div className={styles.evaluationTime}>
+                                        <ClockCircleOutlined style={{ marginRight: 4 }} />
+                                        {evaluation.formattedDate}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <Divider style={{ margin: '12px 0' }} />
-                                  <Row gutter={[8, 8]}>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <div className={styles.dimensionRating}>
-                                        <div>教学能力</div>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation.teachingAbilityRating} 
-                                          style={{ fontSize: 14 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <div className={styles.dimensionRating}>
-                                        <div>教学态度</div>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation.teachingAttitudeRating} 
-                                          style={{ fontSize: 14 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <div className={styles.dimensionRating}>
-                                        <div>教学方法</div>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation.teachingMethodRating} 
-                                          style={{ fontSize: 14 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <div className={styles.dimensionRating}>
-                                        <div>学术水平</div>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation.academicLevelRating} 
-                                          style={{ fontSize: 14 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <div className={styles.dimensionRating}>
-                                        <div>指导能力</div>
-                                        <Rate 
-                                          disabled 
-                                          value={evaluation.guidanceAbilityRating} 
-                                          style={{ fontSize: 14 }}
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={12} sm={8} md={4}>
-                                      <Button 
-                                        type="primary" 
-                                        icon={<EyeOutlined />} 
-                                        onClick={() => viewEvaluationDetail(evaluation)}
-                                        style={{ marginTop: 6 }}
-                                      >
-                                        查看详情
-                                      </Button>
-                                    </Col>
-                                  </Row>
-                                </div>
-                              </Col>
-                            </Row>
-                          </Card>
-                        </List.Item>
-                      )}
-                    />
+                                </Col>
+                                <Col xs={24} sm={18}>
+                                  <div className={styles.ratingsContainer}>
+                                    <div className={styles.overallRating}>
+                                      <div>总体评分</div>
+                                      <Rate 
+                                        disabled 
+                                        value={evaluation.overallRating} 
+                                        style={{ fontSize: 18 }}
+                                      />
+                                      <span className={styles.ratingText}>
+                                        {evaluation.overallRating}.0
+                                      </span>
+                                    </div>
+                                    <Divider style={{ margin: '12px 0' }} />
+                                    <Row gutter={[8, 8]}>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <div className={styles.dimensionRating}>
+                                          <div>教学能力</div>
+                                          <Rate 
+                                            disabled 
+                                            value={evaluation.teachingAbilityRating} 
+                                            style={{ fontSize: 14 }}
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <div className={styles.dimensionRating}>
+                                          <div>教学态度</div>
+                                          <Rate 
+                                            disabled 
+                                            value={evaluation.teachingAttitudeRating} 
+                                            style={{ fontSize: 14 }}
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <div className={styles.dimensionRating}>
+                                          <div>教学方法</div>
+                                          <Rate 
+                                            disabled 
+                                            value={evaluation.teachingMethodRating} 
+                                            style={{ fontSize: 14 }}
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <div className={styles.dimensionRating}>
+                                          <div>学术水平</div>
+                                          <Rate 
+                                            disabled 
+                                            value={evaluation.academicLevelRating} 
+                                            style={{ fontSize: 14 }}
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <div className={styles.dimensionRating}>
+                                          <div>指导能力</div>
+                                          <Rate 
+                                            disabled 
+                                            value={evaluation.guidanceAbilityRating} 
+                                            style={{ fontSize: 14 }}
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={12} sm={8} md={4}>
+                                        <Button 
+                                          type="primary" 
+                                          icon={<EyeOutlined />} 
+                                          onClick={() => viewEvaluationDetail(evaluation)}
+                                          style={{ marginTop: 6 }}
+                                        >
+                                          查看详情
+                                        </Button>
+                                      </Col>
+                                    </Row>
+                                  </div>
+                                </Col>
+                              </Row>
+                            </Card>
+                          </List.Item>
+                        )}
+                      />
+                    )}
                   </div>
 
-                  {/* 分页组件 */}
-                  <div className={`${styles.paginationContainer} ${styles.paginationWrapper}`}>
-                    <Pagination
-                      current={pagination.current}
-                      pageSize={pagination.pageSize}
-                      total={pagination.total}
-                      onChange={handlePageChange}
-                      showSizeChanger={true}
-                      pageSizeOptions={[5, 10, 20, 50]}
-                      onShowSizeChange={(current, size) => {
-                        setPagination(prev => ({ ...prev, current: 1, pageSize: size }));
-                      }}
-                      showQuickJumper
-                      showTotal={(total) => `共 ${total} 条评价`}
-                    />
-                  </div>
+                  {/* 分页组件 - 只在有数据且不是日期筛选无数据时显示 */}
+                  {!noDataInDateRange && filteredEvaluations.length > 0 && (
+                    <div className={`${styles.paginationContainer} ${styles.paginationWrapper}`}>
+                      <Pagination
+                        current={pagination.current}
+                        pageSize={pagination.pageSize}
+                        total={pagination.total}
+                        onChange={handlePageChange}
+                        showSizeChanger={true}
+                        pageSizeOptions={[5, 10, 20, 50]}
+                        onShowSizeChange={(current, size) => {
+                          setPagination(prev => ({ ...prev, current: 1, pageSize: size }));
+                        }}
+                        showQuickJumper
+                        showTotal={(total) => `共 ${total} 条评价`}
+                      />
+                    </div>
+                  )}
                 </>
               )}
               
@@ -1134,12 +1263,13 @@ export default function TeacherViewEvaluateTeacherPage() {
                                       <img
                                         alt={`附件图片 ${index + 1}`}
                                         src={`https://gateway.pinata.cloud/ipfs/${hash}`}
-                                        style={{ height: 160, objectFit: 'cover' }}
                                         onClick={() => handlePreview(`https://gateway.pinata.cloud/ipfs/${hash}`)}
                                       />
                                     }
                                   >
-                                    <Card.Meta title={`附件图片 ${index + 1}`} />
+                                    <Card.Meta
+                                      title={`附件图片 ${index + 1}`}
+                                    />
                                   </Card>
                                 </Col>
                               ))}
@@ -1151,20 +1281,10 @@ export default function TeacherViewEvaluateTeacherPage() {
                   </div>
                 </Drawer>
               )}
-              
-              {/* 图片预览模态框 */}
-              <Modal
-                open={previewVisible}
-                title="图片预览"
-                footer={null}
-                onCancel={handlePreviewClose}
-              >
-                <img alt="评价图片" style={{ width: '100%' }} src={previewImage} />
-              </Modal>
             </Content>
           </Layout>
         </Layout>
       </Layout>
     </ConfigProvider>
   );
-} 
+}
