@@ -172,6 +172,8 @@ function SubmitEvaluationContent({ params, router }) {
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState('');
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [transactionHash, setTransactionHash] = useState(''); // 添加交易哈希状态
+  const [blockNumber, setBlockNumber] = useState(''); // 添加区块号状态
   
   // Web3相关
   const [provider, setProvider] = useState(null);
@@ -549,6 +551,9 @@ function SubmitEvaluationContent({ params, router }) {
       
       // 立即打印交易哈希作为存证凭证
       console.log('评价提交成功! 交易哈希(存证凭证):', tx.hash);
+      
+      // 保存交易哈希为状态
+      setTransactionHash(tx.hash);
         
       // 等待交易确认
       const receipt = await tx.wait();
@@ -556,10 +561,45 @@ function SubmitEvaluationContent({ params, router }) {
       // 关闭处理中模态框
       processingModal.destroy();
       
+      // 保存区块号为状态
+      setBlockNumber(receipt.blockNumber.toString());
+      
       // 打印交易收据信息
       console.log('交易已确认! 区块号:', receipt.blockNumber);
       console.log('交易收据:', receipt);
       console.log('Gas使用量:', receipt.gasUsed.toString());
+        
+      // 保存交易记录到数据库
+      try {
+        const transactionData = {
+          transaction_hash: tx.hash,
+          block_number: receipt.blockNumber,
+          wallet_address: userData.address,
+          user_name: userData.name,
+          function_name: 'submitEvaluation',
+          gas_used: receipt.gasUsed.toString()
+        };
+        
+        // 发送请求保存交易记录
+        const saveResponse = await fetch('/api/saveTransaction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(transactionData),
+        });
+        
+        const saveResult = await saveResponse.json();
+        
+        if (saveResult.success) {
+          console.log('交易记录已保存到数据库:', saveResult);
+        } else {
+          console.error('保存交易记录失败:', saveResult.message);
+        }
+      } catch (saveError) {
+        console.error('保存交易记录时出错:', saveError);
+        // 不阻止用户继续操作，只记录错误
+      }
         
       // 显示成功消息 - 改为打开成功弹窗而不是设置消息
       setSuccessMessage('评价提交成功！交易已确认');
@@ -969,6 +1009,7 @@ function SubmitEvaluationContent({ params, router }) {
               centered
               closable={false}
               maskClosable={false}
+              width={500}
               footer={[
                 <Button 
                   key="confirm" 
@@ -987,8 +1028,30 @@ function SubmitEvaluationContent({ params, router }) {
                 <div style={{ fontSize: '60px', color: '#52c41a', marginBottom: '24px' }}>
                   <CheckCircleOutlined />
                 </div>
-                <p style={{ fontSize: '18px', marginBottom: '16px' }}>评价提交成功！</p>
-                <p style={{ fontSize: '14px', color: '#888', marginTop: '16px' }}>您的评价已成功提交到区块链，点击确定返回课程详情</p>
+                <p style={{ fontSize: '18px', marginBottom: '16px', fontWeight: 'bold' }}>评价提交成功！</p>
+                
+                {transactionHash && (
+                  <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '12px', borderRadius: '6px', marginBottom: '16px', textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>区块链存证凭证：</div>
+                    <div style={{ wordBreak: 'break-all', fontSize: '14px' }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 'bold', display: 'inline-block', width: '80px' }}>交易哈希：</span>
+                        <span>{transactionHash}</span>
+                      </div>
+                      {blockNumber && (
+                        <div>
+                          <span style={{ fontWeight: 'bold', display: 'inline-block', width: '80px' }}>区块号：</span>
+                          <span>{blockNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <p style={{ fontSize: '14px', color: '#666', marginTop: '16px' }}>
+                  您的评价已成功上链，数据不可篡改且永久存储！
+                </p>
+                <p style={{ fontSize: '14px', color: '#888', marginTop: '8px' }}>点击确定返回课程详情</p>
               </div>
             </Modal>
           </Content>

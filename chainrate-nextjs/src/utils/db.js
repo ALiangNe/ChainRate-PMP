@@ -72,10 +72,71 @@ async function addAnnouncement(title, content) {
   }
 }
 
+// 保存交易记录到数据库
+async function saveTransactionRecord(transactionData) {
+  try {
+    const { transaction_hash, block_number, wallet_address, user_name, function_name, gas_used } = transactionData;
+    
+    // 检查交易哈希是否已存在
+    const [existing] = await pool.query(
+      'SELECT id FROM transaction_records WHERE transaction_hash = ?',
+      [transaction_hash]
+    );
+    
+    if (existing.length > 0) {
+      console.log('交易记录已存在，不重复添加:', transaction_hash);
+      return existing[0].id;
+    }
+    
+    // 插入新的交易记录
+    const [result] = await pool.query(
+      'INSERT INTO transaction_records (transaction_hash, block_number, wallet_address, user_name, function_name, gas_used) VALUES (?, ?, ?, ?, ?, ?)',
+      [transaction_hash, block_number, wallet_address, user_name, function_name, gas_used]
+    );
+    
+    console.log('交易记录已保存，ID:', result.insertId);
+    return result.insertId;
+  } catch (error) {
+    console.error('保存交易记录失败:', error);
+    throw error;
+  }
+}
+
+// 获取用户的交易记录列表
+async function getUserTransactionRecords(walletAddress, limit = 20) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM transaction_records WHERE wallet_address = ? ORDER BY transaction_time DESC LIMIT ?',
+      [walletAddress, limit]
+    );
+    return rows;
+  } catch (error) {
+    console.error('获取用户交易记录失败:', error);
+    throw error;
+  }
+}
+
+// 获取交易记录详情
+async function getTransactionDetail(transactionHash) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM transaction_records WHERE transaction_hash = ?',
+      [transactionHash]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error('获取交易详情失败:', error);
+    throw error;
+  }
+}
+
 // 导出函数
 export {
   testConnection,
   getAnnouncements,
   getRecentAnnouncements,
-  addAnnouncement
+  addAnnouncement,
+  saveTransactionRecord,
+  getUserTransactionRecords,
+  getTransactionDetail
 }; 

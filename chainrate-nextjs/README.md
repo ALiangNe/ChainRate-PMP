@@ -126,3 +126,36 @@ npm run dev
 ## 许可证
 
 本项目采用 MIT 许可证。
+
+## 最新功能更新：区块链交易记录
+
+### 交易记录存证功能
+我们新增了区块链交易记录存证功能，现在当学生提交评价时，系统会自动：
+1. 将交易哈希、区块号等关键信息保存到数据库
+2. 在评价提交成功后显示交易哈希作为存证凭证
+3. 提供API接口用于查询用户的交易记录
+
+### 数据库结构
+新增交易记录表 `transaction_records`，包含以下字段：
+- `id`: 主键
+- `transaction_hash`: 交易哈希
+- `block_number`: 区块号
+- `wallet_address`: 钱包地址
+- `user_name`: 用户名字
+- `function_name`: 函数名称
+- `gas_used`: 消耗的gas
+- `transaction_time`: 交易时间
+
+### API接口
+1. **保存交易记录**
+   - 路径: `/api/saveTransaction`
+   - 方法: POST
+   - 参数: `transaction_hash`, `block_number`, `wallet_address`, `user_name`, `function_name`, `gas_used`
+
+2. **获取用户交易记录**
+   - 路径: `/api/getTransactions?walletAddress={wallet地址}&limit={数量}`
+   - 方法: GET
+   - 参数: `walletAddress` (必须), `limit` (可选, 默认20)
+
+### 使用方法
+在表单提交后，系统自动保存交易信息，并在成功模态框中展示交易哈希和区块号作为区块链存证凭证。
