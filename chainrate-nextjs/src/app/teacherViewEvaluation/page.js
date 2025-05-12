@@ -1094,7 +1094,8 @@ export default function TeacherViewEvaluationPage() {
                       description={
                         <span>
                           {courses.length > 0 
-                            ? "暂无评价数据" 
+                            // ? "暂无评价数据" 
+                            ? "未找到符合条件的数据" 
                             : "请先创建课程并等待学生评价"}
                         </span>
                       }
