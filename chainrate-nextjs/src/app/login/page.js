@@ -38,6 +38,7 @@ import {
   SafetyCertificateOutlined,
   TeamOutlined
 } from '@ant-design/icons';
+import { checkSession, setupSessionCheck, clearSession } from '../utils/authCheck';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -121,33 +122,12 @@ export default function LoginPage() {
 
   // 检查登录会话是否过期
   useEffect(() => {
-    const checkSessionExpiry = () => {
-      const loginTime = localStorage.getItem('loginTime');
-      if (loginTime && localStorage.getItem('isLoggedIn') === 'true') {
-        const expiryTime = parseInt(loginTime) + 30 * 60 * 1000; // 30分钟过期
-        
-        if (Date.now() > expiryTime) {
-          // 会话已过期，清除登录信息
-          localStorage.removeItem('isLoggedIn');
-          localStorage.removeItem('userAddress');
-          localStorage.removeItem('userName');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('userRoleHash');
-          localStorage.removeItem('loginTime');
-          
-          message.warning('登录已过期，请重新登录');
-        }
-      }
-    };
-    
-    // 页面加载时检查一次
-    checkSessionExpiry();
+    // 初次检查
+    checkSession(router);
     
     // 设置定期检查
-    const interval = setInterval(checkSessionExpiry, 60000); // 每分钟检查一次
-    
-    return () => clearInterval(interval);
-  }, []);
+    return setupSessionCheck(router);
+  }, [router]);
 
   // 初始化钱包连接
   useEffect(() => {

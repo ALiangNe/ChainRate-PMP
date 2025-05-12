@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Avatar, Dropdown } from 'antd';
+import { Avatar, Dropdown, message } from 'antd';
 import { UserOutlined, LogoutOutlined, SettingOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { checkSession, setupSessionCheck, clearSession } from '../utils/authCheck';
 
 export default function UserAvatar({ color = '#1677ff', size = 'default' }) {
   const router = useRouter();
@@ -36,18 +37,18 @@ export default function UserAvatar({ color = '#1677ff', size = 'default' }) {
     });
   }, []);
   
+  // 添加会话过期检查
+  useEffect(() => {
+    // 初次检查
+    checkSession(router);
+    
+    // 设置定期检查
+    return setupSessionCheck(router);
+  }, [router]);
+  
   const handleLogout = () => {
     // 清除所有用户相关的localStorage
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userAddress');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userRoleHash');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userCollege');
-    localStorage.removeItem('userMajor');
-    localStorage.removeItem('userGrade');
-    localStorage.removeItem('userAvatar');
+    clearSession();
     
     // 重定向到登录页面
     router.push('/login');
