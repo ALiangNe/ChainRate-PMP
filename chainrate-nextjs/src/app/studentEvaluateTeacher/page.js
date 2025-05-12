@@ -390,6 +390,24 @@ function StudentEvaluateTeacherPage() {
   
   // 选择教师进行评价
   const selectTeacher = (teacher) => {
+    // 检查教师是否已经被评价过
+    if (teacher.hasEvaluated) {
+      modal.info({
+        title: '已经评价过',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '48px', color: '#1890ff', marginBottom: '16px' }}>
+              <CheckCircleOutlined />
+            </div>
+            <p style={{ fontSize: '16px' }}>您已经评价过该教师，每位学生只能对同一位教师评价一次</p>
+          </div>
+        ),
+        centered: true,
+        okText: '我知道了'
+      });
+      return;
+    }
+    
     // 检查教师是否有未结束的课程
     if (!teacher.hasActiveCourses) {
       showCourseEndedModal();
@@ -643,7 +661,25 @@ function StudentEvaluateTeacherPage() {
       
     } catch (err) {
       console.error("提交评价失败:", err);
-      setError('提交评价失败: ' + (err.message || err));
+      
+      // 处理特定的错误
+      if (err.reason === "ChainRate02: already evaluated this teacher" || 
+          (err.message && err.message.includes("already evaluated this teacher"))) {
+        modal.error({
+          title: '评价失败',
+          content: (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
+                <ExclamationCircleOutlined />
+              </div>
+              <p style={{ fontSize: '16px' }}>您已经评价过该教师，不能重复评价</p>
+            </div>
+          ),
+          centered: true,
+        });
+      } else {
+        setError('提交评价失败: ' + (err.message || err));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1040,7 +1076,7 @@ function StudentEvaluateTeacherPage() {
                               <div className={styles.teacherName}>
                                 {teacher.name}
                                 {teacher.hasEvaluated && (
-                                  <Tag color="success" style={{ marginLeft: 8 }}>可再次评价</Tag>
+                                  <Tag color="success" style={{ marginLeft: 8 }}>已评价</Tag>
                                 )}
                                 {!teacher.hasActiveCourses && !teacher.hasEvaluated && (
                                   <Tag color="error" style={{ marginLeft: 8 }}>评价已截止</Tag>
@@ -1053,11 +1089,11 @@ function StudentEvaluateTeacherPage() {
                         actions={[
                           teacher.hasEvaluated ? (
                             <Button 
-                              type="primary" 
+                              type="default" 
                               onClick={() => selectTeacher(teacher)}
                               icon={<CheckCircleOutlined />}
                             >
-                              再次评价
+                              已评价
                             </Button>
                           ) : teacher.hasActiveCourses ? (
                             <Button 
