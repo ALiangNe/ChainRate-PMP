@@ -504,7 +504,7 @@ export default function TeacherViewEvaluateTeacherPage() {
     }
     
     const [startDate, endDate] = dates;
-    
+  
     // 严格验证：确保结束日期不早于开始日期
     if (endDate.isBefore(startDate, 'day')) {
       console.error("无效的日期范围:", startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'));
@@ -1014,121 +1014,121 @@ export default function TeacherViewEvaluateTeacherPage() {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     ) : (
-                      <List
-                        dataSource={filteredEvaluations}
-                        renderItem={(evaluation) => (
-                          <List.Item>
-                            <Card 
-                              hoverable 
-                              className={styles.evaluationCard}
-                              style={{ width: '100%' }}
-                            >
-                              <Row gutter={[16, 16]}>
-                                <Col xs={24} sm={6}>
-                                  <div className={styles.evaluationHeader}>
-                                    <Avatar 
-                                      size={64} 
-                                      icon={<UserOutlined />} 
-                                      src={evaluation.avatarUrl}
-                                      style={{ backgroundColor: evaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
+                    <List
+                      dataSource={filteredEvaluations}
+                      renderItem={(evaluation) => (
+                        <List.Item>
+                          <Card 
+                            hoverable 
+                            className={styles.evaluationCard}
+                            style={{ width: '100%' }}
+                          >
+                            <Row gutter={[16, 16]}>
+                              <Col xs={24} sm={6}>
+                                <div className={styles.evaluationHeader}>
+                                  <Avatar 
+                                    size={64} 
+                                    icon={<UserOutlined />} 
+                                    src={evaluation.avatarUrl}
+                                    style={{ backgroundColor: evaluation.isAnonymous ? '#1a73e8' : '#1a73e8' }}
+                                  />
+                                  <div className={styles.evaluationMeta}>
+                                    <div className={styles.studentName}>
+                                      {evaluation.studentName}
+                                      {evaluation.isAnonymous && (
+                                        <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
+                                      )}
+                                    </div>
+                                    <div className={styles.evaluationTime}>
+                                      <ClockCircleOutlined style={{ marginRight: 4 }} />
+                                      {evaluation.formattedDate}
+                                    </div>
+                                  </div>
+                                </div>
+                              </Col>
+                              <Col xs={24} sm={18}>
+                                <div className={styles.ratingsContainer}>
+                                  <div className={styles.overallRating}>
+                                    <div>总体评分</div>
+                                    <Rate 
+                                      disabled 
+                                      value={evaluation.overallRating} 
+                                      style={{ fontSize: 18 }}
                                     />
-                                    <div className={styles.evaluationMeta}>
-                                      <div className={styles.studentName}>
-                                        {evaluation.studentName}
-                                        {evaluation.isAnonymous && (
-                                          <Tag color="blue" style={{ marginLeft: 8 }}>匿名</Tag>
-                                        )}
-                                      </div>
-                                      <div className={styles.evaluationTime}>
-                                        <ClockCircleOutlined style={{ marginRight: 4 }} />
-                                        {evaluation.formattedDate}
-                                      </div>
-                                    </div>
+                                    <span className={styles.ratingText}>
+                                      {evaluation.overallRating}.0
+                                    </span>
                                   </div>
-                                </Col>
-                                <Col xs={24} sm={18}>
-                                  <div className={styles.ratingsContainer}>
-                                    <div className={styles.overallRating}>
-                                      <div>总体评分</div>
-                                      <Rate 
-                                        disabled 
-                                        value={evaluation.overallRating} 
-                                        style={{ fontSize: 18 }}
-                                      />
-                                      <span className={styles.ratingText}>
-                                        {evaluation.overallRating}.0
-                                      </span>
-                                    </div>
-                                    <Divider style={{ margin: '12px 0' }} />
-                                    <Row gutter={[8, 8]}>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <div className={styles.dimensionRating}>
-                                          <div>教学能力</div>
-                                          <Rate 
-                                            disabled 
-                                            value={evaluation.teachingAbilityRating} 
-                                            style={{ fontSize: 14 }}
-                                          />
-                                        </div>
-                                      </Col>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <div className={styles.dimensionRating}>
-                                          <div>教学态度</div>
-                                          <Rate 
-                                            disabled 
-                                            value={evaluation.teachingAttitudeRating} 
-                                            style={{ fontSize: 14 }}
-                                          />
-                                        </div>
-                                      </Col>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <div className={styles.dimensionRating}>
-                                          <div>教学方法</div>
-                                          <Rate 
-                                            disabled 
-                                            value={evaluation.teachingMethodRating} 
-                                            style={{ fontSize: 14 }}
-                                          />
-                                        </div>
-                                      </Col>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <div className={styles.dimensionRating}>
-                                          <div>学术水平</div>
-                                          <Rate 
-                                            disabled 
-                                            value={evaluation.academicLevelRating} 
-                                            style={{ fontSize: 14 }}
-                                          />
-                                        </div>
-                                      </Col>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <div className={styles.dimensionRating}>
-                                          <div>指导能力</div>
-                                          <Rate 
-                                            disabled 
-                                            value={evaluation.guidanceAbilityRating} 
-                                            style={{ fontSize: 14 }}
-                                          />
-                                        </div>
-                                      </Col>
-                                      <Col xs={12} sm={8} md={4}>
-                                        <Button 
-                                          type="primary" 
-                                          icon={<EyeOutlined />} 
-                                          onClick={() => viewEvaluationDetail(evaluation)}
-                                          style={{ marginTop: 6 }}
-                                        >
-                                          查看详情
-                                        </Button>
-                                      </Col>
-                                    </Row>
-                                  </div>
-                                </Col>
-                              </Row>
-                            </Card>
-                          </List.Item>
-                        )}
-                      />
+                                  <Divider style={{ margin: '12px 0' }} />
+                                  <Row gutter={[8, 8]}>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <div className={styles.dimensionRating}>
+                                        <div>教学能力</div>
+                                        <Rate 
+                                          disabled 
+                                          value={evaluation.teachingAbilityRating} 
+                                          style={{ fontSize: 14 }}
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <div className={styles.dimensionRating}>
+                                        <div>教学态度</div>
+                                        <Rate 
+                                          disabled 
+                                          value={evaluation.teachingAttitudeRating} 
+                                          style={{ fontSize: 14 }}
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <div className={styles.dimensionRating}>
+                                        <div>教学方法</div>
+                                        <Rate 
+                                          disabled 
+                                          value={evaluation.teachingMethodRating} 
+                                          style={{ fontSize: 14 }}
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <div className={styles.dimensionRating}>
+                                        <div>学术水平</div>
+                                        <Rate 
+                                          disabled 
+                                          value={evaluation.academicLevelRating} 
+                                          style={{ fontSize: 14 }}
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <div className={styles.dimensionRating}>
+                                        <div>指导能力</div>
+                                        <Rate 
+                                          disabled 
+                                          value={evaluation.guidanceAbilityRating} 
+                                          style={{ fontSize: 14 }}
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={12} sm={8} md={4}>
+                                      <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        onClick={() => viewEvaluationDetail(evaluation)}
+                                        style={{ marginTop: 6 }}
+                                      >
+                                        查看详情
+                                      </Button>
+                                    </Col>
+                                  </Row>
+                                </div>
+                              </Col>
+                            </Row>
+                          </Card>
+                        </List.Item>
+                      )}
+                    />
                     )}
                   </div>
 
@@ -1287,4 +1287,4 @@ export default function TeacherViewEvaluateTeacherPage() {
       </Layout>
     </ConfigProvider>
   );
-}
+} 

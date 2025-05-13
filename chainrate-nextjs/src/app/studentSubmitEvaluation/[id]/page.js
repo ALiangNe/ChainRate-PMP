@@ -736,224 +736,224 @@ function SubmitEvaluationContent({ params, router }) {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className={styles.logo}>
-            <Image 
-              src="/images/logo1.png" 
-              alt="链评系统Logo" 
-              width={40} 
-              height={40}
-              style={{ borderRadius: '6px' }}
-            />
-          </div>
-          <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-            链评系统（ChainRate）- 学生端
-          </div>
-        </div>
-        <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
-          <UserAvatar color="#fff" />
-        </div>
-      </Header>
-      <Layout>
-        <Sider width={200} style={{ background: colorBgContainer }}>
-          <StudentSidebar defaultSelectedKey="4" defaultOpenKey="sub3" />
-        </Sider>
-        <Layout style={{ padding: '0 24px 24px' }}>
-          <Breadcrumb
-            items={[
-              { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
-              { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
-              { title: course?.name, onClick: () => router.push(`/studentCourseDetail/${courseId}`), className: 'clickable-breadcrumb' },
-              { title: '提交评价' }
-            ]}
-            style={{ margin: '16px 0' }}
-          />
-          <Content
-            style={{
-              padding: 24,
-              margin: 0,
-              minHeight: 280,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-            }}
-          >
-            {!course ? (
-              <Empty 
-                description="未找到课程" 
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
+      <Layout style={{ minHeight: '100vh' }}>
+        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className={styles.logo}>
+              <Image 
+                src="/images/logo1.png" 
+                alt="链评系统Logo" 
+                width={40} 
+                height={40}
+                style={{ borderRadius: '6px' }}
               />
-            ) : (
-              <>
-                <Card
-                  title={
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <FormOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
-                      <span>提交课程评价</span>
-                    </div>
-                  }
-                  style={{ marginBottom: '20px' }}
-                >
-                  <Row gutter={[16, 16]}>
-                    <Col span={24}>
-                      <Card 
-                        type="inner" 
-                        title="课程信息" 
-                        style={{ marginBottom: '20px' }}
-                      >
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} md={12}>
-                            <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                              <BookOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                              <Text strong>{course.name}</Text>
-                            </div>
-                            <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                              <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                              <Text>教师: {course.teacherName}</Text>
-                            </div>
-                          </Col>
-                          <Col xs={24} md={12}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                              <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
-                              <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
-                            </div>
-                          </Col>
-                        </Row>
-                      </Card>
-                    </Col>
-                    
-                    <Col span={24}>
-                      <Form layout="vertical" onFinish={handleSubmitEvaluation}>
-                        <Card type="inner" title="评分" style={{ marginBottom: '20px' }}>
-                          <Row gutter={[32, 16]}>
-                            <Col xs={24} md={12} lg={6}>
-                              <Form.Item label="总体评分">
-                                <Rate 
-                                  defaultValue={rating}
-                                  onChange={(value) => handleRatingChange('overall', value)}
-                                />
-                              </Form.Item>
+            </div>
+            <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）- 学生端
+            </div>
+          </div>
+          <div style={{ color: 'white', marginRight: '20px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <UserAvatar color="#fff" />
+          </div>
+        </Header>
+        <Layout>
+          <Sider width={200} style={{ background: colorBgContainer }}>
+            <StudentSidebar defaultSelectedKey="4" defaultOpenKey="sub3" />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb
+              items={[
+                { title: '首页', onClick: () => router.push('/studentIndex'), className: 'clickable-breadcrumb' },
+                { title: '课程列表', onClick: () => router.push('/studentViewCourses'), className: 'clickable-breadcrumb' },
+                { title: course?.name, onClick: () => router.push(`/studentCourseDetail/${courseId}`), className: 'clickable-breadcrumb' },
+                { title: '提交评价' }
+              ]}
+              style={{ margin: '16px 0' }}
+            />
+            <Content
+              style={{
+                padding: 24,
+                margin: 0,
+                minHeight: 280,
+                background: colorBgContainer,
+                borderRadius: borderRadiusLG,
+              }}
+            >
+              {!course ? (
+                <Empty 
+                  description="未找到课程" 
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                <>
+                  <Card
+                    title={
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <FormOutlined style={{ color: colorPrimary, marginRight: '8px' }} />
+                        <span>提交课程评价</span>
+                      </div>
+                    }
+                    style={{ marginBottom: '20px' }}
+                  >
+                    <Row gutter={[16, 16]}>
+                      <Col span={24}>
+                        <Card 
+                          type="inner" 
+                          title="课程信息" 
+                          style={{ marginBottom: '20px' }}
+                        >
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <BookOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text strong>{course.name}</Text>
+                              </div>
+                              <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                                <UserOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>教师: {course.teacherName}</Text>
+                              </div>
                             </Col>
-                            <Col xs={24} md={12} lg={6}>
-                              <Form.Item label="教学质量">
-                                <Rate 
-                                  defaultValue={teachingRating}
-                                  onChange={(value) => handleRatingChange('teaching', value)}
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12} lg={6}>
-                              <Form.Item label="内容设计">
-                                <Rate 
-                                  defaultValue={contentRating}
-                                  onChange={(value) => handleRatingChange('content', value)}
-                                />
-                              </Form.Item>
-                            </Col>
-                            <Col xs={24} md={12} lg={6}>
-                              <Form.Item label="师生互动">
-                                <Rate 
-                                  defaultValue={interactionRating}
-                                  onChange={(value) => handleRatingChange('interaction', value)}
-                                />
-                              </Form.Item>
+                            <Col xs={24} md={12}>
+                              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                <CalendarOutlined style={{ marginRight: '8px', color: colorPrimary }} />
+                                <Text>评价期间: {formatDateTime(course.startTime)} 至 {formatDateTime(course.endTime)}</Text>
+                              </div>
                             </Col>
                           </Row>
                         </Card>
-                        
-                        <Card type="inner" title="评价内容" style={{ marginBottom: '20px' }}>
-                          <Form.Item>
-                            <TextArea
-                              value={content}
-                              onChange={(e) => setContent(e.target.value)}
-                              placeholder="请输入您对该课程的评价..."
-                              rows={6}
-                              showCount
-                              maxLength={1000}
-                            />
-                          </Form.Item>
-                        </Card>
-                        
-                        <Card type="inner" title="上传图片（可选）" style={{ marginBottom: '20px' }}>
-                          <Form.Item>
-                            <Upload {...uploadProps}>
-                              {images.length < 5 && (
-                                <div>
-                                  <UploadOutlined />
-                                  <div style={{ marginTop: 8 }}>上传</div>
+                      </Col>
+                      
+                      <Col span={24}>
+                        <Form layout="vertical" onFinish={handleSubmitEvaluation}>
+                          <Card type="inner" title="评分" style={{ marginBottom: '20px' }}>
+                            <Row gutter={[32, 16]}>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="总体评分">
+                                  <Rate 
+                                    defaultValue={rating}
+                                    onChange={(value) => handleRatingChange('overall', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="教学质量">
+                                  <Rate 
+                                    defaultValue={teachingRating}
+                                    onChange={(value) => handleRatingChange('teaching', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="内容设计">
+                                  <Rate 
+                                    defaultValue={contentRating}
+                                    onChange={(value) => handleRatingChange('content', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                              <Col xs={24} md={12} lg={6}>
+                                <Form.Item label="师生互动">
+                                  <Rate 
+                                    defaultValue={interactionRating}
+                                    onChange={(value) => handleRatingChange('interaction', value)}
+                                  />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                          </Card>
+                          
+                          <Card type="inner" title="评价内容" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <TextArea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="请输入您对该课程的评价..."
+                                rows={6}
+                                showCount
+                                maxLength={1000}
+                              />
+                            </Form.Item>
+                          </Card>
+                          
+                          <Card type="inner" title="上传图片（可选）" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <Upload {...uploadProps}>
+                                {images.length < 5 && (
+                                  <div>
+                                    <UploadOutlined />
+                                    <div style={{ marginTop: 8 }}>上传</div>
                                   <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
                                     (限制5MB)
                                   </div>
+                                  </div>
+                                )}
+                              </Upload>
+                              
+                              {uploadingImages && (
+                                <div style={{ marginTop: 16 }}>
+                                  <Progress percent={uploadProgress} status="active" />
+                                  <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
+                                    <LoadingOutlined style={{ marginRight: 8 }} />
+                                    正在上传图片到IPFS...
+                                  </Text>
                                 </div>
                               )}
-                            </Upload>
-                            
-                            {uploadingImages && (
-                              <div style={{ marginTop: 16 }}>
-                                <Progress percent={uploadProgress} status="active" />
-                                <Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
-                                  <LoadingOutlined style={{ marginRight: 8 }} />
-                                  正在上传图片到IPFS...
-                                </Text>
-                              </div>
-                            )}
-                            
-                            {uploadedImageHashes.length > 0 && (
-                              <div style={{ marginTop: 16 }}>
-                                <Text strong style={{ marginBottom: 8, display: 'block' }}>
-                                  <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-                                  图片已上传到IPFS:
-                                </Text>
-                                {uploadedImageHashes.map((hash, index) => (
-                                  <Tag 
-                                    key={index}
-                                    color="success" 
-                                    style={{ margin: '4px', wordBreak: 'break-all' }}
-                                  >
-                                    {hash.substring(0, 10)}...{hash.substring(hash.length - 10)}
-                                  </Tag>
-                                ))}
-                              </div>
-                            )}
-                            
-                            <div style={{ marginTop: 12 }}>
-                              <Text type="secondary">
+                              
+                              {uploadedImageHashes.length > 0 && (
+                                <div style={{ marginTop: 16 }}>
+                                  <Text strong style={{ marginBottom: 8, display: 'block' }}>
+                                    <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                                    图片已上传到IPFS:
+                                  </Text>
+                                  {uploadedImageHashes.map((hash, index) => (
+                                    <Tag 
+                                      key={index}
+                                      color="success" 
+                                      style={{ margin: '4px', wordBreak: 'break-all' }}
+                                    >
+                                      {hash.substring(0, 10)}...{hash.substring(hash.length - 10)}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div style={{ marginTop: 12 }}>
+                                <Text type="secondary">
                                 支持上传的图片格式：JPG, PNG, GIF等，单张图片大小不能超过5MB，最多上传5张
-                              </Text>
-                              <br />
-                              <Text type="secondary">
-                                图片将上传到IPFS分布式存储网络，上传后将永久保存且不可篡改
-                              </Text>
-                            </div>
-                          </Form.Item>
-                        </Card>
-                        
-                        <Card type="inner" title="隐私设置" style={{ marginBottom: '20px' }}>
+                                </Text>
+                                <br />
+                                <Text type="secondary">
+                                  图片将上传到IPFS分布式存储网络，上传后将永久保存且不可篡改
+                                </Text>
+                              </div>
+                            </Form.Item>
+                          </Card>
+                          
+                          <Card type="inner" title="隐私设置" style={{ marginBottom: '20px' }}>
+                            <Form.Item>
+                              <Checkbox 
+                                checked={isAnonymous}
+                                onChange={(e) => setIsAnonymous(e.target.checked)}
+                              >
+                                匿名评价（教师将无法看到您的姓名）
+                              </Checkbox>
+                            </Form.Item>
+                          </Card>
+                          
                           <Form.Item>
-                            <Checkbox 
-                              checked={isAnonymous}
-                              onChange={(e) => setIsAnonymous(e.target.checked)}
-                            >
-                              匿名评价（教师将无法看到您的姓名）
-                            </Checkbox>
-                          </Form.Item>
-                        </Card>
-                        
-                        <Form.Item>
-                          <Space>
-                            <Button 
-                              onClick={goBack}
-                            >
-                              取消
-                            </Button>
-                            <Button 
-                              type="primary" 
-                              htmlType="submit"
-                              loading={submitting}
-                              disabled={!content.trim() || uploadingImages}
-                              icon={<SendOutlined />}
+                            <Space>
+                              <Button 
+                                onClick={goBack}
+                              >
+                                取消
+                              </Button>
+                              <Button 
+                                type="primary" 
+                                htmlType="submit"
+                                loading={submitting}
+                                disabled={!content.trim() || uploadingImages}
+                                icon={<SendOutlined />}
                               size="large"
                               style={{ 
                                 height: '48px', 
@@ -962,27 +962,27 @@ function SubmitEvaluationContent({ params, router }) {
                                 background: content.trim() && !uploadingImages ? '#1a73e8' : undefined,
                                 boxShadow: content.trim() && !uploadingImages ? '0 4px 12px rgba(26, 115, 232, 0.4)' : 'none'
                               }}
-                            >
-                              提交评价
-                            </Button>
-                          </Space>
-                        </Form.Item>
-                      </Form>
-                    </Col>
-                  </Row>
-                </Card>
-              </>
-            )}
+                              >
+                                提交评价
+                              </Button>
+                            </Space>
+                          </Form.Item>
+                        </Form>
+                      </Col>
+                    </Row>
+                  </Card>
+                </>
+              )}
 
-            {/* 图片预览模态框 */}
-            <Modal
+              {/* 图片预览模态框 */}
+              <Modal
               open={previewVisible}
-              title="图片预览"
-              footer={null}
-              onCancel={() => setPreviewVisible(false)}
-            >
-              <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
-            </Modal>
+                title="图片预览"
+                footer={null}
+                onCancel={() => setPreviewVisible(false)}
+              >
+                <img alt="预览图片" style={{ width: '100%' }} src={previewImage} />
+              </Modal>
             
             {/* 错误提示弹窗 */}
             <Modal
@@ -1054,13 +1054,13 @@ function SubmitEvaluationContent({ params, router }) {
                 <p style={{ fontSize: '14px', color: '#888', marginTop: '8px' }}>点击确定返回课程详情</p>
               </div>
             </Modal>
-          </Content>
+            </Content>
+          </Layout>
         </Layout>
+        <div className={styles.footer}>
+          <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
+        </div>
       </Layout>
-      <div className={styles.footer}>
-        <p>© 2023 链评系统 - 基于区块链的教学评价系统</p>
-      </div>
-    </Layout>
   );
 }
 
