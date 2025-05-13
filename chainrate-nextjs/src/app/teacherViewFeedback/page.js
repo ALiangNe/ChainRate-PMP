@@ -323,7 +323,8 @@ export default function TeacherViewFeedbackPage() {
       // 如果有课程，默认选择第一个课程并加载其反馈
       if (coursesList.length > 0) {
         setSelectedCourse(coursesList[0]);
-        await loadCourseFeedbacks(contract02Instance, coursesList[0].id);
+        // Pass both contractInstance (main contract) and contract02Instance (feedback contract)
+        await loadCourseFeedbacks(contractInstance, contract02Instance, coursesList[0].id);
       }
       
       setLoading(false);
@@ -393,13 +394,13 @@ export default function TeacherViewFeedbackPage() {
   };
   
   // 加载课程反馈
-  const loadCourseFeedbacks = async (contract02Instance, courseId) => {
+  const loadCourseFeedbacks = async (mainContract, courseFeedbackContract, courseId) => {
     try {
       setLoading(true);
       console.log(`加载课程 ${courseId} 的反馈...`);
       
       // 检查合约和主合约是否已初始化
-      if (!contract02Instance) {
+      if (!courseFeedbackContract || !mainContract) {
         console.error("合约未初始化");
         setError('合约未初始化，请刷新页面重试');
         setLoading(false);
@@ -407,7 +408,7 @@ export default function TeacherViewFeedbackPage() {
       }
       
       // 获取课程反馈ID列表
-      const feedbackIds = await contract02Instance.getCourseFeedbacks(courseId);
+      const feedbackIds = await courseFeedbackContract.getCourseFeedbacks(courseId);
       console.log("课程反馈ID:", feedbackIds);
       
       if (feedbackIds.length === 0) {
@@ -434,7 +435,7 @@ export default function TeacherViewFeedbackPage() {
         try {
           const feedbackId = feedbackIds[i];
           // 获取反馈详情
-          const feedback = await contract02Instance.getCourseFeedbackDetails(feedbackId);
+          const feedback = await courseFeedbackContract.getCourseFeedbackDetails(feedbackId);
           
           // 获取提交反馈的学生信息
           let student = {
@@ -445,14 +446,14 @@ export default function TeacherViewFeedbackPage() {
           };
           
           try {
-            const currentContract = contract; // 保存当前contract状态的引用
-            if (currentContract && typeof currentContract.getUserInfo === 'function') {
-              student = await currentContract.getUserInfo(feedback.student);
+            // Use the passed mainContract instance
+            if (mainContract && typeof mainContract.getUserInfo === 'function') {
+              student = await mainContract.getUserInfo(feedback.student);
               console.log(`获取学生信息成功:`, student);
               
               // 从智能合约获取学生头像URL
               try {
-                const studentProfile = await currentContract.getUserProfile(feedback.student);
+                const studentProfile = await mainContract.getUserProfile(feedback.student);
                 if (studentProfile && studentProfile.avatar) {
                   student.avatar = studentProfile.avatar;
                   console.log(`获取到学生头像URL:`, student.avatar);
@@ -485,7 +486,7 @@ export default function TeacherViewFeedbackPage() {
             
             if (Number(feedback.status) === 1) { // FeedbackStatus.Replied = 1
               try {
-                const replyDetails = await contract02Instance.getTeacherReplyDetails(feedbackId);
+                const replyDetails = await courseFeedbackContract.getTeacherReplyDetails(feedbackId);
                 hasReply = true;
                 
                 // 获取回复的实际内容
@@ -517,7 +518,7 @@ export default function TeacherViewFeedbackPage() {
           if (versionsCount > 1) {
             try {
               // 获取最新版本信息，版本号比总数少1
-              const latestVersion = await contract02Instance.getFeedbackVersion(
+              const latestVersion = await courseFeedbackContract.getFeedbackVersion(
                 feedbackId, 
                 versionsCount - 1
               );
@@ -624,8 +625,8 @@ export default function TeacherViewFeedbackPage() {
     const selected = courses.find(course => course.id === courseId);
     setSelectedCourse(selected);
     
-    if (contract02 && selected) {
-      await loadCourseFeedbacks(contract02, selected.id);
+    if (contract && contract02 && selected) { // Ensure main contract (contract) is also available
+      await loadCourseFeedbacks(contract, contract02, selected.id);
     }
   };
   
@@ -744,7 +745,7 @@ export default function TeacherViewFeedbackPage() {
       if (selectedCourse) {
         // 增加延迟确保区块链状态同步
         setTimeout(async () => {
-          await loadCourseFeedbacks(contract02, selectedCourse.id);
+          await loadCourseFeedbacks(contract, contract02, selectedCourse.id);
         }, 1000); // 等待1秒后刷新
       }
       
@@ -789,6 +790,7 @@ export default function TeacherViewFeedbackPage() {
       // 版本索引从0开始，原始版本是0，最新版本是 versionsCount-1
       for (let i = 0; i < versionsCount; i++) {
         try {
+          // Assuming contract02 is the correct contract for feedback versions
           const version = await contract02.getFeedbackVersion(feedback.id, i);
           
           // 获取版本内容
@@ -875,6 +877,7 @@ export default function TeacherViewFeedbackPage() {
   const loadFeedbackVersion = async (feedbackId, versionId) => {
     try {
       console.log(`尝试加载反馈 ${feedbackId} 的版本 ${versionId}`);
+      // Assuming contract02 is the correct contract for feedback versions
       const version = await contract02.getFeedbackVersion(feedbackId, versionId);
       console.log(`成功获取反馈 ${feedbackId} 的版本 ${versionId}:`, version);
       
