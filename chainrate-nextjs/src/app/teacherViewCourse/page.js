@@ -36,7 +36,8 @@ import {
   Empty,
   Tooltip,
   Spin,
-  Alert
+  Alert,
+  Table
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
@@ -282,6 +283,91 @@ export default function ViewCoursesPage() {
     router.push('/login');
   };
 
+  // Table columns definition
+  const courseTableColumns = [
+    {
+      title: '课程名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <a onClick={() => handleManageCourse(record.id)} style={{ fontWeight: 'bold' }}>
+          {text}
+        </a>
+      ),
+      sorter: (a, b) => a.name.localeCompare(b.name),
+    },
+    {
+      title: '课程ID',
+      dataIndex: 'id',
+      key: 'id',
+      align: 'center',
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: '当前状态',
+      key: 'currentStatus',
+      align: 'center',
+      render: (text, record) => {
+        const status = getCourseStatus(record);
+        return <Tag color={status.color}>{status.text}</Tag>;
+      },
+      // Sorter based on the text of the status for more intuitive sorting
+      sorter: (a, b) => getCourseStatus(a).text.localeCompare(getCourseStatus(b).text),
+    },
+    {
+      title: '是否启用',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      align: 'center',
+      render: (isActive) => (
+        <Tag color={isActive ? 'green' : 'red'}>{isActive ? '是' : '否'}</Tag>
+      ),
+      sorter: (a, b) => a.isActive - b.isActive, // Boolean to number for sorting
+    },
+    {
+      title: '评价开始时间',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (date) => formatDateTime(date),
+      sorter: (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+    },
+    {
+      title: '评价结束时间',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      render: (date) => formatDateTime(date),
+      sorter: (a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime(),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      align: 'center',
+      render: (text, record) => (
+        <Space size="small">
+          <Tooltip title="管理课程">
+            <Button
+              type="primary"
+              icon={<SettingOutlined />}
+              onClick={() => handleManageCourse(record.id)}
+              size="small"
+            >
+              管理
+            </Button>
+          </Tooltip>
+          <Tooltip title="查看课程评价">
+            <Button
+              icon={<EyeOutlined />}
+              onClick={() => handleViewEvaluations(record.id)}
+              size="small"
+            >
+              评价
+            </Button>
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -391,8 +477,9 @@ export default function ViewCoursesPage() {
               )}
               
               {loadingCourses ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-                  <Spin tip="正在加载课程数据..." />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0' }}>
+                  <Spin />
+                  <span style={{ marginLeft: '8px' }}>正在加载课程数据...</span>
                 </div>
               ) : filteredCourses.length === 0 ? (
                 <Empty
@@ -412,56 +499,20 @@ export default function ViewCoursesPage() {
                   </Button>
                 </Empty>
               ) : (
-                <Row gutter={[16, 16]}>
-                  {filteredCourses.map(course => {
-                    const courseStatus = getCourseStatus(course);
-                    
-                    return (
-                      <Col xs={24} sm={12} md={8} key={course.id}>
-                        <Card
-                          title={
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Tooltip title={course.name}>
-                                <span style={{ 
-                                  maxWidth: '200px', 
-                                  overflow: 'hidden', 
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block'
-                                }}>
-                                  {course.name}
-                                </span>
-                              </Tooltip>
-                              <Tag color={courseStatus.color}>{courseStatus.text}</Tag>
-                            </div>
-                          }
-                          hoverable
-                        >
-                          <p><strong>课程ID:</strong> {course.id}</p>
-                          <p><strong>评价开始:</strong> {formatDateTime(course.startTime)}</p>
-                          <p><strong>评价结束:</strong> {formatDateTime(course.endTime)}</p>
-                          <p><strong>状态:</strong> {course.isActive ? '已启用' : '已停用'}</p>
-                          
-                          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <Button
-                              type="primary"
-                              icon={<SettingOutlined />}
-                              onClick={() => handleManageCourse(course.id)}
-                            >
-                              管理
-                            </Button>
-                            <Button
-                              icon={<EyeOutlined />}
-                              onClick={() => handleViewEvaluations(course.id)}
-                            >
-                              查看评价
-                            </Button>
-                          </div>
-                        </Card>
-                      </Col>
-                    );
-                  })}
-                </Row>
+                <Table
+                  columns={courseTableColumns}
+                  dataSource={filteredCourses.map(course => ({ ...course, key: course.id }))}
+                  rowKey="id"
+                  loading={loadingCourses}
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['5', '10', '20', '50'],
+                    showTotal: (total, range) => `${range[0]}-${range[1]} 共 ${total} 条`,
+                  }}
+                  className={styles.courseTable} // Add a class for specific table styling if needed
+                  scroll={{ x: 'max-content' }} // For responsiveness
+                />
               )}
             </Content>
           </Layout>

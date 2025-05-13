@@ -696,15 +696,15 @@ export default function StudentViewCoursesPage() {
               >
                 <div style={{ marginBottom: '16px' }}>
                   <Space wrap size="middle" style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                    <Search
-                      placeholder="搜索课程名称或教师姓名"
-                      allowClear
-                      enterButton="搜索"
-                      size="middle"
-                      onSearch={handleSearchChange}
+                  <Search
+                    placeholder="搜索课程名称或教师姓名"
+                    allowClear
+                    enterButton="搜索"
+                    size="middle"
+                    onSearch={handleSearchChange}
                       style={{ flexGrow: 1, minWidth: '250px' }}
-                      disabled={loadingCourses}
-                    />
+                    disabled={loadingCourses}
+                  />
                     <Select
                       placeholder="筛选状态"
                       style={{ width: 140 }}

@@ -281,4 +281,22 @@
   .searchBox, .filterBox {
     width: 100%;
   }
+}
+
+/* Styles for the new course table */
+.courseTable {
+  margin-bottom: 16px; /* Ensure some space below the table */
+}
+
+.courseTable .ant-tag {
+  margin-right: 0; /* Consistent tag styling */
+}
+
+.footer {
+  background-color: #f0f2f5;
+  padding: 16px;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+  /* border-top: 1px solid #e8e8e8; */ /* Optional top border */
 } 
