@@ -9,10 +9,9 @@
  * - 显示课程评价状态和统计数据
  * 
  * 主要组件:
- * - CourseCard: 显示课程基本信息的卡片组件
+ * - Table: 显示课程基本信息的表格组件
  * - FilterPanel: 提供课程筛选和排序功能
  * - SearchBar: 课程搜索功能
- * - Pagination: 分页控制组件
  * - CourseDetailModal: 课程详情模态框
  * 
  * 数据流:
@@ -31,7 +30,7 @@
  * - 加载状态管理和用户反馈
  * 
  * @author ChainRate Team
- * @version 1.0
+ * @version 1.1
  */
 
 'use client';
@@ -55,10 +54,16 @@ import {
   CalendarOutlined,
   TeamOutlined,
   StarOutlined,
+  StarFilled,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   CheckCircleOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  FilterOutlined,
+  SortAscendingOutlined,
+  InfoCircleOutlined,
+  EyeOutlined,
+  UserAddOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -79,7 +84,15 @@ import {
   Tooltip,
   Badge,
   Divider,
-  Select
+  Select,
+  Table,
+  Typography,
+  Avatar,
+  Rate,
+  Progress,
+  Popover,
+  Statistic,
+  Modal
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import StudentSidebar from '../components/StudentSidebar';
@@ -88,6 +101,7 @@ const { Header, Content, Sider } = Layout;
 const { Meta } = Card;
 const { Search } = Input;
 const { Option } = Select;
+const { Title, Text, Paragraph } = Typography;
 
 export default function StudentViewCoursesPage() {
   const router = useRouter();
@@ -123,6 +137,24 @@ export default function StudentViewCoursesPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterValue, setFilterValue] = useState('');
+  
+  // 表格相关状态
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    pageSizeOptions: ['10', '20', '50'],
+    showTotal: (total) => `共 ${total} 门课程`
+  });
+  
+  const [sortedInfo, setSortedInfo] = useState({});
+  const [tableLoading, setTableLoading] = useState(false);
+  
+  // 详情模态框
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   
   // Web3相关
   const [provider, setProvider] = useState(null);
@@ -457,6 +489,124 @@ export default function StudentViewCoursesPage() {
     router.push('/login');
   };
 
+  // 表格列定义
+  const columns = [
+    {
+      title: '课程名称',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      sortOrder: sortedInfo.columnKey === 'name' && sortedInfo.order,
+      render: (text, record) => (
+        <a onClick={() => handleViewCourseDetail(record.id)} style={{ color: colorPrimary }}>
+          {text}
+        </a>
+      ),
+    },
+    {
+      title: '教师',
+      dataIndex: 'teacherName',
+      key: 'teacherName',
+      sorter: (a, b) => a.teacherName.localeCompare(b.teacherName),
+      sortOrder: sortedInfo.columnKey === 'teacherName' && sortedInfo.order,
+    },
+    {
+      title: '课程状态',
+      key: 'status',
+      dataIndex: 'status',
+      render: (text, record) => {
+        const statusInfo = getCourseStatus(record);
+        return <Tag color={statusInfo.color}>{statusInfo.status}</Tag>;
+      },
+      filters: [
+        { text: '即将开始', value: '即将开始' },
+        { text: '评价中', value: '评价中' },
+        { text: '已结束', value: '已结束' },
+      ],
+      onFilter: (value, record) => getCourseStatus(record).status === value,
+    },
+    {
+      title: '开始时间',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (text) => formatDateTime(new Date(text)),
+      sorter: (a, b) => new Date(a.startTime) - new Date(b.startTime),
+      sortOrder: sortedInfo.columnKey === 'startTime' && sortedInfo.order,
+    },
+    {
+      title: '结束时间',
+      dataIndex: 'endTime',
+      key: 'endTime',
+      render: (text) => formatDateTime(new Date(text)),
+      sorter: (a, b) => new Date(a.endTime) - new Date(b.endTime),
+      sortOrder: sortedInfo.columnKey === 'endTime' && sortedInfo.order,
+    },
+    {
+      title: '学生人数',
+      dataIndex: 'studentCount',
+      key: 'studentCount',
+      sorter: (a, b) => a.studentCount - b.studentCount,
+      sortOrder: sortedInfo.columnKey === 'studentCount' && sortedInfo.order,
+      align: 'center',
+    },
+    {
+      title: '平均评分',
+      dataIndex: 'averageRating',
+      key: 'averageRating',
+      render: (rating) => <Rate disabled defaultValue={rating} allowHalf count={5} style={{ fontSize: 16 }} />,
+      sorter: (a, b) => a.averageRating - b.averageRating,
+      sortOrder: sortedInfo.columnKey === 'averageRating' && sortedInfo.order,
+      align: 'center',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      align: 'center',
+      render: (text, record) => (
+        <Space size="middle">
+          <Tooltip title="查看课程详情">
+            <Button 
+              icon={<EyeOutlined />} 
+              onClick={() => handleViewCourseDetail(record.id)}
+              type="primary"
+              ghost
+            />
+          </Tooltip>
+          {record.isJoined ? (
+            <Button 
+              icon={<CheckCircleOutlined />} 
+              disabled 
+              style={{ color: '#52c41a', borderColor: '#b7eb8f' }}
+            >
+              已加入
+            </Button>
+          ) : (
+            <Button 
+              icon={<UserAddOutlined />} 
+              loading={joinCoursePending[record.id]} 
+              onClick={() => handleJoinCourse(record.id)}
+              disabled={new Date() > record.endTime || getCourseStatus(record).status === '已结束'}
+              type="primary"
+            >
+              {getCourseStatus(record).status === '已结束' ? '已结束' : '加入课程'}
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  // 处理表格变化事件（分页、排序、筛选）
+  const handleTableChange = (pagination, filters, sorter) => {
+    setPagination(prev => ({
+      ...prev,
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+    }));
+    setSortedInfo(sorter);
+    // 注意: Antd Table 的筛选器是内建的，如果需要结合外部筛选，则在此处处理filters
+  };
+
   if (loading) {
     return <div className={styles.container}>正在加载...</div>;
   }
@@ -545,24 +695,22 @@ export default function StudentViewCoursesPage() {
                 style={{ marginBottom: '20px' }}
               >
                 <div style={{ marginBottom: '16px' }}>
-                  <Search
-                    placeholder="搜索课程名称或教师姓名"
-                    allowClear
-                    enterButton="搜索"
-                    size="middle"
-                    onSearch={handleSearchChange}
-                    style={{ width: '100%', maxWidth: '500px' }}
-                    disabled={loadingCourses}
-                  />
-                </div>
-                
-                <div style={{ marginBottom: '16px' }}>
-                  <Space>
+                  <Space wrap size="middle" style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                    <Search
+                      placeholder="搜索课程名称或教师姓名"
+                      allowClear
+                      enterButton="搜索"
+                      size="middle"
+                      onSearch={handleSearchChange}
+                      style={{ flexGrow: 1, minWidth: '250px' }}
+                      disabled={loadingCourses}
+                    />
                     <Select
                       placeholder="筛选状态"
-                      style={{ width: 120 }}
+                      style={{ width: 140 }}
                       onChange={(value) => handleFilterChange('status', value)}
                       disabled={loadingCourses}
+                      allowClear
                     >
                       <Option value="all">全部课程</Option>
                       <Option value="joined">已加入</Option>
@@ -571,9 +719,10 @@ export default function StudentViewCoursesPage() {
                     
                     <Select
                       placeholder="筛选时间"
-                      style={{ width: 120 }}
+                      style={{ width: 140 }}
                       onChange={(value) => handleFilterChange('time', value)}
                       disabled={loadingCourses}
+                      allowClear
                     >
                       <Option value="all">全部时间</Option>
                       <Option value="active">进行中</Option>
@@ -609,103 +758,19 @@ export default function StudentViewCoursesPage() {
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 ) : (
-                  <Row gutter={[16, 16]}>
-                    {filteredCourses.map(course => {
-                      const courseStatus = getCourseStatus(course);
-                      
-                      return (
-                        <Col xs={24} sm={12} md={8} lg={6} key={course.id}>
-                          <Card
-                            hoverable
-                            className={styles.modernCard}
-                            cover={
-                              <div 
-                                className={styles.cardStatusBar}
-                                style={{ 
-                                background: courseStatus.color === 'default' ? '#d9d9d9' : 
-                                            courseStatus.color === 'blue' ? '#1a73e8' : '#52c41a'
-                                }} 
-                              />
-                            }
-                            bodyStyle={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column' }}
-                          >
-                            <div className={styles.modernCardContent}>
-                              <div className={styles.cardHeader}>
-                                <div className={styles.cardTitle}>{course.name}</div>
-                                <Tag 
-                                  color={courseStatus.color} 
-                                  className={styles.cardStatus}
-                                >
-                                  {courseStatus.status}
-                                </Tag>
-                              </div>
-                              
-                              <div className={styles.cardInfoItem}>
-                                <UserOutlined className={styles.infoIcon} />
-                                <span className={styles.infoText}>{course.teacherName}</span>
-                              </div>
-                              
-                              <div className={styles.cardInfoItem}>
-                                <CalendarOutlined className={styles.infoIcon} />
-                                <div className={styles.infoText}>
-                                  <div>{formatDateTime(course.startTime)}</div>
-                                  <div>至</div>
-                                  <div>{formatDateTime(course.endTime)}</div>
-                                </div>
-                              </div>
-                              
-                              <div className={styles.cardInfoItem}>
-                                <TeamOutlined className={styles.infoIcon} />
-                                <span className={styles.infoText}>
-                                  学生数: <span className={styles.studentCountNumber}>{course.studentCount}</span>
-                                </span>
-                              </div>
-                              
-                              <div className={styles.cardInfoItem}>
-                                <StarOutlined className={styles.infoIcon} />
-                                <span className={styles.infoText}>
-                                  评分: <span className={styles.ratingScore}>{course.averageRating.toFixed(1)}</span>
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className={styles.cardFooter}>
-                              <Button 
-                                key="view" 
-                                icon={<BookOutlined />}
-                                onClick={() => handleViewCourseDetail(course.id)}
-                                className={`${styles.actionButton} ${styles.viewButton}`}
-                              >
-                                查看详情
-                              </Button>
-                              
-                              {course.isJoined ? (
-                                <Button 
-                                  key="joined" 
-                                  icon={<CheckCircleOutlined />}
-                                  disabled
-                                  className={`${styles.actionButton} ${styles.joinedButton}`}
-                                >
-                                  已加入
-                                </Button>
-                              ) : (
-                                <Button 
-                                  key="join" 
-                                  loading={joinCoursePending[course.id]} 
-                                  onClick={() => handleJoinCourse(course.id)}
-                                  icon={<TeamOutlined />}
-                                  className={`${styles.actionButton} ${styles.joinButton}`}
-                                  disabled={new Date() > course.endTime}
-                                >
-                                  {new Date() > course.endTime ? '已结束' : '加入课程'}
-                                </Button>
-                              )}
-                            </div>
-                          </Card>
-                        </Col>
-                      );
-                    })}
-                  </Row>
+                  <Table
+                    columns={columns}
+                    dataSource={filteredCourses.map(course => ({ ...course, key: course.id }))}
+                    rowKey="id" // 使用课程ID作为key
+                    pagination={{
+                      ...pagination,
+                      total: filteredCourses.length, // 确保total是当前筛选后的课程总数
+                    }}
+                    loading={loadingCourses} // 使用 loadingCourses 作为表格的加载状态
+                    onChange={handleTableChange}
+                    className={styles.courseTable} // 可以添加自定义样式类
+                    scroll={{ x: 'max-content' }} // 保证表格在小屏幕上可以横向滚动
+                  />
                 )}
               </Card>
             </Content>
