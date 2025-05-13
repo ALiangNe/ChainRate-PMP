@@ -11,15 +11,15 @@
 
 /* 页面标题栏 */
 .pageHeader {
-  background: white;
-  padding: 16px 24px;
+  /* background: white; */ /* Removed to allow dark header */
+  padding: 16px 24px; /* This padding is likely overridden by inline styles now, but kept for reference */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  /* box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); */ /* Removed as dark header typically doesn't have this shadow */
+  /* position: sticky; */ /* Removing sticky to match antd default header behavior */
+  /* top: 0; */
+  /* z-index: 10; */
 }
 
 /* 工具栏样式 */
@@ -49,9 +49,25 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 反馈列表容器 */
+/* 反馈列表容器 (现在是表格容器) */
 .feedbacksContainer {
   margin-top: 24px;
+}
+
+/* 新的反馈表格样式 */
+.feedbackTable {
+  /* 如果需要，可以在此为表格添加特定样式 */
+  /* 例如：表格头部的背景色、字体大小等 */
+}
+
+.feedbackTable .ant-tag {
+  /* 统一调整表格内Tag的样式，如果需要 */
+  margin-right: 0; /* 有些Tag在列定义中已经设置了，这里确保统一 */
+}
+
+.feedbackTable .ant-btn-sm {
+  /* 统一调整表格内小按钮的间距或样式 */
+  /* padding: 0 8px; */
 }
 
 /* 反馈详情模态框样式 */

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
@@ -31,7 +32,8 @@ import {
   List,
   Divider,
   Timeline,
-  Alert
+  Alert,
+  Table
 } from 'antd';
 import { 
   HomeFilled, 
@@ -60,7 +62,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
 import axios from 'axios';
 
-const { Header, Content } = Layout;
+const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -767,6 +769,141 @@ export default function StudentViewFeedbackPage() {
   
   const filteredFeedbacks = getFilteredAndSortedFeedbacks();
   
+  // 表格列定义
+  const feedbackTableColumns = [
+    {
+      title: '课程名称',
+      key: 'courseName',
+      sorter: (a, b) => {
+        const courseNameA = getCourseInfo(a.courseId).name || '';
+        const courseNameB = getCourseInfo(b.courseId).name || '';
+        return courseNameA.localeCompare(courseNameB);
+      },
+      render: (text, record) => {
+        const courseInfo = getCourseInfo(record.courseId);
+        return (
+          <Tooltip title={`课程ID: ${record.courseId}`}>
+            <Text strong>{courseInfo.name || '未知课程'}</Text>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: '教师',
+      key: 'teacherName',
+      sorter: (a, b) => {
+        const teacherNameA = getTeacherInfo(getCourseInfo(a.courseId).teacher).name || '';
+        const teacherNameB = getTeacherInfo(getCourseInfo(b.courseId).teacher).name || '';
+        return teacherNameA.localeCompare(teacherNameB);
+      },
+      render: (text, record) => {
+        const courseInfo = getCourseInfo(record.courseId);
+        const teacherInfo = getTeacherInfo(courseInfo.teacher);
+        return teacherInfo.name || '未知教师';
+      },
+    },
+    {
+      title: '反馈摘要',
+      dataIndex: 'content',
+      key: 'content',
+      ellipsis: true, // 自动省略超长文本
+      render: (text) => (
+        <Tooltip title={text}>
+          <Paragraph style={{ marginBottom: 0 }} ellipsis={{ rows: 2 }}>{text || '无内容'}</Paragraph>
+        </Tooltip>
+      ),
+    },
+    {
+      title: '提交时间',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      sorter: (a, b) => a.timestamp - b.timestamp,
+      render: (timestamp) => dayjs(timestamp * 1000).format('YYYY-MM-DD HH:mm'),
+      width: 160,
+      align: 'center',
+    },
+    {
+      title: '状态',
+      key: 'status',
+      align: 'center',
+      sorter: (a, b) => a.status - b.status,
+      render: (text, record) => {
+        const statusInfo = FEEDBACK_STATUS[record.status] || { text: '未知', color: 'default', icon: null };
+        return (
+          <Tag color={statusInfo.color} icon={statusInfo.icon} style={{ marginRight: 0 }}>
+            {statusInfo.text}
+          </Tag>
+        );
+      },
+      filters: Object.keys(FEEDBACK_STATUS).map(key => ({
+        text: FEEDBACK_STATUS[key].text,
+        value: key,
+      })).concat([
+        { text: '已回复', value: 'replied' }, 
+        { text: '未回复', value: 'unreplied' }
+      ]),
+      // 注意：这里的 onFilter 需要根据 getFilteredAndSortedFeedbacks 的逻辑来适配
+      // 简单起见，暂时不直接在列上实现精确筛选，依赖顶部的筛选器
+      // onFilter: (value, record) => record.status.toString() === value, 
+    },
+    {
+      title: '教师回复',
+      key: 'replyStatus',
+      align: 'center',
+      render: (text, record) => (
+        record.hasReply ? 
+        <Tag color="green" icon={<CheckCircleOutlined />}>已回复</Tag> :
+        <Tag color="orange" icon={<ClockCircleOutlined />}>等待回复</Tag>
+      ),
+      filters: [
+        { text: '已回复', value: true },
+        { text: '等待回复', value: false },
+      ],
+      onFilter: (value, record) => record.hasReply === value,
+    },
+    {
+      title: '附件',
+      key: 'attachments',
+      align: 'center',
+      render: (text, record) => (
+        <Space size="small">
+          {record.imageUrls && record.imageUrls.length > 0 && 
+            <Tooltip title={`图片: ${record.imageUrls.length}个`}><PictureOutlined style={{color: "#1890ff"}}/></Tooltip>}
+          {record.documentUrls && record.documentUrls.length > 0 && 
+            <Tooltip title={`文档: ${record.documentUrls.length}个`}><FileOutlined style={{color: "#1890ff"}}/></Tooltip>}
+          {(!record.imageUrls || record.imageUrls.length === 0) && 
+           (!record.documentUrls || record.documentUrls.length === 0) &&
+            <Text type="secondary">无</Text>}
+        </Space>
+      )
+    },
+    {
+      title: '操作',
+      key: 'action',
+      align: 'center',
+      width: 150,
+      render: (text, record) => (
+        <Space>
+          <Tooltip title="查看详情">
+            <Button 
+              size="small"
+              icon={<EyeOutlined />} 
+              onClick={() => handleViewFeedback(record)} 
+            />
+          </Tooltip>
+          <Tooltip title="编辑反馈">
+            <Button 
+              size="small"
+              icon={<EditOutlined />} 
+              onClick={() => handleEditFeedback(record)} 
+              disabled={record.status === 3 || record.hasReply} // 已删除或已回复的不可编辑
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
   // 创建新反馈
   const handleCreateFeedback = () => {
     router.push('/studentSubmitFeedback');
@@ -776,475 +913,428 @@ export default function StudentViewFeedbackPage() {
   return (
     <ConfigProvider>
       <Layout style={{ minHeight: '100vh' }}>
-        <StudentSidebar selectedKey="8" />
-        
-        <Layout>
-          <Header className={styles.pageHeader}>
-            <div>
-              <Breadcrumb
-                items={[
-                  { title: '首页', href: '/student' },
-                  { title: '我的反馈' }
-                ]}
-              />
+        <Header style={{ 
+          background: '#001529', 
+          padding: '0 24px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          color: 'white' 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Image 
+              src="/images/logo1.png" 
+              alt="链评系统Logo" 
+              width={40}
+              height={40}
+              style={{ borderRadius: '6px', marginRight: '12px' }}
+            />
+            <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+              链评系统（ChainRate）- 学生端
             </div>
-            <UserAvatar userData={userData} />
-          </Header>
-          
-          <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
-            {loading ? (
-              <div className={styles.loadingContainer}>
-                <Spin size="large" />
-                <div>加载中...</div>
-              </div>
-            ) : (
-              <>
-                {/* 数据统计卡片 */}
-                <Row gutter={16} style={{ marginBottom: 24 }}>
-                  <Col span={6}>
-                    <Card className={styles.statCard}>
-                      <Statistic 
-                        title="总反馈数" 
-                        value={statistics.total} 
-                        prefix={<CommentOutlined />} 
-                        valueStyle={{ color: '#1890ff' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card className={styles.statCard}>
-                      <Statistic 
-                        title="已回复" 
-                        value={statistics.replied} 
-                        prefix={<CheckCircleOutlined />} 
-                        valueStyle={{ color: '#52c41a' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card className={styles.statCard}>
-                      <Statistic 
-                        title="未回复" 
-                        value={statistics.unreplied} 
-                        prefix={<ClockCircleOutlined />} 
-                        valueStyle={{ color: '#faad14' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card className={styles.statCard}>
-                      <Statistic 
-                        title="已删除" 
-                        value={statistics.deleted} 
-                        prefix={<DeleteOutlined />} 
-                        valueStyle={{ color: '#ff4d4f' }}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-                
-                {/* 筛选和搜索栏 */}
-                <div className={styles.toolBar}>
-                  <div className={styles.filterGroup}>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', color: 'white' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <UserAvatar userData={userData} /> {/* Assuming UserAvatar handles white text or has a prop */}
+          </div>
+        </Header>
+        
+        <Layout> {/* Layout for Sider and Content Area */}
+          <Sider width={200} theme="light" style={{ background: '#fff' }}> {/* Explicitly light Sider */}
+            <StudentSidebar selectedKey="8" />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}> {/* Layout for Breadcrumb and Content */}
+            <Breadcrumb
+              style={{ margin: '16px 0' }}
+              items={[
+                { title: <a href="/studentIndex"><HomeFilled style={{ marginRight: '4px' }} />首页</a> },
+                { title: '我的反馈' }
+              ]}
+            />
+            <Content style={{ margin: '0', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
+              {loading ? (
+                <div className={styles.loadingContainer}>
+                  <Spin size="large" />
+                  <div>加载中...</div>
+                </div>
+              ) : (
+                <>
+                  {/* 数据统计卡片 */}
+                  <Row gutter={16} style={{ marginBottom: 24 }}>
+                    <Col span={6}>
+                      <Card className={styles.statCard}>
+                        <Statistic 
+                          title="总反馈数" 
+                          value={statistics.total} 
+                          prefix={<CommentOutlined />} 
+                          valueStyle={{ color: '#1890ff' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={6}>
+                      <Card className={styles.statCard}>
+                        <Statistic 
+                          title="已回复" 
+                          value={statistics.replied} 
+                          prefix={<CheckCircleOutlined />} 
+                          valueStyle={{ color: '#52c41a' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={6}>
+                      <Card className={styles.statCard}>
+                        <Statistic 
+                          title="未回复" 
+                          value={statistics.unreplied} 
+                          prefix={<ClockCircleOutlined />} 
+                          valueStyle={{ color: '#faad14' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={6}>
+                      <Card className={styles.statCard}>
+                        <Statistic 
+                          title="已删除" 
+                          value={statistics.deleted} 
+                          prefix={<DeleteOutlined />} 
+                          valueStyle={{ color: '#ff4d4f' }}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                  
+                  {/* 筛选和搜索栏 */}
+                  <div className={styles.toolBar}>
+                    <div className={styles.filterGroup}>
+                      <Space>
+                        <Select 
+                          defaultValue="all" 
+                          style={{ width: 120 }} 
+                          onChange={handleStatusFilter}
+                          placeholder="状态筛选"
+                          suffixIcon={<FilterOutlined />}
+                        >
+                          <Option value="all">所有状态</Option>
+                          <Option value="unreplied">未回复</Option>
+                          <Option value="replied">已回复</Option>
+                          <Option value="2">已修改</Option>
+                          <Option value="3">已删除</Option>
+                        </Select>
+                        
+                        <Select 
+                          defaultValue="newest" 
+                          style={{ width: 120 }} 
+                          onChange={handleSort}
+                          placeholder="排序方式"
+                          suffixIcon={<SortAscendingOutlined />}
+                        >
+                          <Option value="newest">最新优先</Option>
+                          <Option value="oldest">最早优先</Option>
+                          <Option value="statusAsc">状态升序</Option>
+                          <Option value="statusDesc">状态降序</Option>
+                        </Select>
+                      </Space>
+                    </div>
+                    
                     <Space>
-                      <Select 
-                        defaultValue="all" 
-                        style={{ width: 120 }} 
-                        onChange={handleStatusFilter}
-                        placeholder="状态筛选"
-                        suffixIcon={<FilterOutlined />}
+                      <Button 
+                        type="primary" 
+                        onClick={handleCreateFeedback}
                       >
-                        <Option value="all">所有状态</Option>
-                        <Option value="unreplied">未回复</Option>
-                        <Option value="replied">已回复</Option>
-                        <Option value="2">已修改</Option>
-                        <Option value="3">已删除</Option>
-                      </Select>
+                        新建反馈
+                      </Button>
                       
-                      <Select 
-                        defaultValue="newest" 
-                        style={{ width: 120 }} 
-                        onChange={handleSort}
-                        placeholder="排序方式"
-                        suffixIcon={<SortAscendingOutlined />}
-                      >
-                        <Option value="newest">最新优先</Option>
-                        <Option value="oldest">最早优先</Option>
-                        <Option value="statusAsc">状态升序</Option>
-                        <Option value="statusDesc">状态降序</Option>
-                      </Select>
+                      <Search
+                        placeholder="搜索反馈内容、课程名称..."
+                        allowClear
+                        enterButton
+                        onSearch={handleSearch}
+                        style={{ width: 300 }}
+                      />
                     </Space>
                   </div>
                   
-                  <Space>
-                    <Button 
-                      type="primary" 
-                      onClick={handleCreateFeedback}
-                    >
-                      新建反馈
-                    </Button>
-                    
-                    <Search
-                      placeholder="搜索反馈内容、课程名称..."
-                      allowClear
-                      enterButton
-                      onSearch={handleSearch}
-                      style={{ width: 300 }}
-                    />
-                  </Space>
-                </div>
-                
-                {/* 反馈列表 */}
-                <div className={styles.feedbacksContainer}>
-                  {filteredFeedbacks.length === 0 ? (
-                    <Empty 
-                      description={
-                        <span>
-                          {searchText || filterStatus !== 'all' 
-                            ? '没有符合条件的反馈' 
-                            : '你还没有提交过任何课程反馈'}
-                        </span>
-                      }
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    >
-                      {!(searchText || filterStatus !== 'all') && (
-                        <Button 
-                          type="primary" 
-                          onClick={handleCreateFeedback}
-                        >
-                          去提交反馈
-                        </Button>
-                      )}
-                    </Empty>
-                  ) : (
-                    <List
-                      itemLayout="vertical"
-                      dataSource={filteredFeedbacks}
-                      renderItem={feedback => {
-                        const courseInfo = getCourseInfo(feedback.courseId);
-                        const statusInfo = FEEDBACK_STATUS[feedback.status];
-                        
-                        return (
-                          <List.Item
-                            key={feedback.id}
-                            actions={[
-                              <Button 
-                                key="view" 
-                                type="link" 
-                                icon={<EyeOutlined />}
-                                onClick={() => handleViewFeedback(feedback)}
-                              >
-                                查看详情
-                              </Button>,
-                              <Button 
-                                key="edit" 
-                                type="link" 
-                                icon={<EditOutlined />}
-                                onClick={() => handleEditFeedback(feedback)}
-                                disabled={feedback.status === 3 || feedback.hasReply}
-                              >
-                                编辑反馈
-                              </Button>
-                            ]}
-                            extra={
-                              <Space>
-                                {feedback.hasReply && (
-                                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                                    已回复
-                                  </Tag>
-                                )}
-                                <Tag color={statusInfo.color} icon={statusInfo.icon}>
-                                  {statusInfo.text}
-                                </Tag>
-                              </Space>
-                            }
-                          >
-                            <List.Item.Meta
-                              title={
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <Text strong>{courseInfo.name}</Text>
-                                  <Text type="secondary">
-                                    {feedback.hasReply ? '教师已回复' : '等待回复'}
-                                  </Text>
-                                </div>
-                              }
-                              description={
-                                <div>
-                                  <Text type="secondary">
-                                    <CalendarOutlined /> 提交时间: {dayjs(feedback.timestamp * 1000).format('YYYY-MM-DD HH:mm')}
-                                  </Text>
-                                  <br />
-                                  <Text type="secondary">
-                                    <UserOutlined /> 教师: {getTeacherInfo(courseInfo.teacher).name}
-                                  </Text>
-                                </div>
-                              }
-                            />
-                            <Paragraph ellipsis={{ rows: 2 }} style={{ marginTop: 16 }}>
-                              {feedback.content}
-                            </Paragraph>
-                            <div>
-                              {feedback.imageUrls.length > 0 && (
-                                <Text type="secondary">
-                                  <PictureOutlined /> 图片附件: {feedback.imageUrls.length} 个
-                                </Text>
-                              )}
-                              {feedback.imageUrls.length > 0 && feedback.documentHashes.length > 0 && (
-                                <Divider type="vertical" />
-                              )}
-                              {feedback.documentHashes.length > 0 && (
-                                <Text type="secondary">
-                                  <FileOutlined /> 文档附件: {feedback.documentHashes.length} 个
-                                </Text>
-                              )}
-                            </div>
-                          </List.Item>
-                        );
-                      }}
-                    />
-                  )}
-                </div>
-                
-                {/* 反馈详情模态框 */}
-                {selectedFeedback && (
-                  <Modal
-                    title={
-                      <div className={styles.modalTitle}>
-                        <span>反馈详情</span>
-                        <Tag color={FEEDBACK_STATUS[selectedFeedback.status].color} icon={FEEDBACK_STATUS[selectedFeedback.status].icon}>
-                          {FEEDBACK_STATUS[selectedFeedback.status].text}
-                        </Tag>
-                      </div>
-                    }
-                    open={detailModalVisible}
-                    onCancel={handleCloseDetail}
-                    footer={[
-                      <Button key="close" onClick={handleCloseDetail}>关闭</Button>,
-                      <Button
-                        key="edit"
-                        type="primary"
-                        onClick={() => handleEditFeedback(selectedFeedback)}
-                        disabled={selectedFeedback.status === 3 || selectedFeedback.hasReply}
+                  {/* 反馈列表 */}
+                  <div className={styles.feedbacksContainer}>
+                    {filteredFeedbacks.length === 0 ? (
+                      <Empty 
+                        description={
+                          <span>
+                            {searchText || filterStatus !== 'all' 
+                              ? '没有符合条件的反馈' 
+                              : '你还没有提交过任何课程反馈'}
+                          </span>
+                        }
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
                       >
-                        编辑反馈
-                      </Button>
-                    ]}
-                    width={800}
-                  >
-                    <div className={styles.feedbackDetail}>
-                      <div className={styles.courseInfo}>
-                        <Title level={4}>{getCourseInfo(selectedFeedback.courseId).name}</Title>
-                        <div className={styles.teacherInfo}>
-                          <UserOutlined /> 授课教师: {getTeacherInfo(getCourseInfo(selectedFeedback.courseId).teacher).name}
+                        {!(searchText || filterStatus !== 'all') && (
+                          <Button 
+                            type="primary" 
+                            onClick={handleCreateFeedback}
+                          >
+                            去提交反馈
+                          </Button>
+                        )}
+                      </Empty>
+                    ) : (
+                      <Table
+                        columns={feedbackTableColumns}
+                        dataSource={filteredFeedbacks.map(fb => ({ ...fb, key: fb.id }))}
+                        rowKey="id"
+                        loading={loading} // 使用外层的 loading 状态
+                        pagination={{
+                          pageSize: 10, 
+                          showSizeChanger: true,
+                          pageSizeOptions: ['10', '20', '50'],
+                          showTotal: (total, range) => `${range[0]}-${range[1]} 共 ${total} 条`
+                        }} // 添加分页
+                        className={styles.feedbackTable} // 为表格添加特定样式类
+                        scroll={{ x: 'max-content' }} // 保证表格内容横向可滚动
+                      />
+                    )}
+                  </div>
+                  
+                  {/* 反馈详情模态框 */}
+                  {selectedFeedback && (
+                    <Modal
+                      title={
+                        <div className={styles.modalTitle}>
+                          <span>反馈详情</span>
+                          <Tag color={FEEDBACK_STATUS[selectedFeedback.status].color} icon={FEEDBACK_STATUS[selectedFeedback.status].icon}>
+                            {FEEDBACK_STATUS[selectedFeedback.status].text}
+                          </Tag>
                         </div>
-                      </div>
-                      
-                      <Tabs defaultActiveKey="content">
-                        <TabPane tab="反馈内容" key="content">
-                          <div className={styles.feedbackBody}>
-                            <div className={styles.feedbackTime}>
-                              <CalendarOutlined /> 提交时间: {dayjs(selectedFeedback.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                            </div>
-                            
-                            <div className={styles.feedbackContentDetail}>
-                              {selectedFeedback.content}
-                            </div>
-                            
-                            {/* 显示附件信息 */}
-                            {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
-                              <div className={styles.attachments}>
-                                {selectedFeedback.imageUrls.length > 0 && (
-                                  <div className={styles.attachmentSection}>
-                                    <Title level={5}>
-                                      <PictureOutlined /> 图片附件 ({selectedFeedback.imageUrls.length})
-                                    </Title>
-                                    <Row gutter={[16, 16]}>
-                                      {selectedFeedback.imageUrls.map((url, index) => (
-                                        <Col span={8} key={index}>
-                                          <div className={styles.imagePreview}>
-                                            <img 
-                                              src={url} 
-                                              alt={`图片 ${index + 1}`} 
-                                              className={styles.previewImg}
-                                            />
-                                          </div>
-                                        </Col>
-                                      ))}
-                                    </Row>
-                                  </div>
-                                )}
-                                
-                                {selectedFeedback.documentHashes.length > 0 && (
-                                  <div className={styles.attachmentSection}>
-                                    <Title level={5}>
-                                      <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
-                                    </Title>
-                                    <List
-                                      dataSource={selectedFeedback.documentHashes}
-                                      renderItem={(hash, index) => (
-                                        <List.Item>
-                                          <a 
-                                            href={createIPFSUrl(hash)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={styles.documentLink}
-                                          >
-                                            <FileTextOutlined /> 文档 {index + 1}
-                                          </a>
-                                        </List.Item>
-                                      )}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                      }
+                      open={detailModalVisible}
+                      onCancel={handleCloseDetail}
+                      footer={[
+                        <Button key="close" onClick={handleCloseDetail}>关闭</Button>,
+                        <Button
+                          key="edit"
+                          type="primary"
+                          onClick={() => handleEditFeedback(selectedFeedback)}
+                          disabled={selectedFeedback.status === 3 || selectedFeedback.hasReply}
+                        >
+                          编辑反馈
+                        </Button>
+                      ]}
+                      width={800}
+                    >
+                      <div className={styles.feedbackDetail}>
+                        <div className={styles.courseInfo}>
+                          <Title level={4}>{getCourseInfo(selectedFeedback.courseId).name}</Title>
+                          <div className={styles.teacherInfo}>
+                            <UserOutlined /> 授课教师: {getTeacherInfo(getCourseInfo(selectedFeedback.courseId).teacher).name}
                           </div>
-                        </TabPane>
+                        </div>
                         
-                        <TabPane tab="版本历史" key="versions">
-                          {loadingVersions ? (
-                            <div className={styles.loadingContainer} style={{ height: '200px' }}>
-                              <Spin size="small" />
-                              <div>加载版本历史...</div>
-                            </div>
-                          ) : feedbackVersions.length > 0 ? (
-                            <div className={styles.versionsContainer}>
-                              <Alert
-                                message="版本历史记录"
-                                description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
-                                type="info"
-                                showIcon
-                                style={{ marginBottom: 16 }}
-                              />
-                              <Timeline mode="left">
-                                {feedbackVersions.map((version, index) => (
-                                  <Timeline.Item 
-                                    key={version.id} 
-                                    color={index === 0 ? 'green' : 'blue'} 
-                                    label={dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                                  >
-                                    <Card 
-                                      size="small" 
-                                      title={
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                          <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
-                                          <Tag color={index === 0 ? "green" : "blue"}>
-                                            {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
-                                          </Tag>
-                                        </div>
-                                      }
-                                      className={styles.versionCard}
-                                    >
-                                      <div className={styles.versionContent}>
-                                        {version.content}
-                                      </div>
-                                      
-                                      {/* 增强版本附件显示 */}
-                                      {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
-                                        <div className={styles.versionAttachments}>
-                                          {/* 图片附件展示 */}
-                                          {version.imageUrls.length > 0 && (
-                                            <div style={{ marginTop: 12 }}>
-                                              <Divider orientation="left" plain>
-                                                <Text type="secondary">
-                                                  <PictureOutlined /> 图片附件 ({version.imageUrls.length})
-                                                </Text>
-                                              </Divider>
-                                              <Row gutter={[8, 8]}>
-                                                {version.imageUrls.map((url, imgIndex) => (
-                                                  <Col span={8} key={imgIndex}>
-                                                    <div className={styles.versionImagePreview}>
-                                                      <img 
-                                                        src={url} 
-                                                        alt={`版本 ${feedbackVersions.length - index} 图片 ${imgIndex + 1}`} 
-                                                        className={styles.previewImg}
-                                                        onClick={() => window.open(url, '_blank')}
-                                                      />
-                                                    </div>
-                                                  </Col>
-                                                ))}
-                                              </Row>
-                                            </div>
-                                          )}
-                                          
-                                          {/* 文档附件展示 */}
-                                          {version.documentHashes.length > 0 && (
-                                            <div style={{ marginTop: 12 }}>
-                                              <Divider orientation="left" plain>
-                                                <Text type="secondary">
-                                                  <FileOutlined /> 文档附件 ({version.documentHashes.length})
-                                                </Text>
-                                              </Divider>
-                                              <List
-                                                size="small"
-                                                dataSource={version.documentHashes}
-                                                renderItem={(hash, docIndex) => (
-                                                  <List.Item>
-                                                    <a 
-                                                      href={createIPFSUrl(hash)}
-                                                      target="_blank"
-                                                      rel="noopener noreferrer"
-                                                      className={styles.documentLink}
-                                                    >
-                                                      <FileTextOutlined /> 文档 {docIndex + 1}
-                                                    </a>
-                                                  </List.Item>
-                                                )}
-                                              />
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </Card>
-                                  </Timeline.Item>
-                                ))}
-                              </Timeline>
-                            </div>
-                          ) : (
-                            <Empty description="没有找到版本历史记录" />
-                          )}
-                        </TabPane>
-                        
-                        <TabPane tab="教师回复" key="reply" disabled={!selectedFeedback.hasReply}>
-                          {selectedFeedback.hasReply && selectedFeedback.reply && (
-                            <div className={styles.replyContainer}>
-                              <div className={styles.replyHeader}>
-                                <div className={styles.replyTeacher}>
-                                  <Avatar icon={<UserOutlined />} />
-                                  <span>{getTeacherInfo(selectedFeedback.reply.teacher).name}</span>
-                                </div>
-                                <div className={styles.replyTime}>
-                                  <CalendarOutlined /> {dayjs(selectedFeedback.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
-                                </div>
+                        <Tabs defaultActiveKey="content">
+                          <TabPane tab="反馈内容" key="content">
+                            <div className={styles.feedbackBody}>
+                              <div className={styles.feedbackTime}>
+                                <CalendarOutlined /> 提交时间: {dayjs(selectedFeedback.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
                               </div>
                               
-                              <div className={styles.replyContent}>
-                                {selectedFeedback.reply.content}
+                              <div className={styles.feedbackContentDetail}>
+                                {selectedFeedback.content}
                               </div>
+                              
+                              {/* 显示附件信息 */}
+                              {(selectedFeedback.imageUrls.length > 0 || selectedFeedback.documentHashes.length > 0) && (
+                                <div className={styles.attachments}>
+                                  {selectedFeedback.imageUrls.length > 0 && (
+                                    <div className={styles.attachmentSection}>
+                                      <Title level={5}>
+                                        <PictureOutlined /> 图片附件 ({selectedFeedback.imageUrls.length})
+                                      </Title>
+                                      <Row gutter={[16, 16]}>
+                                        {selectedFeedback.imageUrls.map((url, index) => (
+                                          <Col span={8} key={index}>
+                                            <div className={styles.imagePreview}>
+                                              <img 
+                                                src={url} 
+                                                alt={`图片 ${index + 1}`} 
+                                                className={styles.previewImg}
+                                              />
+                                            </div>
+                                          </Col>
+                                        ))}
+                                      </Row>
+                                    </div>
+                                  )}
+                                  
+                                  {selectedFeedback.documentHashes.length > 0 && (
+                                    <div className={styles.attachmentSection}>
+                                      <Title level={5}>
+                                        <FileOutlined /> 文档附件 ({selectedFeedback.documentHashes.length})
+                                      </Title>
+                                      <List
+                                        dataSource={selectedFeedback.documentHashes}
+                                        renderItem={(hash, index) => (
+                                          <List.Item>
+                                            <a 
+                                              href={createIPFSUrl(hash)}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className={styles.documentLink}
+                                            >
+                                              <FileTextOutlined /> 文档 {index + 1}
+                                            </a>
+                                          </List.Item>
+                                        )}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </TabPane>
-                      </Tabs>
-                    </div>
-                  </Modal>
-                )}
-              </>
-            )}
-          </Content>
+                          </TabPane>
+                          
+                          <TabPane tab="版本历史" key="versions">
+                            {loadingVersions ? (
+                              <div className={styles.loadingContainer} style={{ height: '200px' }}>
+                                <Spin size="small" />
+                                <div>加载版本历史...</div>
+                              </div>
+                            ) : feedbackVersions.length > 0 ? (
+                              <div className={styles.versionsContainer}>
+                                <Alert
+                                  message="版本历史记录"
+                                  description="以下是该反馈的所有历史版本，按时间从新到旧排序。每次修改都会生成一个新版本，所有版本都保存在区块链上，确保不可篡改。"
+                                  type="info"
+                                  showIcon
+                                  style={{ marginBottom: 16 }}
+                                />
+                                <Timeline mode="left">
+                                  {feedbackVersions.map((version, index) => (
+                                    <Timeline.Item 
+                                      key={version.id} 
+                                      color={index === 0 ? 'green' : 'blue'} 
+                                      label={dayjs(version.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                    >
+                                      <Card 
+                                        size="small" 
+                                        title={
+                                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{index === 0 ? "当前版本" : `版本 ${feedbackVersions.length - index}`}</span>
+                                            <Tag color={index === 0 ? "green" : "blue"}>
+                                              {index === 0 ? "最新" : `修改于 ${dayjs(version.timestamp * 1000).fromNow()}`}
+                                            </Tag>
+                                          </div>
+                                        }
+                                        className={styles.versionCard}
+                                      >
+                                        <div className={styles.versionContent}>
+                                          {version.content}
+                                        </div>
+                                        
+                                        {/* 增强版本附件显示 */}
+                                        {(version.imageUrls.length > 0 || version.documentHashes.length > 0) && (
+                                          <div className={styles.versionAttachments}>
+                                            {/* 图片附件展示 */}
+                                            {version.imageUrls.length > 0 && (
+                                              <div style={{ marginTop: 12 }}>
+                                                <Divider orientation="left" plain>
+                                                  <Text type="secondary">
+                                                    <PictureOutlined /> 图片附件 ({version.imageUrls.length})
+                                                  </Text>
+                                                </Divider>
+                                                <Row gutter={[8, 8]}>
+                                                  {version.imageUrls.map((url, imgIndex) => (
+                                                    <Col span={8} key={imgIndex}>
+                                                      <div className={styles.versionImagePreview}>
+                                                        <img 
+                                                          src={url} 
+                                                          alt={`版本 ${feedbackVersions.length - index} 图片 ${imgIndex + 1}`} 
+                                                          className={styles.previewImg}
+                                                          onClick={() => window.open(url, '_blank')}
+                                                        />
+                                                      </div>
+                                                    </Col>
+                                                  ))}
+                                                </Row>
+                                              </div>
+                                            )}
+                                            
+                                            {/* 文档附件展示 */}
+                                            {version.documentHashes.length > 0 && (
+                                              <div style={{ marginTop: 12 }}>
+                                                <Divider orientation="left" plain>
+                                                  <Text type="secondary">
+                                                    <FileOutlined /> 文档附件 ({version.documentHashes.length})
+                                                  </Text>
+                                                </Divider>
+                                                <List
+                                                  size="small"
+                                                  dataSource={version.documentHashes}
+                                                  renderItem={(hash, docIndex) => (
+                                                    <List.Item>
+                                                      <a 
+                                                        href={createIPFSUrl(hash)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className={styles.documentLink}
+                                                      >
+                                                        <FileTextOutlined /> 文档 {docIndex + 1}
+                                                      </a>
+                                                    </List.Item>
+                                                  )}
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </Card>
+                                    </Timeline.Item>
+                                  ))}
+                                </Timeline>
+                              </div>
+                            ) : (
+                              <Empty description="没有找到版本历史记录" />
+                            )}
+                          </TabPane>
+                          
+                          <TabPane tab="教师回复" key="reply" disabled={!selectedFeedback.hasReply}>
+                            {selectedFeedback.hasReply && selectedFeedback.reply && (
+                              <div className={styles.replyContainer}>
+                                <div className={styles.replyHeader}>
+                                  <div className={styles.replyTeacher}>
+                                    <Avatar icon={<UserOutlined />} />
+                                    <span>{getTeacherInfo(selectedFeedback.reply.teacher).name}</span>
+                                  </div>
+                                  <div className={styles.replyTime}>
+                                    <CalendarOutlined /> {dayjs(selectedFeedback.reply.timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')}
+                                  </div>
+                                </div>
+                                
+                                <div className={styles.replyContent}>
+                                  {selectedFeedback.reply.content}
+                                </div>
+                              </div>
+                            )}
+                          </TabPane>
+                        </Tabs>
+                      </div>
+                    </Modal>
+                  )}
+                </>
+              )}
+            </Content>
+          </Layout>
         </Layout>
+        
+        {/* 在最后添加EditFeedbackModal组件 */}
+        <EditFeedbackModal
+          visible={editModalVisible}
+          feedback={editingFeedback}
+          onCancel={() => {
+            setEditModalVisible(false);
+            setEditingFeedback(null);
+          }}
+          onSubmit={handleSubmitEdit}
+          loading={submittingEdit}
+        />
       </Layout>
-      
-      {/* 在最后添加EditFeedbackModal组件 */}
-      <EditFeedbackModal
-        visible={editModalVisible}
-        feedback={editingFeedback}
-        onCancel={() => {
-          setEditModalVisible(false);
-          setEditingFeedback(null);
-        }}
-        onSubmit={handleSubmitEdit}
-        loading={submittingEdit}
-      />
     </ConfigProvider>
   );
 } 

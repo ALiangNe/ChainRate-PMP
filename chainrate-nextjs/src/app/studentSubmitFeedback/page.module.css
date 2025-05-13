@@ -6,7 +6,7 @@
   width: 100%;
 }
 
-.pageHeader {
+.contentPageHeader {
   padding: 24px;
   background-color: #fff;
   border-bottom: 1px solid #f0f0f0;
@@ -152,7 +152,7 @@
 
 /* 响应式样式 */
 @media (max-width: 768px) {
-  .pageHeader {
+  .contentPageHeader {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -164,4 +164,13 @@
   .infoItem strong {
     min-width: 60px;
   }
+}
+
+/* Added for clarity, assuming styles for pageHeaderContainer might exist or be added */
+.contentPageHeaderContainer {
+  /* Styles for the container of the header elements in course select mode */
+  /* For example, if it needs specific flex properties or margins */
+  display: flex; /* Assuming it was a flex container */
+  align-items: center; /* Assuming it was a flex container */
+  margin-bottom: 16px; /* Example margin */
 } 

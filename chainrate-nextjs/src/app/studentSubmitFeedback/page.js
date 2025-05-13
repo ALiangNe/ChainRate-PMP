@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
@@ -28,7 +29,8 @@ import {
   Space,
   Tag,
   Table,
-  Empty
+  Empty,
+  Result
 } from 'antd';
 import { 
   UploadOutlined, 
@@ -631,173 +633,114 @@ export default function StudentSubmitFeedbackPage() {
     );
   }
   
-  // 成功提交后的UI
+  // 提交成功后的UI
   if (submitSuccess) {
     return (
       <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
-        <Layout style={{ minHeight: '100vh' }}>
-          <StudentSidebar defaultSelectedKey="7" defaultOpenKey="sub3" />
-          
-          <Layout>
-            <Header style={{ padding: 0, backgroundColor: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
-                <Breadcrumb
-                  items={[
-                    // { title: <HomeFilled />, href: '/studentIndex' },
-                    { title: '首页', href: '/studentIndex' },
-                    { title: '课程列表', href: '/studentViewCourses' },
-                    { title: '提交课程反馈' },
-                  ]}
-                />
-                <UserAvatar
-                  username={userData.name}
-                  avatar={userData.avatar}
-                  onLogout={() => {
-                    localStorage.clear();
-                    router.push('/login');
-                  }}
-                />
-              </div>
-            </Header>
-            
-            <Content style={{ margin: '24px 16px', padding: '24px', background: '#fff', minHeight: 280 }}>
-              <div className={styles.successContainer}>
-                <div className={styles.successIcon}>
-                  <CheckCircleOutlined className={styles.bigSuccessIcon} />
-                </div>
-                <Title level={2}>反馈提交成功！</Title>
-                <Text className={styles.feedbackIdText}>
-                  反馈ID: <Tag color="blue">{feedbackId}</Tag>
-                </Text>
-                <Paragraph className={styles.successMessage}>
-                  您的课程反馈已成功提交到区块链，教师会在看到反馈后尽快回复。
-                </Paragraph>
-                <Space size="middle">
-                  <Button 
-                    type="primary" 
-                    size="large"
-                    icon={<BookOutlined />}
-                    onClick={() => router.push('/studentViewCourses')}
-                  >
-                    返回课程列表
-                  </Button>
-                  <Button 
-                    size="large" 
-                    icon={<CommentOutlined />}
-                    onClick={() => router.push('/studentMyEvaluation')}
-                  >
-                    查看我的评价
-                  </Button>
-                </Space>
-              </div>
-            </Content>
-          </Layout>
+        <Layout style={{ minHeight: '100vh', justifyContent: 'center', alignItems: 'center', background: '#f0f2f5' }}>
+          <Result
+            status="success"
+            title="课程反馈提交成功！"
+            subTitle={`您的反馈 (ID: ${feedbackId}) 已成功提交并记录在区块链上。教师将会尽快查看并处理。`}
+            extra={[
+              <Button type="primary" key="view" onClick={() => router.push(`/studentViewFeedback?id=${feedbackId}`)}>
+                查看我的反馈
+              </Button>,
+              <Button key="again" onClick={() => router.push('/studentSubmitFeedback')}>
+                提交新反馈
+              </Button>,
+              <Button key="home" onClick={() => router.push('/studentIndex')}>
+                返回首页
+              </Button>,
+            ]}
+          />
         </Layout>
-        
-        {/* 错误提示弹窗 */}
-        <Modal
-          open={errorModalVisible}
-          title="提示"
-          centered
-          okText="确定"
-          cancelButtonProps={{ style: { display: 'none' } }}
-          onOk={() => setErrorModalVisible(false)}
-          onCancel={() => setErrorModalVisible(false)}
-        >
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: '24px', color: '#ff4d4f', marginBottom: '16px' }}>
-              <ExclamationCircleOutlined />
-            </div>
-            <p style={{ fontSize: '16px' }}>{errorModalContent}</p>
-          </div>
-        </Modal>
       </ConfigProvider>
     );
   }
   
-  // 课程选择模式的UI
+  // 课程选择模式UI
   if (courseSelectMode) {
     return (
       <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
         <Layout style={{ minHeight: '100vh' }}>
-          <StudentSidebar defaultSelectedKey="7" defaultOpenKey="sub3" />
-          
+          <Header style={{ background: '#001529', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Image src="/images/logo1.png" alt="链评系统Logo" width={40} height={40} style={{ borderRadius: '6px', marginRight: '12px' }}/>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>链评系统（ChainRate）- 学生端</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+              <UserAvatar userData={userData} />
+            </div>
+          </Header>
           <Layout>
-            <Header style={{ padding: 0, backgroundColor: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
-                <Breadcrumb
-                  items={[
-                    // { title: <HomeFilled />, href: '/studentIndex' },
-                    { title: '首页', href: '/studentIndex' },
-                    { title: '评价管理', href: '/studentMyEvaluation' },
-                    { title: '提交课程反馈' },
-                  ]}
-                />
-                <UserAvatar
-                  username={userData.name}
-                  avatar={userData.avatar}
-                  onLogout={() => {
-                    localStorage.clear();
-                    router.push('/login');
-                  }}
-                />
-              </div>
-            </Header>
-            
-            <Content style={{ margin: '24px 16px', padding: '24px', background: '#fff', minHeight: 280 }}>
-              <div className={styles.pageHeader}>
-                <Button 
-                  icon={<ArrowLeftOutlined />} 
-                  className={styles.backButton}
-                  onClick={() => router.push('/studentViewCourses')}
-                >
-                  返回课程列表
-                </Button>
-                <Title level={2} className={styles.pageTitle}>选择要反馈的课程</Title>
-              </div>
-              
-              <Alert
-                message="请选择要提交反馈的课程"
-                description="您需要先选择一个已加入的课程，然后才能提交反馈。课程反馈将发送给该课程的授课教师。"
-                type="info"
-                showIcon
-                className={styles.alertInfo}
+            <Sider width={200} theme="light" style={{ background: '#fff' }}>
+              <StudentSidebar defaultSelectedKey="7" defaultOpenKey="sub3" />
+            </Sider>
+            <Layout style={{ padding: '0 24px 24px' }}>
+              <Breadcrumb style={{ margin: '16px 0' }}
+                items={[
+                  { title: <a href="/studentIndex"><HomeFilled style={{ marginRight: '4px' }} />首页</a> },
+                  { title: '评价管理' },
+                  { title: '选择课程提交反馈' },
+                ]}
               />
-              
-              {studentCourses.length > 0 ? (
-                <Table
-                  columns={courseSelectionColumns}
-                  dataSource={studentCourses.map(course => ({ ...course, key: course.id }))}
-                  rowKey="id"
-                  loading={loading} // 使用外层 loading 状态
-                  pagination={{ pageSize: 10 }} // 简单分页
-                  className={styles.courseSelectionTable}
-                  scroll={{ x: 'max-content' }}
-                />
-              ) : (
-                <div className={styles.emptyCoursesContainer}> 
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={
-                      <Space direction="vertical" align="center" size="large">
-                        <Title level={4} style={{ color: 'rgba(0, 0, 0, 0.45)' }}>您尚未加入任何课程或暂无可反馈的课程</Title>
-                        <Paragraph style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
-                          请先确保您已加入相关课程，并且课程已开始或已结束。
-                        </Paragraph>
-                        <Button 
-                          type="primary" 
-                          icon={<BookOutlined />}
-                          onClick={() => router.push('/studentViewCourses')}
-                          size="large"
-                        >
-                          去查看和加入课程
-                        </Button>
-                      </Space>
-                    }
-                  />
+              <Content style={{ margin: '0', padding: 24, background: '#fff', borderRadius: 8, minHeight: 280 }}>
+                <div className={styles.contentPageHeaderContainer}>
+                  <Button 
+                    icon={<ArrowLeftOutlined />} 
+                    className={styles.backButton}
+                    onClick={() => router.push('/studentViewCourses')}
+                  >
+                    返回课程列表
+                  </Button>
+                  <Title level={2} className={styles.pageTitle}>选择要反馈的课程</Title>
                 </div>
-              )}
-            </Content>
+                
+                <Alert
+                  message="请选择要提交反馈的课程"
+                  description="您需要先选择一个已加入的课程，然后才能提交反馈。课程反馈将发送给该课程的授课教师。"
+                  type="info"
+                  showIcon
+                  className={styles.alertInfo}
+                />
+                
+                {studentCourses.length > 0 ? (
+                  <Table
+                    columns={courseSelectionColumns}
+                    dataSource={studentCourses.map(course => ({ ...course, key: course.id }))}
+                    rowKey="id"
+                    loading={loading} // 使用外层 loading 状态
+                    pagination={{ pageSize: 10 }} // 简单分页
+                    className={styles.courseSelectionTable}
+                    scroll={{ x: 'max-content' }}
+                  />
+                ) : (
+                  <div className={styles.emptyCoursesContainer}> 
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <Space direction="vertical" align="center" size="large">
+                          <Title level={4} style={{ color: 'rgba(0, 0, 0, 0.45)' }}>您尚未加入任何课程或暂无可反馈的课程</Title>
+                          <Paragraph style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
+                            请先确保您已加入相关课程，并且课程已开始或已结束。
+                          </Paragraph>
+                          <Button 
+                            type="primary" 
+                            icon={<BookOutlined />}
+                            onClick={() => router.push('/studentViewCourses')}
+                            size="large"
+                          >
+                            去查看和加入课程
+                          </Button>
+                        </Space>
+                      }
+                    />
+                  </div>
+                )}
+              </Content>
+            </Layout>
           </Layout>
         </Layout>
         
@@ -826,175 +769,175 @@ export default function StudentSubmitFeedbackPage() {
   return (
     <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
       <Layout style={{ minHeight: '100vh' }}>
-        <StudentSidebar defaultSelectedKey="7" defaultOpenKey="sub3" />
-        
+        <Header style={{ background: '#001529', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Image src="/images/logo1.png" alt="链评系统Logo" width={40} height={40} style={{ borderRadius: '6px', marginRight: '12px' }}/>
+            <div style={{ fontSize: '18px', fontWeight: 'bold' }}>链评系统（ChainRate）- 学生端</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '15px' }}>欢迎, {userData.name}</span>
+            <UserAvatar userData={userData} />
+          </div>
+        </Header>
         <Layout>
-          <Header style={{ padding: 0, backgroundColor: '#fff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 30, paddingRight: 30 }}>
-              <Breadcrumb
-                items={[
-                  // { title: <HomeFilled />, href: '/studentIndex' },
-                  { title: '首页', href: '/studentIndex' },
-                  { title: '评价管理' },
-                  { title: '提交课程反馈' },
-                ]}
-              />
-              <UserAvatar
-                username={userData.name}
-                avatar={userData.avatar}
-                onLogout={() => {
-                  localStorage.clear();
-                  router.push('/login');
-                }}
-              />
-            </div>
-          </Header>
-          
-          <Content style={{ margin: '24px 16px', padding: 0, background: '#fff', minHeight: 280 }}>
-            <div className={styles.pageHeader}>
-              <Button 
-                icon={<ArrowLeftOutlined />} 
-                className={styles.backButton}
-                onClick={backToCourseSelect}
-              >
-                返回选择课程
-              </Button>
-              <Title level={2} className={styles.pageTitle}>提交课程反馈</Title>
-            </div>
-            
-            <div className={styles.contentContainer}>
-              {selectedCourse && teacherInfo && (
-                <Card className={styles.courseInfoCard}>
-                  <div className={styles.selectedCourseInfo}>
-                    <div className={styles.courseTitle}>
-                      <Title level={3}>{selectedCourse.name}</Title>
-                      <Tag color={selectedCourse.isActive ? "green" : "red"} className={styles.courseStatusTag}>
-                        {selectedCourse.isActive ? "进行中" : "已结束"}
-                      </Tag>
-                    </div>
-                    
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <div className={styles.infoItem}>
-                          <Text strong>课程ID: </Text>
-                          <Text>{selectedCourse.id}</Text>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <Text strong>教师: </Text>
-                          <Text>{teacherInfo.name}</Text>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <Text strong>院系: </Text>
-                          <Text>{teacherInfo.college}</Text>
-                        </div>
-                      </Col>
-                      <Col span={12}>
-                        <div className={styles.infoItem}>
-                          <Text strong>专业: </Text>
-                          <Text>{teacherInfo.major}</Text>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <Text strong>邮箱: </Text>
-                          <Text>{teacherInfo.email}</Text>
-                        </div>
-                        <div className={styles.infoItem}>
-                          <Text strong>选课人数: </Text>
-                          <Text>{selectedCourse.studentCount}</Text>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                </Card>
-              )}
-              
-              <Alert
-                message="课程反馈说明"
-                description="您可以在这里提交对课程内容的反馈意见，包括文字描述、相关文档和图片。所有反馈将存储在区块链上，确保透明性和不可篡改性。教师会在查看反馈后尽快回复。"
-                type="info"
-                showIcon
-                icon={<FileTextOutlined />}
-                className={styles.alertInfo}
-              />
-              
-              <Card className={styles.feedbackCard} title="课程反馈表单">
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={handleSubmit}
-                  className={styles.feedbackForm}
+          <Sider width={200} theme="light" style={{ background: '#fff' }}>
+            <StudentSidebar defaultSelectedKey="7" defaultOpenKey="sub3" />
+          </Sider>
+          <Layout style={{ padding: '0 24px 24px' }}>
+            <Breadcrumb style={{ margin: '16px 0' }}
+              items={[
+                { title: <a href="/studentIndex"><HomeFilled style={{ marginRight: '4px' }} />首页</a> },
+                { title: '评价管理' },
+                { title: '提交课程反馈' },
+                selectedCourse ? { title: selectedCourse.name } : null,
+              ].filter(Boolean)}
+            />
+            <Content style={{ margin: '0', padding: 0, background: '#fff', borderRadius: 8, minHeight: 280 }}>
+              <div className={styles.contentPageHeader}>
+                <Button 
+                  icon={<ArrowLeftOutlined />} 
+                  className={styles.backButton}
+                  onClick={backToCourseSelect}
                 >
-                  <Form.Item
-                    name="content"
-                    label="反馈内容"
-                    rules={[
-                      { required: true, message: '请输入反馈内容' },
-                      { min: 10, message: '反馈内容至少需要10个字' }
-                    ]}
+                  返回选择课程
+                </Button>
+                <Title level={2} className={styles.pageTitle}>提交课程反馈</Title>
+              </div>
+              
+              <div className={styles.contentContainer}>
+                {selectedCourse && teacherInfo && (
+                  <Card className={styles.courseInfoCard}>
+                    <div className={styles.selectedCourseInfo}>
+                      <div className={styles.courseTitle}>
+                        <Title level={3}>{selectedCourse.name}</Title>
+                        <Tag color={selectedCourse.isActive ? "green" : "red"} className={styles.courseStatusTag}>
+                          {selectedCourse.isActive ? "进行中" : "已结束"}
+                        </Tag>
+                      </div>
+                      
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <div className={styles.infoItem}>
+                            <Text strong>课程ID: </Text>
+                            <Text>{selectedCourse.id}</Text>
+                          </div>
+                          <div className={styles.infoItem}>
+                            <Text strong>教师: </Text>
+                            <Text>{teacherInfo.name}</Text>
+                          </div>
+                          <div className={styles.infoItem}>
+                            <Text strong>院系: </Text>
+                            <Text>{teacherInfo.college}</Text>
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div className={styles.infoItem}>
+                            <Text strong>专业: </Text>
+                            <Text>{teacherInfo.major}</Text>
+                          </div>
+                          <div className={styles.infoItem}>
+                            <Text strong>邮箱: </Text>
+                            <Text>{teacherInfo.email}</Text>
+                          </div>
+                          <div className={styles.infoItem}>
+                            <Text strong>选课人数: </Text>
+                            <Text>{selectedCourse.studentCount}</Text>
+                          </div>
+                        </Col>
+                      </Row>
+                    </div>
+                  </Card>
+                )}
+                
+                <Alert
+                  message="课程反馈说明"
+                  description="您可以在这里提交对课程内容的反馈意见，包括文字描述、相关文档和图片。所有反馈将存储在区块链上，确保透明性和不可篡改性。教师会在查看反馈后尽快回复。"
+                  type="info"
+                  showIcon
+                  icon={<FileTextOutlined />}
+                  className={styles.alertInfo}
+                />
+                
+                <Card className={styles.feedbackCard} title="课程反馈表单">
+                  <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleSubmit}
+                    className={styles.feedbackForm}
                   >
-                    <TextArea 
-                      placeholder="请详细描述您对课程内容的反馈、建议或问题..." 
-                      autoSize={{ minRows: 6, maxRows: 12 }}
-                      showCount
-                      maxLength={2000}
-                    />
-                  </Form.Item>
-                  
-                  <Divider plain>附件上传</Divider>
-                  
-                  <Form.Item
-                    name="documents"
-                    label="文档上传 (可选)"
-                    extra="支持 PDF(.pdf), Word(.doc, .docx), Excel(.xls, .xlsx), PPT(.ppt, .pptx), 文本(.txt)等格式，单个文件最大10MB"
-                  >
-                    <Upload
-                      listType="text"
-                      fileList={documentFiles}
-                      onChange={handleDocumentUpload}
-                      beforeUpload={beforeUpload}
-                      multiple
+                    <Form.Item
+                      name="content"
+                      label="反馈内容"
+                      rules={[
+                        { required: true, message: '请输入反馈内容' },
+                        { min: 10, message: '反馈内容至少需要10个字' }
+                      ]}
                     >
-                      <Button icon={<FileOutlined />}>上传文档</Button>
-                    </Upload>
-                  </Form.Item>
-                  
-                  <Form.Item
-                    name="images"
-                    label="图片上传 (可选)"
-                    extra="支持JPG(.jpg, .jpeg), PNG(.png), GIF(.gif), WebP(.webp)等图片格式，单个文件最大10MB"
-                  >
-                    <Upload
-                      listType="picture"
-                      fileList={imageFiles}
-                      onChange={handleImageUpload}
-                      beforeUpload={beforeUpload}
-                      multiple
+                      <TextArea 
+                        placeholder="请详细描述您对课程内容的反馈、建议或问题..." 
+                        autoSize={{ minRows: 6, maxRows: 12 }}
+                        showCount
+                        maxLength={2000}
+                      />
+                    </Form.Item>
+                    
+                    <Divider plain>附件上传</Divider>
+                    
+                    <Form.Item
+                      name="documents"
+                      label="文档上传 (可选)"
+                      extra="支持 PDF(.pdf), Word(.doc, .docx), Excel(.xls, .xlsx), PPT(.ppt, .pptx), 文本(.txt)等格式，单个文件最大10MB"
                     >
-                      <Button icon={<PictureOutlined />}>上传图片</Button>
-                    </Upload>
-                  </Form.Item>
-                  
-                  <Form.Item className={styles.formButtons}>
-                    <Space size="middle">
-                      <Button 
-                        type="primary" 
-                        htmlType="submit" 
-                        loading={submitting || uploading}
-                        icon={<FormOutlined />}
+                      <Upload
+                        listType="text"
+                        fileList={documentFiles}
+                        onChange={handleDocumentUpload}
+                        beforeUpload={beforeUpload}
+                        multiple
                       >
-                        {uploading ? '上传文件中...' : submitting ? '提交中...' : '提交反馈'}
-                      </Button>
-                      <Button 
-                        onClick={handleReset}
-                        disabled={submitting || uploading}
+                        <Button icon={<FileOutlined />}>上传文档</Button>
+                      </Upload>
+                    </Form.Item>
+                    
+                    <Form.Item
+                      name="images"
+                      label="图片上传 (可选)"
+                      extra="支持JPG(.jpg, .jpeg), PNG(.png), GIF(.gif), WebP(.webp)等图片格式，单个文件最大10MB"
+                    >
+                      <Upload
+                        listType="picture"
+                        fileList={imageFiles}
+                        onChange={handleImageUpload}
+                        beforeUpload={beforeUpload}
+                        multiple
                       >
-                        重置
-                      </Button>
-                    </Space>
-                  </Form.Item>
-                </Form>
-              </Card>
-            </div>
-          </Content>
+                        <Button icon={<PictureOutlined />}>上传图片</Button>
+                      </Upload>
+                    </Form.Item>
+                    
+                    <Form.Item className={styles.formButtons}>
+                      <Space size="middle">
+                        <Button 
+                          type="primary" 
+                          htmlType="submit" 
+                          loading={submitting || uploading}
+                          icon={<FormOutlined />}
+                        >
+                          {uploading ? '上传文件中...' : submitting ? '提交中...' : '提交反馈'}
+                        </Button>
+                        <Button 
+                          onClick={handleReset}
+                          disabled={submitting || uploading}
+                        >
+                          重置
+                        </Button>
+                      </Space>
+                    </Form.Item>
+                  </Form>
+                </Card>
+              </div>
+            </Content>
+          </Layout>
         </Layout>
       </Layout>
       
