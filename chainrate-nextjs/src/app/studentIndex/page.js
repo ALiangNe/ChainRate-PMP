@@ -491,7 +491,7 @@ function AntDesignContent({
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  onClick={() => router.push('/studentViewCourses')}
+                  onClick={() => router.push('/studentMyEvaluation')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
                       <BookOutlined style={{ fontSize: 48, color: colorPrimary }} />
@@ -500,8 +500,8 @@ function AntDesignContent({
                   style={{ height: '100%' }}
                 >
                   <Meta
-                    title="查看课程"
-                    description="浏览可评价的课程列表"
+                    title="评分管理"
+                    description="浏览已提交的课程评分"
                   />
                   <div style={{ marginTop: 16 }}>
                     <Button type="primary" ghost>进入</Button>
@@ -512,7 +512,7 @@ function AntDesignContent({
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  onClick={() => router.push('/studentMyEvaluation')}
+                  onClick={() => router.push('/studentViewEvaluateTeacher')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
                       <CommentOutlined style={{ fontSize: 48, color: colorPrimary }} />
@@ -521,8 +521,8 @@ function AntDesignContent({
                   style={{ height: '100%' }}
                 >
                   <Meta
-                    title="我的评价"
-                    description="查看已提交的课程评价"
+                    title="评价管理"
+                    description="查看已提交的教师评价"
                   />
                   <div style={{ marginTop: 16 }}>
                     <Button type="primary" ghost>进入</Button>
@@ -533,7 +533,7 @@ function AntDesignContent({
               <Col xs={24} sm={12} md={8}>
                 <Card
                   hoverable
-                  onClick={() => router.push('/submit-evaluation')}
+                  onClick={() => router.push('/studentViewFeedback')}
                   cover={
                     <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
                       <FormOutlined style={{ fontSize: 48, color: colorPrimary }} />
@@ -542,8 +542,8 @@ function AntDesignContent({
                   style={{ height: '100%' }}
                 >
                   <Meta
-                    title="提交评价"
-                    description="为已选课程提交评价"
+                    title="反馈管理"
+                    description="为已选课程提交反馈"
                   />
                   <div style={{ marginTop: 16 }}>
                     <Button type="primary" ghost>进入</Button>

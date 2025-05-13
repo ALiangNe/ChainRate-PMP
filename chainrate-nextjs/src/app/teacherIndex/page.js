@@ -473,7 +473,7 @@ export default function TeacherIndexPage() {
                     style={{ height: '100%' }}
                   >
                     <Meta
-                      title="查看评价"
+                      title="课程评分"
                       description="查看学生对课程的评价"
                     />
                     <div style={{ marginTop: 16 }}>
@@ -486,7 +486,7 @@ export default function TeacherIndexPage() {
                   <Card
                     hoverable
                     className={styles.functionCardEnhanced}
-                    onClick={() => router.push('/statistics')}
+                    onClick={() => router.push('/teacherStatisticalAnalysis')}
                     cover={
                       <div style={{ padding: '24px 0 0 0', textAlign: 'center' }}>
                         <PieChartOutlined style={{ fontSize: 48, color: '#1a73e8' }} />

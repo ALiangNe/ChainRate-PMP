@@ -1597,12 +1597,29 @@ export default function TeacherViewFeedbackPage() {
     return (
       <List.Item
         key={feedback.id}
+        style={{ 
+          background: '#fff', 
+          borderRadius: '8px', 
+          marginBottom: '12px',
+          padding: '16px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+          border: '1px solid #f0f0f0',
+          transition: 'all 0.3s ease'
+        }}
+        className={styles.feedbackListItem}
         actions={[
           <Button 
             type={feedback.hasReply ? "default" : "primary"}
             icon={<RollbackOutlined />}
             onClick={() => openReplyModal(feedback)}
             key="reply-button"
+            style={{
+              borderRadius: '6px',
+              ...(feedback.hasReply ? {} : {
+                background: '#1a73e8',
+                boxShadow: '0 2px 4px rgba(26, 115, 232, 0.2)'
+              })
+            }}
           >
             {feedback.hasReply ? "修改回复" : "回复"}
           </Button>,
@@ -1612,6 +1629,7 @@ export default function TeacherViewFeedbackPage() {
               icon={<DiffOutlined />}
               onClick={() => openCompareModal(feedback)}
               key="compare-button"
+              style={{ borderRadius: '6px' }}
             >
               版本对比
             </Button>
@@ -1622,6 +1640,7 @@ export default function TeacherViewFeedbackPage() {
             onClick={() => exportFeedbackHistory(feedback)}
             loading={exportLoading}
             key="export-button"
+            style={{ borderRadius: '6px' }}
           >
             导出记录
           </Button>
@@ -1630,14 +1649,33 @@ export default function TeacherViewFeedbackPage() {
         <List.Item.Meta
           avatar={
             feedback.isAnonymous ? (
-              <Avatar style={{ backgroundColor: '#ccc', verticalAlign: 'middle' }}>
+              <Avatar 
+                style={{ 
+                  backgroundColor: '#ccc', 
+                  verticalAlign: 'middle',
+                  width: '42px',
+                  height: '42px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
                 匿
               </Avatar>
             ) : (
               <Avatar 
                 style={{ 
-                  backgroundColor: feedback.student.avatar ? 'transparent' : colorPrimary,
-                  verticalAlign: 'middle'
+                  backgroundColor: feedback.student.avatar ? 'transparent' : '#1a73e8',
+                  verticalAlign: 'middle',
+                  width: '42px',
+                  height: '42px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
                 src={feedback.student.avatar}
                 // 当头像加载失败时显示用户名首字母
@@ -1648,23 +1686,63 @@ export default function TeacherViewFeedbackPage() {
             )
           }
           title={
-            <Space>
-              <span>{feedback.isAnonymous ? '匿名学生' : feedback.student.name}</span>
+            <Space size={[8, 0]} wrap>
+              <span style={{ fontSize: '16px', fontWeight: '500' }}>
+                {feedback.isAnonymous ? '匿名学生' : feedback.student.name}
+              </span>
               {!feedback.isAnonymous && (
                 <Tooltip title={`${feedback.student.college} - ${feedback.student.major} - ${feedback.student.grade}`}>
-                  <Tag icon={<EnvironmentOutlined />} color="blue">
+                  <Tag 
+                    icon={<EnvironmentOutlined />} 
+                    color="blue"
+                    style={{ 
+                      borderRadius: '12px', 
+                      paddingLeft: '6px',
+                      paddingRight: '10px'
+                    }}
+                  >
                     {feedback.student.college}
                   </Tag>
                 </Tooltip>
               )}
               {feedback.hasReply ? (
-                <Tag icon={<CheckCircleOutlined />} color="success">已回复</Tag>
+                <Tag 
+                  icon={<CheckCircleOutlined />} 
+                  color="success"
+                  style={{ 
+                    borderRadius: '12px', 
+                    paddingLeft: '6px',
+                    paddingRight: '10px'
+                  }}
+                >
+                  已回复
+                </Tag>
               ) : (
-                <Tag icon={<ClockCircleOutlined />} color="warning">待回复</Tag>
+                <Tag 
+                  icon={<ClockCircleOutlined />} 
+                  color="warning"
+                  style={{ 
+                    borderRadius: '12px', 
+                    paddingLeft: '6px',
+                    paddingRight: '10px'
+                  }}
+                >
+                  待回复
+                </Tag>
               )}
               {feedback.isModified && (
                 <Tooltip title={`最后修改于 ${feedback.lastModifiedDate || '未知时间'}`}>
-                  <Tag icon={<FileTextOutlined />} color="purple">已修改</Tag>
+                  <Tag 
+                    icon={<FileTextOutlined />} 
+                    color="purple"
+                    style={{ 
+                      borderRadius: '12px', 
+                      paddingLeft: '6px',
+                      paddingRight: '10px'
+                    }}
+                  >
+                    已修改
+                  </Tag>
                 </Tooltip>
               )}
             </Space>
@@ -1682,6 +1760,11 @@ export default function TeacherViewFeedbackPage() {
               </div>
               <Paragraph 
                 className={styles.feedbackContent}
+                style={{ 
+                  margin: '12px 0',
+                  fontSize: '14px',
+                  lineHeight: '1.6' 
+                }}
               >
                 {feedback.content}
               </Paragraph>
@@ -1690,14 +1773,25 @@ export default function TeacherViewFeedbackPage() {
                 <div className={styles.replyContainer}>
                   <div className={styles.replyHeader}>
                     <Space>
-                      <MessageOutlined /> 
-                      <span>教师回复</span>
+                      <MessageOutlined style={{ color: '#1a73e8' }} /> 
+                      <span style={{ color: '#1a73e8', fontWeight: '500' }}>教师回复</span>
                       <span className={styles.replyDate}>
                         {feedback.formattedReplyDate}
                       </span>
                     </Space>
                   </div>
-                  <Paragraph className={styles.replyContent}>
+                  <Paragraph 
+                    className={styles.replyContent}
+                    style={{ 
+                      margin: '8px 0 0 0',
+                      fontSize: '14px',
+                      color: '#333',
+                      background: '#f9f9f9',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      borderLeft: '3px solid #1a73e8'
+                    }}
+                  >
                     {feedback.reply}
                   </Paragraph>
                 </div>
@@ -1783,12 +1877,24 @@ export default function TeacherViewFeedbackPage() {
                   {/* 课程选择和统计概览 */}
                   <Card 
                     className={styles.courseCard}
+                    bordered={false}
+                    style={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      borderRadius: '8px',
+                      overflow: 'hidden'
+                    }}
                     title={
                       <div className={styles.cardTitle}>
-                        <BookOutlined className={styles.cardTitleIcon} />
-                        <span>课程反馈管理</span>
+                        <BookOutlined className={styles.cardTitleIcon} style={{ color: '#1a73e8' }} />
+                        <span style={{ fontSize: '16px', fontWeight: '600' }}>课程反馈管理</span>
                       </div>
                     }
+                    headStyle={{ 
+                      background: 'linear-gradient(to right, #f0f5ff, #ffffff)',
+                      borderBottom: '1px solid #eaeaea',
+                      padding: '12px 20px'
+                    }}
+                    bodyStyle={{ padding: '24px 20px' }}
                   >
                     <Row gutter={[24, 24]}>
                       <Col xs={24} md={8}>
@@ -1812,78 +1918,112 @@ export default function TeacherViewFeedbackPage() {
                         <Row gutter={[16, 16]}>
                           <Col xs={24} sm={12}>
                             <Statistic 
-                              title="总反馈数" 
+                              title={<span style={{ fontSize: '14px', color: '#666' }}>总反馈数</span>} 
                               value={feedbackStats.total} 
-                              prefix={<CommentOutlined className={styles.statIcon} />} 
+                              valueStyle={{ fontSize: '28px', color: '#1a73e8', fontWeight: '600' }}
+                              prefix={<CommentOutlined style={{ color: '#1a73e8', fontSize: '24px', marginRight: '8px' }} />} 
                             />
                           </Col>
                           <Col xs={24} sm={12}>
                             <Statistic 
-                              title="待回复" 
+                              title={<span style={{ fontSize: '14px', color: '#666' }}>待回复</span>} 
                               value={feedbackStats.pending}
-                              prefix={<ClockCircleOutlined className={styles.warningIcon} />} 
-                              suffix={feedbackStats.total > 0 ? `/${feedbackStats.total}` : ''}
+                              valueStyle={{ fontSize: '28px', color: feedbackStats.pending > 0 ? '#ff4d4f' : '#52c41a', fontWeight: '600' }}
+                              prefix={<ClockCircleOutlined style={{ color: feedbackStats.pending > 0 ? '#ff4d4f' : '#52c41a', fontSize: '24px', marginRight: '8px' }} />} 
+                              suffix={
+                                <span style={{ fontSize: '16px', color: '#999', marginLeft: '4px' }}>
+                                  {feedbackStats.total > 0 ? `/${feedbackStats.total}` : ''}
+                                </span>
+                              }
                             />
                           </Col>
-                          {/* <Col xs={24} sm={8}>
-                            <Statistic 
-                              title="平均评分" 
-                              value={feedbackStats.avgRating} 
-                              prefix={<StarFilled className={styles.ratingIcon} />} 
-                              suffix="/5"
-                            />
-                          </Col> */}
                         </Row>
                       </Col>
                     </Row>
                   </Card>
                   
                   {/* 筛选和搜索 */}
-                  <Card className={styles.filterCard}>
-                    <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} md={8}>
+                  <Card 
+                    className={styles.filterCard} 
+                    bordered={false} 
+                    style={{ 
+                      boxShadow: '0 3px 10px rgba(0,0,0,0.08)',
+                      marginTop: '16px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(to right, #fcfcff, #f8fbff)'
+                    }}
+                    bodyStyle={{ padding: '16px 20px' }}
+                  >
+                    <Row gutter={[24, 16]} align="middle">
+                      <Col xs={24} md={9}>
                         <div className={styles.filterItem}>
                           <span className={styles.filterLabel}>状态筛选:</span>
                           <Radio.Group 
                             value={filterStatus} 
                             onChange={(e) => handleFilterChange(e.target.value)}
                             buttonStyle="solid"
+                            style={{ marginLeft: '12px' }}
                           >
-                            <Radio.Button value="all">全部</Radio.Button>
-                            <Radio.Button value="pending">
+                            <Radio.Button value="all" style={{ borderRadius: '4px 0 0 4px' }}>全部</Radio.Button>
+                            <Radio.Button value="pending" style={{ 
+                              position: 'relative',
+                              fontWeight: feedbackStats.pending > 0 ? 'bold' : 'normal'
+                            }}>
                               待回复
                               {feedbackStats.pending > 0 && (
-                                <Badge 
-                                  count={feedbackStats.pending} 
-                                  className={styles.pendingBadge}
-                                /> 
+                                <span
+                                  style={{
+                                    position: 'absolute',
+                                    top: '-14px',
+                                    right: '-12px',
+                                    backgroundColor: '#ff4d4f',
+                                    borderRadius: '50%',
+                                    padding: '0 6px',
+                                    height: '24px',
+                                    minWidth: '24px',
+                                    lineHeight: '24px',
+                                    fontSize: '13px',
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 0 0 2px #fff, 0 3px 6px rgba(0,0,0,0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    zIndex: 10
+                                  }}
+                                >
+                                  {feedbackStats.pending}
+                                </span>
                               )}
                             </Radio.Button>
-                            <Radio.Button value="replied">已回复</Radio.Button>
+                            <Radio.Button value="replied" style={{ borderRadius: '0 4px 4px 0' }}>已回复</Radio.Button>
                           </Radio.Group>
                         </div>
                       </Col>
-                      <Col xs={24} md={8}>
+                      <Col xs={24} md={9}>
                         <Input 
                           placeholder="搜索反馈内容或学生姓名" 
-                          prefix={<SearchOutlined />} 
+                          prefix={<SearchOutlined style={{ color: '#1a73e8' }} />} 
                           allowClear
                           value={searchText}
                           onChange={handleSearchChange}
                           className={styles.searchInput}
+                          style={{ borderRadius: '6px' }}
                         />
                       </Col>
-                      <Col xs={24} md={8}>
+                      <Col xs={24} md={6}>
                         <div className={styles.sortContainer}>
                           <span className={styles.sortLabel}>排序:</span>
                           <Select 
                             className={styles.sortSelect}
                             value={sortBy}
                             onChange={handleSortChange}
+                            style={{ marginLeft: '12px', width: '130px', borderRadius: '6px' }}
+                            suffixIcon={<SortAscendingOutlined style={{ color: '#1a73e8' }} />}
                           >
                             <Option value="newest">最新优先</Option>
                             <Option value="oldest">最早优先</Option>
-                            {/* <Option value="rating">评分排序</Option> */}
                           </Select>
                         </div>
                       </Col>
@@ -1891,13 +2031,25 @@ export default function TeacherViewFeedbackPage() {
                   </Card>
                   
                   {/* 反馈列表 */}
-                  <Card className={styles.feedbackListCard}>
+                  <Card 
+                    className={styles.feedbackListCard} 
+                    bordered={false}
+                    style={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      borderRadius: '8px',
+                      marginTop: '24px'
+                    }}
+                    bodyStyle={{ padding: '20px' }}
+                  >
                     <div className={styles.feedbackListHeader}>
                       <div className={styles.feedbackListTitle}>
                         {filteredFeedbacks.length > 0 ? (
-                          <span>共 {filteredFeedbacks.length} 条反馈</span>
+                          <span style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+                            <CommentOutlined style={{ marginRight: '8px', color: '#1a73e8' }} />
+                            共 {filteredFeedbacks.length} 条反馈
+                          </span>
                         ) : (
-                          <span>暂无反馈</span>
+                          <span style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>暂无反馈</span>
                         )}
                       </div>
                       {filteredFeedbacks.length > 0 && (
@@ -1906,6 +2058,11 @@ export default function TeacherViewFeedbackPage() {
                           icon={<FileOutlined />}
                           onClick={exportAllFeedbackHistory}
                           loading={exportingAllFeedbacks}
+                          style={{ 
+                            background: '#1a73e8', 
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 4px rgba(26, 115, 232, 0.2)'
+                          }}
                         >
                           导出全部反馈
                         </Button>

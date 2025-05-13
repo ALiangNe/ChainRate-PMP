@@ -524,11 +524,11 @@ export default function TeacherManageCoursePage({ params }) {
           renderItem={student => (
             <List.Item>
               <List.Item.Meta
-                avatar={<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#34a853' }} />}
+                avatar={<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1a73e8' }} />}
                 title={student.name}
                 description={`${student.address.slice(0, 6)}...${student.address.slice(-4)}`}
               />
-              <Tag color={student.hasEvaluated ? 'success' : 'default'}>
+              <Tag color="#e3f2fd" style={{ color: '#1a73e8' }}>
                 {student.hasEvaluated ? '已评价' : '未评价'}
               </Tag>
             </List.Item>
@@ -579,7 +579,7 @@ export default function TeacherManageCoursePage({ params }) {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: '#34a853',
+            colorPrimary: '#1a73e8',
           },
         }}
       >
@@ -626,7 +626,7 @@ export default function TeacherManageCoursePage({ params }) {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#34a853', // 使用绿色作为教师端主题色
+          colorPrimary: '#1a73e8',
         },
       }}
     >
@@ -688,9 +688,9 @@ export default function TeacherManageCoursePage({ params }) {
                 <Alert
                   message="成功"
                   description={successMessage}
-                  type="success"
+                  type="info"
                   showIcon
-                  style={{ marginBottom: '24px' }}
+                  style={{ marginBottom: '24px', backgroundColor: 'rgba(26, 115, 232, 0.1)', borderColor: 'rgba(26, 115, 232, 0.3)' }}
                   closable
                 />
               )}
@@ -702,7 +702,7 @@ export default function TeacherManageCoursePage({ params }) {
                       title="已选学生"
                       value={originalCourse.studentCount}
                       prefix={<UserOutlined />}
-                      valueStyle={{ color: '#34a853' }}
+                      valueStyle={{ color: '#1a73e8' }}
                     />
                   </Col>
                   <Col xs={24} sm={6}>
@@ -710,7 +710,7 @@ export default function TeacherManageCoursePage({ params }) {
                       title="评价数量"
                       value={stats.evaluationCount}
                       prefix={<CommentOutlined />}
-                      valueStyle={{ color: '#34a853' }}
+                      valueStyle={{ color: '#1a73e8' }}
                     />
                   </Col>
                   <Col xs={24} sm={6}>
@@ -718,7 +718,7 @@ export default function TeacherManageCoursePage({ params }) {
                       title="平均评分"
                       value={stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '暂无'}
                       prefix={<StarFilled />}
-                      valueStyle={{ color: '#34a853' }}
+                      valueStyle={{ color: '#1a73e8' }}
                     />
                   </Col>
                   <Col xs={24} sm={6}>
@@ -726,7 +726,7 @@ export default function TeacherManageCoursePage({ params }) {
                       title="课程状态"
                       value={originalCourse.isActive ? '已启用' : '已停用'}
                       valueStyle={{ 
-                        color: originalCourse.isActive ? '#34a853' : '#999',
+                        color: originalCourse.isActive ? '#1a73e8' : '#999',
                       }}
                       prefix={originalCourse.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
                     />

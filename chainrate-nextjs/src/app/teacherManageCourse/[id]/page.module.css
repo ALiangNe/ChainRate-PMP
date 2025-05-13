@@ -63,9 +63,9 @@
 }
 
 .successBox {
-  background-color: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  color: #388e3c;
+  background-color: rgba(26, 115, 232, 0.1);
+  border: 1px solid rgba(26, 115, 232, 0.3);
+  color: #1a73e8;
 }
 
 .loadingBox, .emptyBox {
@@ -121,8 +121,8 @@
 }
 
 .statusActive {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #388e3c;
+  background-color: rgba(26, 115, 232, 0.1);
+  color: #1a73e8;
 }
 
 .statusInactive {
@@ -294,8 +294,8 @@
 }
 
 .evaluatedBadge {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #388e3c;
+  background-color: rgba(26, 115, 232, 0.1);
+  color: #1a73e8;
 }
 
 .notEvaluatedBadge {
