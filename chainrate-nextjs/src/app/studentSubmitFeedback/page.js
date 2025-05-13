@@ -26,7 +26,9 @@ import {
   Col,
   Modal,
   Space,
-  Tag
+  Tag,
+  Table,
+  Empty
 } from 'antd';
 import { 
   UploadOutlined, 
@@ -493,6 +495,82 @@ export default function StudentSubmitFeedbackPage() {
     router.push('/studentViewCourses');
   };
   
+  // 辅助函数：获取课程状态用于反馈表格
+  const getCourseStatusForFeedback = (course) => {
+    const now = new Date().getTime() / 1000; // 当前时间戳 (秒)
+    const startTime = Number(course.startTime);
+    const endTime = Number(course.endTime);
+
+    if (!course.isActive) {
+      return { text: '已归档 (不可反馈)', color: 'grey', isFeedbackAllowed: false };
+    }
+    if (now < startTime) {
+      return { text: '未开始 (不可反馈)', color: 'blue', isFeedbackAllowed: false };
+    }
+    if (now > endTime) {
+      // 明确已结束的课程不可反馈
+      return { text: '已结束 (不可反馈)', color: 'red', isFeedbackAllowed: false }; 
+    }
+    // 只有进行中的课程可以反馈
+    return { text: '进行中 (可反馈)', color: 'green', isFeedbackAllowed: true };
+  };
+
+  // 表格列定义 (用于课程选择模式)
+  const courseSelectionColumns = [
+    {
+      title: '课程名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <a onClick={() => handleCourseSelect(record.id)} style={{ fontWeight: 'bold' }}>
+          {text}
+        </a>
+      ),
+    },
+    {
+      title: '授课教师',
+      dataIndex: ['teacher', 'name'], // 嵌套数据路径
+      key: 'teacherName',
+    },
+    {
+      title: '教师院系',
+      dataIndex: ['teacher', 'college'],
+      key: 'teacherCollege',
+    },
+    {
+      title: '课程状态',
+      key: 'status',
+      render: (text, record) => {
+        const status = getCourseStatusForFeedback(record);
+        return <Tag color={status.color}>{status.text}</Tag>;
+      },
+    },
+    {
+      title: '选课人数',
+      dataIndex: 'studentCount',
+      key: 'studentCount',
+      align: 'center',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      align: 'center',
+      render: (text, record) => {
+        const status = getCourseStatusForFeedback(record);
+        return (
+          <Button 
+            type="primary" 
+            onClick={() => handleCourseSelect(record.id)}
+            icon={<FormOutlined />}
+            disabled={!status.isFeedbackAllowed} // 根据课程状态禁用按钮
+          >
+            {status.isFeedbackAllowed ? '提交反馈' : '不可反馈'} 
+          </Button>
+        );
+      },
+    },
+  ];
+
   // 上传文件之前的检查
   const beforeUpload = (file) => {
     // 检查文件大小
@@ -686,66 +764,39 @@ export default function StudentSubmitFeedbackPage() {
                 className={styles.alertInfo}
               />
               
-              <div className={styles.courseGrid}>
-                <Row gutter={[16, 16]}>
-                  {studentCourses.length > 0 ? (
-                    studentCourses.map(course => (
-                      <Col xs={24} sm={12} md={8} key={course.id}>
-                        <Card 
-                          className={styles.courseCard}
-                          hoverable
-                          onClick={() => handleCourseSelect(course.id)}
-                        >
-                          <div className={styles.courseCardTitle}>
-                            <Title level={4}>{course.name}</Title>
-                            <Tag color={course.isActive ? "green" : "red"}>
-                              {course.isActive ? "进行中" : "已结束"}
-                            </Tag>
-                          </div>
-                          <div className={styles.courseCardInfo}>
-                            <div className={styles.infoItem}>
-                              <Text strong>课程ID: </Text>
-                              <Text>{course.id}</Text>
-                            </div>
-                            <div className={styles.infoItem}>
-                              <Text strong>教师: </Text>
-                              <Text>{course.teacher.name}</Text>
-                            </div>
-                            <div className={styles.infoItem}>
-                              <Text strong>院系: </Text>
-                              <Text>{course.teacher.college}</Text>
-                            </div>
-                            <div className={styles.infoItem}>
-                              <Text strong>选课人数: </Text>
-                              <Text>{course.studentCount}</Text>
-                            </div>
-                          </div>
-                          <Button 
-                            type="primary" 
-                            className={styles.selectButton}
-                          >
-                            选择此课程
-                          </Button>
-                        </Card>
-                      </Col>
-                    ))
-                  ) : (
-                    <Col span={24}>
-                      <div className={styles.emptyCourses}>
-                        <Title level={4}>您尚未加入任何课程</Title>
-                        <Paragraph>请先加入课程后再提交反馈</Paragraph>
+              {studentCourses.length > 0 ? (
+                <Table
+                  columns={courseSelectionColumns}
+                  dataSource={studentCourses.map(course => ({ ...course, key: course.id }))}
+                  rowKey="id"
+                  loading={loading} // 使用外层 loading 状态
+                  pagination={{ pageSize: 10 }} // 简单分页
+                  className={styles.courseSelectionTable}
+                  scroll={{ x: 'max-content' }}
+                />
+              ) : (
+                <div className={styles.emptyCoursesContainer}> 
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <Space direction="vertical" align="center" size="large">
+                        <Title level={4} style={{ color: 'rgba(0, 0, 0, 0.45)' }}>您尚未加入任何课程或暂无可反馈的课程</Title>
+                        <Paragraph style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
+                          请先确保您已加入相关课程，并且课程已开始或已结束。
+                        </Paragraph>
                         <Button 
                           type="primary" 
                           icon={<BookOutlined />}
                           onClick={() => router.push('/studentViewCourses')}
+                          size="large"
                         >
-                          查看课程列表
+                          去查看和加入课程
                         </Button>
-                      </div>
-                    </Col>
-                  )}
-                </Row>
-              </div>
+                      </Space>
+                    }
+                  />
+                </div>
+              )}
             </Content>
           </Layout>
         </Layout>

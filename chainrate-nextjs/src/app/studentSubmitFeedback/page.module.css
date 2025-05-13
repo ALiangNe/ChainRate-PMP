@@ -26,6 +26,16 @@
   padding: 24px;
 }
 
+/* 表格和空状态容器样式 (用于课程选择模式) */
+.courseSelectionTable {
+  margin-top: 24px;
+}
+
+.emptyCoursesContainer {
+  padding: 48px 0;
+  text-align: center;
+}
+
 /* 课程选择页面样式 */
 .courseGrid {
   margin-top: 24px;
@@ -153,13 +163,5 @@
   
   .infoItem strong {
     min-width: 60px;
-  }
-  
-  .courseCardTitle {
-    flex-direction: column;
-  }
-  
-  .courseCardTitle h4 {
-    margin-bottom: 8px;
   }
 } 
