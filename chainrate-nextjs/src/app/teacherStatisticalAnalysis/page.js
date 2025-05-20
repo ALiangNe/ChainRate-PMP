@@ -226,6 +226,9 @@ export default function TeacherStatisticalAnalysisPage() {
   // 添加日期范围筛选状态
   const [dateFilter, setDateFilter] = useState(null);
 
+  // 1. 首先添加一个新的状态来存储筛选后的评价数据
+  const [filteredEvaluations, setFilteredEvaluations] = useState([]);
+
   useEffect(() => {
     // 检查用户是否已登录且是教师角色
     const checkUserAuth = () => {
@@ -431,6 +434,9 @@ export default function TeacherStatisticalAnalysisPage() {
       evaluation.timestamp >= startDate && evaluation.timestamp <= endDate
     );
     
+    // 更新筛选后的评价列表，供其他模块使用
+    setFilteredEvaluations(currentPeriodEvals);
+    
     // 计算总体统计数据
     let totalRating = 0;
     let totalTeachingAbility = 0;
@@ -560,16 +566,16 @@ export default function TeacherStatisticalAnalysisPage() {
   
   // 生成多维度趋势图数据
   const generateTrendData = () => {
-    if (evaluations.length === 0) return;
+    if (filteredEvaluations.length === 0) return;
     
     // 根据评价数量决定时间间隔粒度
     let timeGroups = [];
     let labels = [];
     
     // 对评价按照时间进行分组
-    if (evaluations.length <= 10) {
+    if (filteredEvaluations.length <= 10) {
       // 评价数较少时，每个评价作为一个点
-      evaluations.forEach(evaluation => {
+      filteredEvaluations.forEach(evaluation => {
         const date = new Date(evaluation.timestamp);
         const label = `${date.getMonth()+1}/${date.getDate()}`;
         timeGroups.push({
@@ -588,7 +594,7 @@ export default function TeacherStatisticalAnalysisPage() {
       // 评价数较多时，按月份分组
       const monthlyGroups = {};
       
-      evaluations.forEach(evaluation => {
+      filteredEvaluations.forEach(evaluation => {
         const date = new Date(evaluation.timestamp);
         const monthKey = `${date.getFullYear()}-${date.getMonth()+1}`;
         
@@ -666,10 +672,10 @@ export default function TeacherStatisticalAnalysisPage() {
   
   // 每当选中的维度变化时，重新生成趋势数据
   useEffect(() => {
-    if (evaluations.length > 0) {
+    if (filteredEvaluations.length > 0) {
       generateTrendData();
     }
-  }, [selectedDimensions, evaluations]);
+  }, [selectedDimensions, filteredEvaluations]);
   
   // 处理时间范围切换
   const handleTimeRangeChange = (value) => {
@@ -1349,7 +1355,7 @@ export default function TeacherStatisticalAnalysisPage() {
                               <List
                                 header={<div>最近评价统计</div>}
                                 dataSource={
-                                  evaluations.slice(0, 5).map(evaluation => ({
+                                  filteredEvaluations.slice(0, 5).map(evaluation => ({
                                     date: evaluation.formattedDate,
                                     rating: evaluation.overallRating
                                   }))
@@ -1387,7 +1393,7 @@ export default function TeacherStatisticalAnalysisPage() {
                                     const currentYear = new Date().getFullYear();
                                     const monthlyData = Array(12).fill(0);
                                     
-                                    evaluations
+                                    filteredEvaluations
                                       .filter(evaluation => evaluation.timestamp.getFullYear() === currentYear)
                                       .forEach(evaluation => {
                                         const month = evaluation.timestamp.getMonth();
@@ -1473,7 +1479,7 @@ export default function TeacherStatisticalAnalysisPage() {
                               }}
                               ref={chartRef}
                             >
-                              {evaluations.length > 0 ? (
+                              {filteredEvaluations.length > 0 ? (
                                 <Line
                                   data={trendData}
                                   options={{
