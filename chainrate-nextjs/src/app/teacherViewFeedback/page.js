@@ -13,6 +13,7 @@ import { diffLines } from 'diff';
 import { jsPDF } from 'jspdf';
 // 修改导入方式，确保autoTable作为函数正确加载
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -32,7 +33,10 @@ import {
   InfoCircleOutlined,
   HistoryOutlined,
   DiffOutlined,
-  FileOutlined
+  FileOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -64,7 +68,9 @@ import {
   Form,
   Tabs,
   Badge,
-  Popover
+  Popover,
+  Dropdown,
+  Menu
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
@@ -148,6 +154,9 @@ export default function TeacherViewFeedbackPage() {
   
   // 在feedbacks状态后添加新的状态
   const [exportingAllFeedbacks, setExportingAllFeedbacks] = useState(false);
+  
+  // XLSX导出状态
+  const [exportingXLSX, setExportingXLSX] = useState(false);
   
   // 初始化检查用户登录状态和加载数据
   useEffect(() => {
@@ -1913,6 +1922,120 @@ export default function TeacherViewFeedbackPage() {
     }
   };
   
+  // 导出所有反馈历史记录为XLSX
+  const exportAllFeedbacksToXLSX = async () => {
+    if (!selectedCourse || !contract02 || filteredFeedbacks.length === 0) {
+      message.error('没有可导出的反馈记录');
+      return;
+    }
+    
+    try {
+      setExportingXLSX(true);
+      message.loading('正在生成Excel表格...', 0);
+      
+      // 准备数据
+      const feedbacksData = [];
+      
+      // 处理每个反馈
+      for (let i = 0; i < filteredFeedbacks.length; i++) {
+        try {
+          const feedback = filteredFeedbacks[i];
+          
+          // 获取反馈的版本数量
+          let versionsCount = 0;
+          try {
+            versionsCount = Number(feedback.versions || 0);
+          } catch (error) {
+            console.error(`获取反馈 ${feedback.id} 版本数量失败:`, error);
+            versionsCount = 1;
+          }
+          
+          // 确保至少有一个版本
+          versionsCount = Math.max(versionsCount, 1);
+          
+          // 获取所有版本信息
+          let versionsInfo = "";
+          if (versionsCount > 1) {
+            try {
+              const versionPromises = [];
+              for (let j = 0; j < versionsCount; j++) {
+                versionPromises.push(loadFeedbackVersion(feedback.id, j));
+              }
+              
+              const versionsList = await Promise.all(versionPromises);
+              versionsList.sort((a, b) => a.timestamp - b.timestamp);
+              
+              versionsInfo = versionsList.map((v, idx) => 
+                `版本${idx+1}(${v.formattedDate}): ${v.content.substring(0, 100)}${v.content.length > 100 ? '...' : ''}`
+              ).join('\n');
+            } catch (error) {
+              console.error(`获取反馈 ${feedback.id} 版本信息失败:`, error);
+              versionsInfo = "获取版本信息失败";
+            }
+          } else {
+            versionsInfo = "无修改版本";
+          }
+          
+          // 添加反馈数据
+          feedbacksData.push({
+            "反馈ID": feedback.id,
+            "学生": feedback.isAnonymous ? '匿名学生' : feedback.student.name,
+            "学院": feedback.student && feedback.student.college ? feedback.student.college : '未知',
+            "专业": feedback.student && feedback.student.major ? feedback.student.major : '未知',
+            "年级": feedback.student && feedback.student.grade ? feedback.student.grade : '未知',
+            "提交时间": feedback.formattedDate,
+            "反馈内容": feedback.content,
+            "状态": feedback.hasReply ? '已回复' : '未回复',
+            "教师回复": feedback.hasReply ? feedback.reply : '',
+            "回复时间": feedback.hasReply ? feedback.formattedReplyDate : '',
+            "版本数量": versionsCount,
+            "版本历史": versionsInfo
+          });
+        } catch (error) {
+          console.error(`处理反馈 ${i} 数据失败:`, error);
+        }
+      }
+      
+      // 创建工作簿
+      const wb = XLSX.utils.book_new();
+      
+      // 创建工作表
+      const ws = XLSX.utils.json_to_sheet(feedbacksData);
+      
+      // 设置列宽
+      const colWidths = [
+        { wch: 10 },  // 反馈ID
+        { wch: 15 },  // 学生
+        { wch: 15 },  // 学院
+        { wch: 15 },  // 专业
+        { wch: 10 },  // 年级
+        { wch: 20 },  // 提交时间
+        { wch: 50 },  // 反馈内容
+        { wch: 10 },  // 状态
+        { wch: 50 },  // 教师回复
+        { wch: 20 },  // 回复时间
+        { wch: 10 },  // 版本数量
+        { wch: 80 },  // 版本历史
+      ];
+      ws['!cols'] = colWidths;
+      
+      // 添加工作表到工作簿
+      XLSX.utils.book_append_sheet(wb, ws, "反馈记录");
+      
+      // 生成Excel文件并下载
+      const filename = `${selectedCourse?.name || 'course'}_全部反馈记录_${new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      
+      message.destroy();
+      message.success(`Excel表格已生成: ${filename}`);
+    } catch (error) {
+      console.error("导出Excel失败:", error);
+      message.error('导出失败: ' + (error.message || error));
+    } finally {
+      setExportingXLSX(false);
+    }
+  };
+  
   return (
     <ConfigProvider
       theme={{
@@ -2205,19 +2328,37 @@ export default function TeacherViewFeedbackPage() {
                         )}
                       </div>
                       {filteredFeedbacks.length > 0 && (
-                        <Button
-                          type="primary"
-                          icon={<FileOutlined />}
-                          onClick={exportAllFeedbackHistory}
-                          loading={exportingAllFeedbacks}
-                          style={{ 
-                            background: '#1a73e8', 
-                            borderRadius: '6px',
-                            boxShadow: '0 2px 4px rgba(26, 115, 232, 0.2)'
+                        <Dropdown
+                          menu={{
+                            items: [
+                              {
+                                key: 'pdf',
+                                icon: <FilePdfOutlined />,
+                                label: '导出PDF报告',
+                                onClick: exportAllFeedbackHistory
+                              },
+                              {
+                                key: 'xlsx',
+                                icon: <FileExcelOutlined />,
+                                label: '导出Excel表格',
+                                onClick: exportAllFeedbacksToXLSX
+                              }
+                            ]
                           }}
+                          trigger={['click']}
                         >
-                          导出全部反馈
-                        </Button>
+                          <Button
+                            type="primary"
+                            style={{ 
+                              background: '#1a73e8', 
+                              borderRadius: '6px',
+                              boxShadow: '0 2px 4px rgba(26, 115, 232, 0.2)'
+                            }}
+                            loading={exportingAllFeedbacks || exportingXLSX}
+                          >
+                            导出全部反馈 <DownOutlined />
+                          </Button>
+                        </Dropdown>
                       )}
                     </div>
                     {filteredFeedbacks.length > 0 ? (
