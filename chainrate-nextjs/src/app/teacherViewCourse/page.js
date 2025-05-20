@@ -18,7 +18,8 @@ import {
   SettingOutlined,
   EyeOutlined,
   BarChartOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -37,13 +38,15 @@ import {
   Tooltip,
   Spin,
   Alert,
-  Table
+  Table,
+  DatePicker
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
 
 const { Header, Content, Sider } = Layout;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 export default function ViewCoursesPage() {
   const router = useRouter();
@@ -66,6 +69,10 @@ export default function ViewCoursesPage() {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all'); // all, active, inactive
+  
+  // 新增筛选状态
+  const [statusFilter, setStatusFilter] = useState('all'); // all, upcoming, active, ended
+  const [dateRange, setDateRange] = useState(null);
   
   // 状态管理
   const [loading, setLoading] = useState(true);
@@ -217,8 +224,35 @@ export default function ViewCoursesPage() {
       result = result.filter(course => !course.isActive);
     }
     
+    // 应用当前状态筛选
+    if (statusFilter !== 'all') {
+      result = result.filter(course => {
+        const status = getCourseStatus(course);
+        return status.status === statusFilter;
+      });
+    }
+    
+    // 应用日期范围筛选
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].startOf('day');
+      const endDate = dateRange[1].endOf('day');
+      
+      result = result.filter(course => {
+        // 判断课程评价时间范围与选定时间范围是否有重叠
+        const courseStart = new Date(course.startTime);
+        const courseEnd = new Date(course.endTime);
+        
+        // 检查课程时间段与筛选时间段是否有交集
+        return (
+          (courseStart <= endDate && courseEnd >= startDate) ||
+          (courseStart >= startDate && courseStart <= endDate) ||
+          (courseEnd >= startDate && courseEnd <= endDate)
+        );
+      });
+    }
+    
     setFilteredCourses(result);
-  }, [searchTerm, filter, courses]);
+  }, [searchTerm, filter, courses, statusFilter, dateRange]);
   
   // 处理搜索输入
   const handleSearchChange = (e) => {
@@ -228,6 +262,16 @@ export default function ViewCoursesPage() {
   // 处理筛选切换
   const handleFilterChange = (value) => {
     setFilter(value);
+  };
+  
+  // 处理当前状态筛选
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+  };
+  
+  // 处理日期范围筛选
+  const handleDateRangeChange = (dates) => {
+    setDateRange(dates);
   };
   
   // 格式化日期时间
@@ -453,17 +497,53 @@ export default function ViewCoursesPage() {
                   allowClear
                   style={{ flex: 1 }}
                 />
+                
+                <RangePicker 
+                  onChange={handleDateRangeChange}
+                  style={{ width: 300 }}
+                  placeholder={['开始日期', '结束日期']}
+                  allowClear
+                  format="YYYY-MM-DD"
+                  suffixIcon={<CalendarOutlined />}
+                  value={dateRange}
+                />
+                
                 <Select
-                  placeholder="筛选课程"
+                  placeholder="课程启用状态"
                   value={filter}
                   onChange={handleFilterChange}
-                  style={{ width: 180 }}
+                  style={{ width: 120 }}
                   suffixIcon={<FilterOutlined />}
                 >
                   <Option value="all">所有课程</Option>
                   <Option value="active">仅显示启用的课程</Option>
                   <Option value="inactive">仅显示停用的课程</Option>
                 </Select>
+
+                <Select
+                  placeholder="当前状态"
+                  value={statusFilter}
+                  onChange={handleStatusFilterChange}
+                  style={{ width: 150 }}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  <Option value="all">所有状态</Option>
+                  <Option value="active">评价中</Option>
+                  <Option value="ended">已结束</Option>
+                </Select>
+                
+                {(searchTerm || filter !== 'all' || statusFilter !== 'all' || dateRange) && (
+                  <Button 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilter('all');
+                      setStatusFilter('all');
+                      setDateRange(null);
+                    }}
+                  >
+                    重置筛选
+                  </Button>
+                )}
               </div>
               
               {error && (
@@ -485,7 +565,7 @@ export default function ViewCoursesPage() {
                 <Empty
                   description={
                     <span>
-                      {searchTerm || filter !== 'all' ? 
+                      {searchTerm || filter !== 'all' || statusFilter !== 'all' || dateRange ? 
                         '未找到符合条件的课程，尝试清除搜索或更改筛选条件' : 
                         '您还没有创建任何课程，请创建新课程'}
                     </span>
