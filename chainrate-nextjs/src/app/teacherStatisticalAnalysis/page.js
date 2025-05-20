@@ -223,6 +223,9 @@ export default function TeacherStatisticalAnalysisPage() {
   const monthlyChartRef = useRef(null);
   const overallStatsRef = useRef(null);
 
+  // 添加日期范围筛选状态
+  const [dateFilter, setDateFilter] = useState(null);
+
   useEffect(() => {
     // 检查用户是否已登录且是教师角色
     const checkUserAuth = () => {
@@ -326,7 +329,7 @@ export default function TeacherStatisticalAnalysisPage() {
     if (evaluations.length > 0) {
       calculateStats();
     }
-  }, [timeRange, evaluations]);
+  }, [timeRange, dateFilter, evaluations]);
   
   // 加载教师收到的所有评价
   const loadTeacherEvaluationStats = async (mainContract, teacherContract, teacherAddress) => {
@@ -402,7 +405,15 @@ export default function TeacherStatisticalAnalysisPage() {
     
     // 获取筛选起始时间
     let startDate;
-    if (timeRange === 'week') {
+    let endDate = now;
+    
+    // 如果有自定义日期筛选，优先使用它
+    if (dateFilter && dateFilter[0] && dateFilter[1]) {
+      startDate = dateFilter[0].toDate();
+      endDate = dateFilter[1].toDate();
+      // 将结束日期设为当天结束时间
+      endDate.setHours(23, 59, 59, 999);
+    } else if (timeRange === 'week') {
       // 最近一周
       startDate = new Date(now);
       startDate.setDate(now.getDate() - 7);
@@ -416,7 +427,9 @@ export default function TeacherStatisticalAnalysisPage() {
     }
     
     // 筛选当前时间段的评价
-    const currentPeriodEvals = evaluations.filter(evaluation => evaluation.timestamp >= startDate);
+    const currentPeriodEvals = evaluations.filter(evaluation => 
+      evaluation.timestamp >= startDate && evaluation.timestamp <= endDate
+    );
     
     // 计算总体统计数据
     let totalRating = 0;
@@ -660,7 +673,24 @@ export default function TeacherStatisticalAnalysisPage() {
   
   // 处理时间范围切换
   const handleTimeRangeChange = (value) => {
+    // 如果切换到预设的时间范围，清除日期筛选
+    if (value !== 'custom') {
+      setDateFilter(null);
+    }
     setTimeRange(value);
+  };
+  
+  // 添加日期筛选处理函数
+  const handleDateFilterChange = (dates) => {
+    // 当清除日期筛选时，重置为null
+    if (!dates || dates.length === 0) {
+      setDateFilter(null);
+      return;
+    }
+    
+    setDateFilter(dates);
+    // 如果选择了自定义日期范围，将时间范围设置为自定义
+    setTimeRange('custom');
   };
   
   // 导出PDF报告
@@ -787,7 +817,7 @@ export default function TeacherStatisticalAnalysisPage() {
       yPosition += 10;
       
       // 添加范围信息
-      const rangeText = `时间范围: ${timeRange === 'all' ? '全部' : timeRange === 'month' ? '近一个月' : '近一周'}`;
+      const rangeText = `时间范围: ${timeRange === 'all' ? '全部' : timeRange === 'month' ? '近一个月' : timeRange === 'week' ? '近一周' : '自定义'}`;
       const rangeInfoImg = await createTextAsImage(rangeText, '14px SimSun', '#000000');
       pdf.addImage(rangeInfoImg, 'PNG', 20, yPosition, 120, 8);
       yPosition += 10;
@@ -1086,7 +1116,21 @@ export default function TeacherStatisticalAnalysisPage() {
                             <Radio.Button value="all">全部</Radio.Button>
                             <Radio.Button value="month">近一个月</Radio.Button>
                             <Radio.Button value="week">近一周</Radio.Button>
+                            <Radio.Button value="custom">自定义</Radio.Button>
                           </Radio.Group>
+                        </div>
+                      </Col>
+                      <Col xs={24} md={16}>
+                        <div className={styles.filterItem}>
+                          <span className={styles.filterLabel} style={{ whiteSpace: 'nowrap', marginRight: '8px' }}>日期筛选：</span>
+                          <RangePicker 
+                            value={dateFilter}
+                            onChange={handleDateFilterChange}
+                            style={{ width: 'calc(100% - 80px)' }}
+                            placeholder={['起始日期', '结束日期']}
+                            disabled={timeRange !== 'custom'}
+                            format="YYYY-MM-DD"
+                          />
                         </div>
                       </Col>
                     </Row>
