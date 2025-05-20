@@ -124,6 +124,8 @@ export default function TeacherViewFeedbackPage() {
   const [filterStatus, setFilterStatus] = useState('all'); // all, pending, replied
   const [searchText, setSearchText] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest, rating
+  const [collegeFilter, setCollegeFilter] = useState('all'); // 新增学院筛选状态
+  const [collegeOptions, setCollegeOptions] = useState([]); // 新增学院选项列表
   
   // 回复反馈状态
   const [replyModalVisible, setReplyModalVisible] = useState(false);
@@ -598,19 +600,35 @@ export default function TeacherViewFeedbackPage() {
       // 按时间排序（从新到旧）
       feedbacksList.sort((a, b) => b.timestamp - a.timestamp);
       
-      console.log("反馈列表:", feedbacksList);
-      console.log("统计数据: 总数:", feedbacksList.length, "已回复:", repliedCount, "未回复:", pendingCount);
-      
+      console.log("筛选后反馈列表:", feedbacksList);
       setFeedbacks(feedbacksList);
       setFilteredFeedbacks(feedbacksList);
       
-      // 更新统计数据
+      // 计算统计数据
       setFeedbackStats({
         total: feedbacksList.length,
         pending: pendingCount,
         replied: repliedCount,
-        avgRating: 0 // 课程反馈没有评分
+        avgRating: feedbacksList.length > 0 ? totalRating / feedbacksList.length : 0
       });
+      
+      // 收集所有不同的学院信息
+      const colleges = feedbacksList
+        .filter(fb => fb.student && fb.student.college && fb.student.college !== '未知学院')
+        .map(fb => fb.student.college);
+      
+      // 去重并排序
+      const uniqueColleges = Array.from(new Set(colleges)).sort();
+      console.log("收集到的学院列表:", uniqueColleges);
+      
+      // 设置学院筛选选项
+      setCollegeOptions(uniqueColleges);
+      
+      // 重置筛选条件，但不要重新应用筛选，因为我们已经设置了 filteredFeedbacks
+      setFilterStatus('all');
+      setSearchText('');
+      setSortBy('newest');
+      setCollegeFilter('all');
       
       setLoading(false);
     } catch (err) {
@@ -622,12 +640,21 @@ export default function TeacherViewFeedbackPage() {
   
   // 处理课程选择变化
   const handleCourseChange = async (courseId) => {
-    const selected = courses.find(course => course.id === courseId);
-    setSelectedCourse(selected);
+    const course = courses.find(c => c.id === courseId);
+    setSelectedCourse(course);
     
-    if (contract && contract02 && selected) { // Ensure main contract (contract) is also available
-      await loadCourseFeedbacks(contract, contract02, selected.id);
-    }
+    // 清空之前的反馈数据
+    setFeedbacks([]);
+    setFilteredFeedbacks([]);
+    
+    // 重置筛选条件
+    setFilterStatus('all');
+    setSearchText('');
+    setSortBy('newest');
+    setCollegeFilter('all');
+    
+    // 加载新选中课程的反馈
+    await loadCourseFeedbacks(contract, contract02, courseId);
   };
   
   // 处理筛选状态变化
@@ -635,7 +662,7 @@ export default function TeacherViewFeedbackPage() {
     setFilterStatus(value);
     
     // 应用筛选
-    applyFilters(value, searchText, sortBy);
+    applyFilters(value, searchText, sortBy, collegeFilter);
   };
   
   // 处理搜索文本变化
@@ -644,7 +671,7 @@ export default function TeacherViewFeedbackPage() {
     setSearchText(value);
     
     // 应用筛选
-    applyFilters(filterStatus, value, sortBy);
+    applyFilters(filterStatus, value, sortBy, collegeFilter);
   };
   
   // 处理排序方式变化
@@ -652,11 +679,19 @@ export default function TeacherViewFeedbackPage() {
     setSortBy(value);
     
     // 应用筛选
-    applyFilters(filterStatus, searchText, value);
+    applyFilters(filterStatus, searchText, value, collegeFilter);
+  };
+  
+  // 处理学院筛选变化
+  const handleCollegeChange = (value) => {
+    setCollegeFilter(value);
+    
+    // 应用筛选
+    applyFilters(filterStatus, searchText, sortBy, value);
   };
   
   // 应用筛选、搜索和排序
-  const applyFilters = (status, search, sort) => {
+  const applyFilters = (status, search, sort, college) => {
     // 基于状态筛选
     let result = [...feedbacks];
     
@@ -666,6 +701,14 @@ export default function TeacherViewFeedbackPage() {
         if (status === 'replied') return feedback.hasReply;
         return true;
       });
+    }
+    
+    // 基于学院筛选
+    if (college !== 'all') {
+      result = result.filter(feedback => 
+        feedback.student && 
+        feedback.student.college === college
+      );
     }
     
     // 基于搜索文本筛选
@@ -686,7 +729,7 @@ export default function TeacherViewFeedbackPage() {
       result.sort((a, b) => b.rating - a.rating);
     }
     
-    console.log(`筛选结果: ${result.length}条反馈, 状态:${status}, 搜索:${search}, 排序:${sort}`);
+    console.log(`筛选结果: ${result.length}条反馈, 状态:${status}, 学院:${college}, 搜索:${search}, 排序:${sort}`);
     setFilteredFeedbacks(result);
   };
   
@@ -1701,7 +1744,12 @@ export default function TeacherViewFeedbackPage() {
                     style={{ 
                       borderRadius: '12px', 
                       paddingLeft: '6px',
-                      paddingRight: '10px'
+                      paddingRight: '10px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCollegeChange(feedback.student.college);
                     }}
                   >
                     {feedback.student.college}
@@ -1958,7 +2006,7 @@ export default function TeacherViewFeedbackPage() {
                     bodyStyle={{ padding: '16px 20px' }}
                   >
                     <Row gutter={[24, 16]} align="middle">
-                      <Col xs={24} md={9}>
+                      <Col xs={24} md={8}>
                         <div className={styles.filterItem}>
                           <span className={styles.filterLabel}>状态筛选:</span>
                           <Radio.Group 
@@ -2004,7 +2052,7 @@ export default function TeacherViewFeedbackPage() {
                           </Radio.Group>
                         </div>
                       </Col>
-                      <Col xs={24} md={9}>
+                      <Col xs={24} md={8}>
                         <Input 
                           placeholder="搜索反馈内容或学生姓名" 
                           prefix={<SearchOutlined style={{ color: '#1a73e8' }} />} 
@@ -2015,9 +2063,26 @@ export default function TeacherViewFeedbackPage() {
                           style={{ borderRadius: '6px' }}
                         />
                       </Col>
-                      <Col xs={24} md={6}>
-                        <div className={styles.sortContainer}>
-                          <span className={styles.sortLabel}>排序:</span>
+                      <Col xs={24} md={8}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <Select 
+                            className={styles.collegeSelect}
+                            value={collegeFilter}
+                            onChange={handleCollegeChange}
+                            style={{ width: '150px', borderRadius: '6px' }}
+                            placeholder="选择学院"
+                            dropdownMatchSelectWidth={false}
+                            allowClear
+                            suffixIcon={<TeamOutlined style={{ color: '#1a73e8' }} />}
+                          >
+                            <Option value="all">全部学院</Option>
+                            {collegeOptions.map(college => (
+                              <Option key={college} value={college}>
+                                {college}
+                              </Option>
+                            ))}
+                          </Select>
+                          
                           <Select 
                             className={styles.sortSelect}
                             value={sortBy}
@@ -2029,6 +2094,31 @@ export default function TeacherViewFeedbackPage() {
                             <Option value="oldest">最早优先</Option>
                           </Select>
                         </div>
+                      </Col>
+                    </Row>
+                    
+                    <Row gutter={[24, 16]} align="middle" style={{ marginTop: '12px' }}>
+                      <Col xs={24}>
+                        {collegeFilter !== 'all' && (
+                          <Alert
+                            message={
+                              <span>
+                                当前已筛选学院: <Tag color="blue" style={{ marginLeft: '4px' }}>{collegeFilter}</Tag>
+                                <Button 
+                                  type="link" 
+                                  size="small" 
+                                  onClick={() => handleCollegeChange('all')}
+                                  style={{ marginLeft: '8px', padding: '0' }}
+                                >
+                                  清除筛选
+                                </Button>
+                              </span>
+                            }
+                            type="info"
+                            showIcon
+                            style={{ padding: '4px 12px', borderRadius: '4px' }}
+                          />
+                        )}
                       </Col>
                     </Row>
                   </Card>

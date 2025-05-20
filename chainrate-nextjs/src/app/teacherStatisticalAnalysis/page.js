@@ -197,7 +197,14 @@ export default function TeacherStatisticalAnalysisPage() {
   ]);
 
   // 多维度评分趋势图相关状态
-  const [selectedDimensions, setSelectedDimensions] = useState(['avgRating']);
+  const [selectedDimensions, setSelectedDimensions] = useState([
+    'avgRating',
+    'avgTeachingAbility',
+    'avgTeachingAttitude',
+    'avgTeachingMethod',
+    'avgAcademicLevel',
+    'avgGuidanceAbility'
+  ]);
   const [trendData, setTrendData] = useState({
     labels: [],
     datasets: []
