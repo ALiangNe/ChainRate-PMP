@@ -1006,6 +1006,39 @@ export default function TeacherStatisticalAnalysisPage() {
     });
   };
   
+  // 第一步：提取"最近评价统计"组件代码，方便后续插入
+  const RecentEvaluationList = () => (
+    <List
+      header={<div>最近评价统计</div>}
+      dataSource={
+        filteredEvaluations.slice(0, 5).map(evaluation => ({
+          date: evaluation.formattedDate,
+          rating: evaluation.overallRating
+        }))
+      }
+      renderItem={(item) => (
+        <List.Item>
+          <div className={styles.timeDistributionItem}>
+            <div className={styles.timeDistributionDate}>
+              <CalendarOutlined style={{ marginRight: 8 }} />
+              {item.date}
+            </div>
+            <div className={styles.timeDistributionRating}>
+              <Rate 
+                disabled 
+                value={item.rating} 
+                style={{ fontSize: 12 }} 
+              />
+              <span className={styles.timeDistributionRatingValue}>
+                {item.rating.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </List.Item>
+      )}
+    />
+  );
+
   return (
     <ConfigProvider
       theme={{
@@ -1232,64 +1265,76 @@ export default function TeacherStatisticalAnalysisPage() {
                             <Col span={24}>
                               <Divider orientation="left">评分均值</Divider>
                               <Row gutter={[24, 24]}>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="总体评分" 
-                                      value={overallStats.avgRating} 
-                                      color="#faad14" 
-                                      icon={<StarFilled />} 
-                                    />
-                                  </div>
+                                {/* 评分均值占2/3 */}
+                                <Col xs={24} sm={24} md={16}>
+                                  <Row gutter={[24, 24]}>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="总体评分" 
+                                          value={overallStats.avgRating} 
+                                          color="#faad14" 
+                                          icon={<StarFilled />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="教学能力" 
+                                          value={overallStats.avgTeachingAbility} 
+                                          color="#1890ff" 
+                                          icon={<BookOutlined />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="教学态度" 
+                                          value={overallStats.avgTeachingAttitude} 
+                                          color="#1a73e8" 
+                                          icon={<TeamOutlined />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="教学方法" 
+                                          value={overallStats.avgTeachingMethod} 
+                                          color="#faad14" 
+                                          icon={<FileTextOutlined />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="学术水平" 
+                                          value={overallStats.avgAcademicLevel} 
+                                          color="#722ed1" 
+                                          icon={<BarChartOutlined />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                    <Col xs={24} sm={12} md={8}>
+                                      <div style={{ padding: '0 16px' }}>
+                                        <RatingDisplay 
+                                          title="指导能力" 
+                                          value={overallStats.avgGuidanceAbility} 
+                                          color="#eb2f96" 
+                                          icon={<CommentOutlined />} 
+                                        />
+                                      </div>
+                                    </Col>
+                                  </Row>
                                 </Col>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="教学能力" 
-                                      value={overallStats.avgTeachingAbility} 
-                                      color="#1890ff" 
-                                      icon={<BookOutlined />} 
-                                    />
-                                  </div>
-                                </Col>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="教学态度" 
-                                      value={overallStats.avgTeachingAttitude} 
-                                      color="#1a73e8" 
-                                      icon={<TeamOutlined />} 
-                                    />
-                                  </div>
-                                </Col>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="教学方法" 
-                                      value={overallStats.avgTeachingMethod} 
-                                      color="#faad14" 
-                                      icon={<FileTextOutlined />} 
-                                    />
-                                  </div>
-                                </Col>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="学术水平" 
-                                      value={overallStats.avgAcademicLevel} 
-                                      color="#722ed1" 
-                                      icon={<BarChartOutlined />} 
-                                    />
-                                  </div>
-                                </Col>
-                                <Col xs={24} sm={12} md={8}>
-                                  <div style={{ padding: '0 16px' }}>
-                                    <RatingDisplay 
-                                      title="指导能力" 
-                                      value={overallStats.avgGuidanceAbility} 
-                                      color="#eb2f96" 
-                                      icon={<CommentOutlined />} 
-                                    />
+                                
+                                {/* 最近评价统计占1/3 */}
+                                <Col xs={24} sm={24} md={8}>
+                                  <div className={styles.recentEvaluationsPanel}>
+                                    <RecentEvaluationList />
                                   </div>
                                 </Col>
                               </Row>
@@ -1351,39 +1396,8 @@ export default function TeacherStatisticalAnalysisPage() {
                         >
                           <div className={styles.timeDistributionContainer} ref={monthlyChartRef}>
                             <div className={styles.timeDistributionContent}>
-                              {/* 最近评价统计 */}
-                              <List
-                                header={<div>最近评价统计</div>}
-                                dataSource={
-                                  filteredEvaluations.slice(0, 5).map(evaluation => ({
-                                    date: evaluation.formattedDate,
-                                    rating: evaluation.overallRating
-                                  }))
-                                }
-                                renderItem={(item) => (
-                                  <List.Item>
-                                    <div className={styles.timeDistributionItem}>
-                                      <div className={styles.timeDistributionDate}>
-                                        <CalendarOutlined style={{ marginRight: 8 }} />
-                                        {item.date}
-                                      </div>
-                                      <div className={styles.timeDistributionRating}>
-                                        <Rate 
-                                          disabled 
-                                          value={item.rating} 
-                                          style={{ fontSize: 12 }} 
-                                        />
-                                        <span className={styles.timeDistributionRatingValue}>
-                                          {item.rating.toFixed(1)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </List.Item>
-                                )}
-                              />
-                              
-                              {/* 月度统计 */}
-                              <div className={styles.monthlyStats}>
+                              {/* 移除最近评价统计，只保留月度统计 */}
+                              <div className={styles.monthlyStats} style={{ marginTop: 0 }}>
                                 <div className={styles.monthlyStatsHeader}>
                                   月度评价统计
                                 </div>
