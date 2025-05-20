@@ -53,7 +53,8 @@ import {
   Checkbox,
   Button,
   message,
-  Modal
+  Modal,
+  Collapse
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
@@ -228,6 +229,9 @@ export default function TeacherStatisticalAnalysisPage() {
 
   // 1. 首先添加一个新的状态来存储筛选后的评价数据
   const [filteredEvaluations, setFilteredEvaluations] = useState([]);
+
+  // 2. 添加一个默认展开面板的状态
+  const [activeKeys, setActiveKeys] = useState(['1', '2', '3']); // 默认全部展开
 
   useEffect(() => {
     // 检查用户是否已登录且是教师角色
@@ -1039,6 +1043,11 @@ export default function TeacherStatisticalAnalysisPage() {
     />
   );
 
+  // 3. 处理折叠面板变化的函数
+  const handleCollapseChange = (keys) => {
+    setActiveKeys(keys);
+  };
+
   return (
     <ConfigProvider
       theme={{
@@ -1176,194 +1185,208 @@ export default function TeacherStatisticalAnalysisPage() {
                   </Card>
                   
                   {/* 总体数据卡片 */}
-                  <div className={styles.statisticsContainer} ref={overallStatsRef}>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <Card 
-                          title={
-                            <div className={styles.cardTitle}>
-                              <PieChartOutlined style={{ marginRight: 8 }} />
-                              评价统计概览
-                            </div>
-                          }
-                        >
-                          <Row gutter={[24, 24]}>
-                            {/* 统计卡片 */}
-                            <Col xs={24} sm={8} md={6}>
-                              <Card className={styles.statCard}>
-                                <Statistic 
-                                  title="评价总数" 
-                                  value={overallStats.total} 
-                                  prefix={<CommentOutlined style={{ color: '#1a73e8' }} />} 
-                                />
-                                {timeRange !== 'all' && (
-                                  <div className={styles.trendValue}>
-                                    <TrendIndicator 
-                                      current={trends.currentPeriod.total} 
-                                      previous={trends.previousPeriod.total}
-                                      title="较上期"
-                                      precision={0}
-                                    />
-                                  </div>
-                                )}
-                              </Card>
-                            </Col>
-                            
-                            <Col xs={24} sm={8} md={6}>
-                              <Card className={styles.statCard}>
-                                <Statistic 
-                                  title="平均评分" 
-                                  value={overallStats.avgRating.toFixed(1)} 
-                                  prefix={<StarFilled style={{ color: '#faad14' }} />} 
-                                  suffix="/5"
-                                />
-                                {timeRange !== 'all' && (
-                                  <div className={styles.trendValue}>
-                                    <TrendIndicator 
-                                      current={trends.currentPeriod.avgRating} 
-                                      previous={trends.previousPeriod.avgRating}
-                                      title="较上期"
-                                      suffix=""
-                                    />
-                                  </div>
-                                )}
-                              </Card>
-                            </Col>
-                            
-                            <Col xs={24} sm={8} md={6}>
-                              <Card className={styles.statCard}>
-                                <Statistic 
-                                  title="匿名评价" 
-                                  value={overallStats.anonymous} 
-                                  prefix={<UserOutlined style={{ color: '#1890ff' }} />} 
-                                  suffix={`/ ${overallStats.total}`}
-                                />
-                              </Card>
-                            </Col>
-                            
-                            <Col xs={24} sm={8} md={6}>
-                              <Card className={styles.statCard}>
-                                <Statistic 
-                                  title="高分评价" 
-                                  value={overallStats.highRating} 
-                                  prefix={<StarFilled style={{ color: '#faad14' }} />} 
-                                  suffix={`/ ${overallStats.total}`}
-                                />
-                                {timeRange !== 'all' && (
-                                  <div className={styles.trendValue}>
-                                    <TrendIndicator 
-                                      current={trends.currentPeriod.highRating} 
-                                      previous={trends.previousPeriod.highRating}
-                                      title="较上期"
-                                      precision={0}
-                                    />
-                                  </div>
-                                )}
-                              </Card>
-                            </Col>
-                            
-                            <Col span={24}>
-                              <Row gutter={[24, 24]}>
-                                {/* 评分均值占2/3 */}
-                                <Col xs={24} sm={24} md={16}>
-                                  {/* 居中显示的评分均值标题 */}
-                                  <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
-                                    <Typography.Title level={4} style={{ margin: 0 }}>评分均值</Typography.Title>
-                                  </div>
-                                  <Row gutter={[24, 24]}>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="总体评分" 
-                                          value={overallStats.avgRating} 
-                                          color="#faad14" 
-                                          icon={<StarFilled />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="教学能力" 
-                                          value={overallStats.avgTeachingAbility} 
-                                          color="#1890ff" 
-                                          icon={<BookOutlined />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="教学态度" 
-                                          value={overallStats.avgTeachingAttitude} 
-                                          color="#1a73e8" 
-                                          icon={<TeamOutlined />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="教学方法" 
-                                          value={overallStats.avgTeachingMethod} 
-                                          color="#faad14" 
-                                          icon={<FileTextOutlined />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="学术水平" 
-                                          value={overallStats.avgAcademicLevel} 
-                                          color="#722ed1" 
-                                          icon={<BarChartOutlined />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                    <Col xs={24} sm={12} md={8}>
-                                      <div style={{ padding: '0 16px' }}>
-                                        <RatingDisplay 
-                                          title="指导能力" 
-                                          value={overallStats.avgGuidanceAbility} 
-                                          color="#eb2f96" 
-                                          icon={<CommentOutlined />} 
-                                        />
-                                      </div>
-                                    </Col>
-                                  </Row>
-                                </Col>
-                                
-                                {/* 最近评价统计占1/3 */}
-                                <Col xs={24} sm={24} md={8}>
-                                  {/* 居中显示的最近评价统计标题 */}
-                                  <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
-                                    <Typography.Title level={4} style={{ margin: 0 }}>最近评价统计</Typography.Title>
-                                  </div>
-                                  <div className={styles.recentEvaluationsPanel}>
-                                    <RecentEvaluationList />
-                                  </div>
-                                </Col>
-                              </Row>
-                            </Col>
-                          </Row>
-                        </Card>
-                      </Col>
-                    </Row>
+                  <div className={styles.statisticsContainer}>
+                    <Collapse 
+                      activeKey={activeKeys} 
+                      onChange={handleCollapseChange}
+                      expandIconPosition="end"
+                      ghost
+                    >
+                      <Collapse.Panel 
+                        key="1" 
+                        header={
+                          <div className={styles.cardTitle}>
+                            <PieChartOutlined style={{ marginRight: 8 }} />
+                            评价统计概览
+                          </div>
+                        }
+                      >
+                        <div ref={overallStatsRef}>
+                          <Card bordered={false}>
+                            <Row gutter={[24, 24]}>
+                              {/* 统计卡片 */}
+                              <Col xs={24} sm={8} md={6}>
+                                <Card className={styles.statCard}>
+                                  <Statistic 
+                                    title="评价总数" 
+                                    value={overallStats.total} 
+                                    prefix={<CommentOutlined style={{ color: '#1a73e8' }} />} 
+                                  />
+                                  {timeRange !== 'all' && (
+                                    <div className={styles.trendValue}>
+                                      <TrendIndicator 
+                                        current={trends.currentPeriod.total} 
+                                        previous={trends.previousPeriod.total}
+                                        title="较上期"
+                                        precision={0}
+                                      />
+                                    </div>
+                                  )}
+                                </Card>
+                              </Col>
+                              
+                              <Col xs={24} sm={8} md={6}>
+                                <Card className={styles.statCard}>
+                                  <Statistic 
+                                    title="平均评分" 
+                                    value={overallStats.avgRating.toFixed(1)} 
+                                    prefix={<StarFilled style={{ color: '#faad14' }} />} 
+                                    suffix="/5"
+                                  />
+                                  {timeRange !== 'all' && (
+                                    <div className={styles.trendValue}>
+                                      <TrendIndicator 
+                                        current={trends.currentPeriod.avgRating} 
+                                        previous={trends.previousPeriod.avgRating}
+                                        title="较上期"
+                                        suffix=""
+                                      />
+                                    </div>
+                                  )}
+                                </Card>
+                              </Col>
+                              
+                              <Col xs={24} sm={8} md={6}>
+                                <Card className={styles.statCard}>
+                                  <Statistic 
+                                    title="匿名评价" 
+                                    value={overallStats.anonymous} 
+                                    prefix={<UserOutlined style={{ color: '#1890ff' }} />} 
+                                    suffix={`/ ${overallStats.total}`}
+                                  />
+                                </Card>
+                              </Col>
+                              
+                              <Col xs={24} sm={8} md={6}>
+                                <Card className={styles.statCard}>
+                                  <Statistic 
+                                    title="高分评价" 
+                                    value={overallStats.highRating} 
+                                    prefix={<StarFilled style={{ color: '#faad14' }} />} 
+                                    suffix={`/ ${overallStats.total}`}
+                                  />
+                                  {timeRange !== 'all' && (
+                                    <div className={styles.trendValue}>
+                                      <TrendIndicator 
+                                        current={trends.currentPeriod.highRating} 
+                                        previous={trends.previousPeriod.highRating}
+                                        title="较上期"
+                                        precision={0}
+                                      />
+                                    </div>
+                                  )}
+                                </Card>
+                              </Col>
+                              
+                              <Col span={24}>
+                                <Row gutter={[24, 24]}>
+                                  {/* 评分均值占2/3 */}
+                                  <Col xs={24} sm={24} md={16}>
+                                    {/* 居中显示的评分均值标题 */}
+                                    <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
+                                      <Typography.Title level={4} style={{ margin: 0 }}>评分均值</Typography.Title>
+                                    </div>
+                                    <Row gutter={[24, 24]}>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="总体评分" 
+                                            value={overallStats.avgRating} 
+                                            color="#faad14" 
+                                            icon={<StarFilled />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="教学能力" 
+                                            value={overallStats.avgTeachingAbility} 
+                                            color="#1890ff" 
+                                            icon={<BookOutlined />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="教学态度" 
+                                            value={overallStats.avgTeachingAttitude} 
+                                            color="#1a73e8" 
+                                            icon={<TeamOutlined />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="教学方法" 
+                                            value={overallStats.avgTeachingMethod} 
+                                            color="#faad14" 
+                                            icon={<FileTextOutlined />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="学术水平" 
+                                            value={overallStats.avgAcademicLevel} 
+                                            color="#722ed1" 
+                                            icon={<BarChartOutlined />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                      <Col xs={24} sm={12} md={8}>
+                                        <div style={{ padding: '0 16px' }}>
+                                          <RatingDisplay 
+                                            title="指导能力" 
+                                            value={overallStats.avgGuidanceAbility} 
+                                            color="#eb2f96" 
+                                            icon={<CommentOutlined />} 
+                                          />
+                                        </div>
+                                      </Col>
+                                    </Row>
+                                  </Col>
+                                  
+                                  {/* 最近评价统计占1/3 */}
+                                  <Col xs={24} sm={24} md={8}>
+                                    {/* 居中显示的最近评价统计标题 */}
+                                    <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
+                                      <Typography.Title level={4} style={{ margin: 0 }}>最近评价统计</Typography.Title>
+                                    </div>
+                                    <div className={styles.recentEvaluationsPanel}>
+                                      <RecentEvaluationList />
+                                    </div>
+                                  </Col>
+                                </Row>
+                              </Col>
+                            </Row>
+                          </Card>
+                        </div>
+                      </Collapse.Panel>
+                    </Collapse>
                   </div>
                   
                   {/* 评分分布 */}
                   <div style={{ marginTop: 24 }}>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <Card 
-                          title={
-                            <div className={styles.cardTitle}>
-                              <PieChartOutlined style={{ marginRight: 8 }} />
-                              评分、时间分布
-                            </div>
-                          }
-                        >
+                    <Collapse 
+                      activeKey={activeKeys} 
+                      onChange={handleCollapseChange}
+                      expandIconPosition="end"
+                      ghost
+                    >
+                      <Collapse.Panel 
+                        key="2" 
+                        header={
+                          <div className={styles.cardTitle}>
+                            <PieChartOutlined style={{ marginRight: 8 }} />
+                            评分、时间分布
+                          </div>
+                        }
+                      >
+                        <Card bordered={false}>
                           <Row gutter={[24, 24]}>
                             {/* 评分分布部分 - 占一半宽度 */}
                             <Col xs={24} md={12}>
@@ -1452,22 +1475,28 @@ export default function TeacherStatisticalAnalysisPage() {
                             </Col>
                           </Row>
                         </Card>
-                      </Col>
-                    </Row>
+                      </Collapse.Panel>
+                    </Collapse>
                   </div>
                   
                   {/* 多维度评分趋势图 */}
                   <div style={{ marginTop: 24 }}>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <Card 
-                          title={
-                            <div className={styles.cardTitle}>
-                              <LineChartOutlined style={{ marginRight: 8 }} />
-                              多维度评分趋势分析
-                            </div>
-                          }
-                        >
+                    <Collapse 
+                      activeKey={activeKeys} 
+                      onChange={handleCollapseChange}
+                      expandIconPosition="end"
+                      ghost
+                    >
+                      <Collapse.Panel 
+                        key="3" 
+                        header={
+                          <div className={styles.cardTitle}>
+                            <LineChartOutlined style={{ marginRight: 8 }} />
+                            多维度评分趋势分析
+                          </div>
+                        }
+                      >
+                        <Card bordered={false}>
                           <div style={{ padding: '16px 0' }}>
                             <div style={{ marginBottom: 16 }}>
                               <AntTitle level={5}>选择评分维度</AntTitle>
@@ -1607,8 +1636,8 @@ export default function TeacherStatisticalAnalysisPage() {
                             </div>
                           </div>
                         </Card>
-                      </Col>
-                    </Row>
+                      </Collapse.Panel>
+                    </Collapse>
                   </div>
                 </div>
               )}
