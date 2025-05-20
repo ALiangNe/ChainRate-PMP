@@ -1011,7 +1011,7 @@ export default function TeacherStatisticalAnalysisPage() {
     <List
       header={null}
       dataSource={
-        filteredEvaluations.slice(0, 4).map(evaluation => ({
+        filteredEvaluations.slice(0, 5).map(evaluation => ({
           date: evaluation.formattedDate,
           rating: evaluation.overallRating
         }))
@@ -1355,101 +1355,102 @@ export default function TeacherStatisticalAnalysisPage() {
                   {/* 评分分布 */}
                   <div style={{ marginTop: 24 }}>
                     <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
+                      <Col xs={24}>
                         <Card 
                           title={
                             <div className={styles.cardTitle}>
                               <PieChartOutlined style={{ marginRight: 8 }} />
-                              评分分布
+                              评分、时间分布
                             </div>
                           }
                         >
-                          <div className={styles.distributionContainer} ref={distributionRef}>
-                            {/* 评分分布柱状图 */}
-                            {ratingDistribution.map((item, index) => (
-                              <div key={index} className={styles.distributionItem}>
-                                <div className={styles.distributionLabel}>{item.name}</div>
-                                <div className={styles.distributionBar}>
-                                  <div 
-                                    className={styles.distributionBarInner} 
-                                    style={{ 
-                                      width: `${(item.value / overallStats.total) * 100}%`,
-                                      backgroundColor: item.color
-                                    }}
-                                  />
-                                </div>
-                                <div className={styles.distributionValue}>
-                                  {item.value}
-                                  <span className={styles.distributionPercent}>
-                                    ({overallStats.total > 0 ? 
-                                      ((item.value / overallStats.total) * 100).toFixed(1) : 0}%)
-                                  </span>
-                                </div>
+                          <Row gutter={[24, 24]}>
+                            {/* 评分分布部分 - 占一半宽度 */}
+                            <Col xs={24} md={12}>
+                              <div className={styles.distributionContainer} ref={distributionRef}>
+                                {/* 评分分布柱状图 */}
+                                {ratingDistribution.map((item, index) => (
+                                  <div key={index} className={styles.distributionItem}>
+                                    <div className={styles.distributionLabel}>{item.name}</div>
+                                    <div className={styles.distributionBar}>
+                                      <div 
+                                        className={styles.distributionBarInner} 
+                                        style={{ 
+                                          width: `${(item.value / overallStats.total) * 100}%`,
+                                          backgroundColor: item.color
+                                        }}
+                                      />
+                                    </div>
+                                    <div className={styles.distributionValue}>
+                                      {item.value}
+                                      <span className={styles.distributionPercent}>
+                                        ({overallStats.total > 0 ? 
+                                          ((item.value / overallStats.total) * 100).toFixed(1) : 0}%)
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </Card>
-                      </Col>
-                      
-                      {/* 评价趋势 */}
-                      <Col xs={24} md={12}>
-                        <Card 
-                          title={
-                            <div className={styles.cardTitle}>
-                              <LineChartOutlined style={{ marginRight: 8 }} />
-                              时间分布
-                            </div>
-                          }
-                        >
-                          <div className={styles.timeDistributionContainer} ref={monthlyChartRef}>
-                            <div className={styles.timeDistributionContent}>
-                              {/* 移除最近评价统计，只保留月度统计 */}
-                              <div className={styles.monthlyStats} style={{ marginTop: 0 }}>
-                                <div className={styles.monthlyStatsHeader}>
-                                  月度评价统计
-                                </div>
-                                <div className={styles.monthlyStatsContent}>
-                                  {/* 统计当前年份的每月评价数量 */}
-                                  {(() => {
-                                    const currentYear = new Date().getFullYear();
-                                    const monthlyData = Array(12).fill(0);
-                                    
-                                    filteredEvaluations
-                                      .filter(evaluation => evaluation.timestamp.getFullYear() === currentYear)
-                                      .forEach(evaluation => {
-                                        const month = evaluation.timestamp.getMonth();
-                                        monthlyData[month]++;
-                                      });
-                                    
-                                    return (
-                                      <div className={styles.monthlyChart}>
-                                        {monthlyData.map((count, index) => (
-                                          <div key={index} className={styles.monthlyChartBar}>
-                                            <div 
-                                              className={styles.monthlyChartBarInner} 
-                                              style={{ 
-                                                height: `${(count / Math.max(...monthlyData, 1)) * 100}%`,
-                                                backgroundColor: count > 0 ? '#1a73e8' : '#f0f0f0'
-                                              }}
-                                            >
-                                              {count > 0 && (
-                                                <div className={styles.monthlyChartBarValue}>
-                                                  {count}
+                            </Col>
+                            
+                            {/* 垂直分割线 */}
+                            <Col xs={0} md={1} style={{ display: 'flex', justifyContent: 'center' }}>
+                              <Divider type="vertical" style={{ height: '100%' }} />
+                            </Col>
+                            
+                            {/* 时间分布部分 - 占一半宽度 */}
+                            <Col xs={24} md={11}>
+                              <div className={styles.timeDistributionContainer} ref={monthlyChartRef}>
+                                <div className={styles.timeDistributionContent}>
+                                  {/* 移除最近评价统计，只保留月度统计 */}
+                                  <div className={styles.monthlyStats} style={{ marginTop: 0 }}>
+                                    <div className={styles.monthlyStatsHeader}>
+                                      月度评价统计
+                                    </div>
+                                    <div className={styles.monthlyStatsContent}>
+                                      {/* 统计当前年份的每月评价数量 */}
+                                      {(() => {
+                                        const currentYear = new Date().getFullYear();
+                                        const monthlyData = Array(12).fill(0);
+                                        
+                                        filteredEvaluations
+                                          .filter(evaluation => evaluation.timestamp.getFullYear() === currentYear)
+                                          .forEach(evaluation => {
+                                            const month = evaluation.timestamp.getMonth();
+                                            monthlyData[month]++;
+                                          });
+                                          
+                                        return (
+                                          <div className={styles.monthlyChart}>
+                                            {monthlyData.map((count, index) => (
+                                              <div key={index} className={styles.monthlyChartBar}>
+                                                <div 
+                                                  className={styles.monthlyChartBarInner} 
+                                                  style={{ 
+                                                    height: `${(count / Math.max(...monthlyData, 1)) * 100}%`,
+                                                    backgroundColor: count > 0 ? '#1a73e8' : '#f0f0f0'
+                                                  }}
+                                                >
+                                                  {count > 0 && (
+                                                    <div className={styles.monthlyChartBarValue}>
+                                                      {count}
+                                                    </div>
+                                                  )}
                                                 </div>
-                                              )}
-                                            </div>
-                                            <div className={styles.monthlyChartBarLabel}>
-                                              {index + 1}月
-                                            </div>
+                                                <div className={styles.monthlyChartBarLabel}>
+                                                  {index + 1}月
+                                                </div>
+                                              </div>
+                                            ))}
                                           </div>
-                                        ))}
-                                      </div>
-                                    );
-                                  })()}
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
+                            </Col>
+                          </Row>
                         </Card>
                       </Col>
                     </Row>
