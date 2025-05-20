@@ -30,7 +30,8 @@ import {
   CopyrightOutlined,
   GithubOutlined,
   WechatOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -50,13 +51,32 @@ import {
   Spin,
   Badge,
   Tag,
-  Avatar
+  Avatar,
+  notification
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
 
 const { Header, Content, Sider } = Layout;
 const { RangePicker } = DatePicker;
+
+// 创建课程须知内容组件
+const CourseNoticeContent = () => (
+  <div className={styles.noticeContent}>
+    <div className={styles.infoItem}>
+      <SafetyOutlined className={styles.infoItemIcon} />
+      <Typography.Text>创建课程会调用智能合约，需要支付少量的Gas费用</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <ClockCircleOutlined className={styles.infoItemIcon} />
+      <Typography.Text>请设置合理的评价时间范围，学生只能在该时间范围内提交评价</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <TeamOutlined className={styles.infoItemIcon} />
+      <Typography.Text>创建后的课程可以在"我的课程"中管理</Typography.Text>
+    </div>
+  </div>
+);
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -87,11 +107,121 @@ export default function CreateCoursePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // 提示框状态
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  // 添加淡出动画状态
+  const [noticeFading, setNoticeFading] = useState(false);
+  
   // Web3相关
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [contract, setContract] = useState(null);
   const [form] = Form.useForm();
+
+  // 显示创建课程须知提示框
+  useEffect(() => {
+    // 延迟显示提示框，以便页面加载完成后再显示
+    const timer = setTimeout(() => {
+      setNoticeVisible(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 关闭提示框
+  const closeNotice = () => {
+    // 先应用淡出动画
+    setNoticeFading(true);
+    
+    // 动画结束后隐藏提示框
+    setTimeout(() => {
+      setNoticeVisible(false);
+      setNoticeFading(false);
+    }, 300); // 300ms 与动画时长匹配
+  };
+
+  // 在组件加载时设置自定义样式
+  useEffect(() => {
+    // 添加自定义样式到 head
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes slideInFade {
+        0% {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .notice-popup {
+        position: fixed;
+        top: 80px;
+        right: 24px;
+        z-index: 1000;
+        max-width: 350px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        padding: 16px;
+        animation: slideInFade 0.5s ease-out forwards;
+        border-left: 4px solid #1a73e8;
+      }
+      
+      .notice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .notice-title {
+        color: #1a73e8;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+      }
+      
+      .notice-close {
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        transition: all 0.3s;
+      }
+      
+      .notice-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      
+      .notice-content {
+        color: #333;
+      }
+      
+      .notice-fade-out {
+        animation: fadeOut 0.3s forwards;
+      }
+      
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   useEffect(() => {
     // 检查用户是否已登录并且是教师角色
@@ -313,31 +443,22 @@ export default function CreateCoursePage() {
                 </div>
               </div>
               
-              <Card 
-                className={styles.infoBoxCard}
-                title={
-                  <div className={styles.infoBoxTitle}>
-                    <BulbOutlined className={styles.infoBoxIcon} />
-                    <span>创建课程须知</span>
+              {noticeVisible && (
+                <div className={`${styles.noticePopup} ${noticeFading ? styles.noticeFadeOut : ''}`}>
+                  <div className={styles.noticeHeader}>
+                    <div className={styles.noticeTitle}>
+                      <BulbOutlined className={styles.noticeIcon} />
+                      <span>创建课程须知</span>
+                    </div>
+                    <div className={styles.noticeClose} onClick={closeNotice}>
+                      <CloseOutlined />
+                    </div>
                   </div>
-                }
-                bordered={false}
-              >
-                <div className={styles.infoBoxContent}>
-                  <div className={styles.infoItem}>
-                    <SafetyOutlined className={styles.infoItemIcon} />
-                    <Typography.Text>创建课程会调用智能合约，需要支付少量的Gas费用</Typography.Text>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <ClockCircleOutlined className={styles.infoItemIcon} />
-                    <Typography.Text>请设置合理的评价时间范围，学生只能在该时间范围内提交评价</Typography.Text>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <TeamOutlined className={styles.infoItemIcon} />
-                    <Typography.Text>创建后的课程可以在"我的课程"中管理</Typography.Text>
+                  <div className={styles.noticeContent}>
+                    <CourseNoticeContent />
                   </div>
                 </div>
-              </Card>
+              )}
               
               {error && (
                 <Alert
