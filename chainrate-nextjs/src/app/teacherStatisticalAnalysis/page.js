@@ -1009,9 +1009,9 @@ export default function TeacherStatisticalAnalysisPage() {
   // 第一步：提取"最近评价统计"组件代码，方便后续插入
   const RecentEvaluationList = () => (
     <List
-      header={<div>最近评价统计</div>}
+      header={null}
       dataSource={
-        filteredEvaluations.slice(0, 5).map(evaluation => ({
+        filteredEvaluations.slice(0, 4).map(evaluation => ({
           date: evaluation.formattedDate,
           rating: evaluation.overallRating
         }))
@@ -1263,10 +1263,13 @@ export default function TeacherStatisticalAnalysisPage() {
                             </Col>
                             
                             <Col span={24}>
-                              <Divider orientation="left">评分均值</Divider>
                               <Row gutter={[24, 24]}>
                                 {/* 评分均值占2/3 */}
                                 <Col xs={24} sm={24} md={16}>
+                                  {/* 居中显示的评分均值标题 */}
+                                  <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
+                                    <Typography.Title level={4} style={{ margin: 0 }}>评分均值</Typography.Title>
+                                  </div>
                                   <Row gutter={[24, 24]}>
                                     <Col xs={24} sm={12} md={8}>
                                       <div style={{ padding: '0 16px' }}>
@@ -1333,6 +1336,10 @@ export default function TeacherStatisticalAnalysisPage() {
                                 
                                 {/* 最近评价统计占1/3 */}
                                 <Col xs={24} sm={24} md={8}>
+                                  {/* 居中显示的最近评价统计标题 */}
+                                  <div style={{ textAlign: 'center', margin: '0 0 16px 0' }}>
+                                    <Typography.Title level={4} style={{ margin: 0 }}>最近评价统计</Typography.Title>
+                                  </div>
                                   <div className={styles.recentEvaluationsPanel}>
                                     <RecentEvaluationList />
                                   </div>
