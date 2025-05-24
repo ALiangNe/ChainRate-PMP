@@ -570,7 +570,9 @@ export default function StudentViewCoursesPage() {
               onClick={() => handleViewCourseDetail(record.id)}
               type="primary"
               ghost
-            />
+            >
+              详情
+            </Button>
           </Tooltip>
           {record.isJoined ? (
             <Button 

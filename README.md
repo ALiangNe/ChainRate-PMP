@@ -23,26 +23,8 @@ ChainRate-PMP是一个基于区块链技术的项目管理评估系统，旨在�
 - Hardhat (开发框架)
 - OpenZeppelin (合约库)
 
-## 项目结构
-```
-ChainRate-PMP/
-├── chainrate-nextjs/          # 前端项目
-│   ├── src/                   # 源代码
-│   │   ├── components/       # React组件
-│   │   ├── pages/           # 页面路由
-│   │   ├── styles/          # 样式文件
-│   │   └── utils/           # 工具函数
-│   ├── public/               # 静态资源
-│   └── package.json          # 项目依赖
-│
-└── chainrate-hardhat/        # 智能合约项目
-    ├── contracts/            # 智能合约代码
-    ├── scripts/             # 部署脚本
-    ├── test/                # 测试文件
-    └── package.json         # 项目依赖
-```
 
-## 安装说明
+## 安装使用说明
 ### 前端项目安装
 ```bash
 cd chainrate-nextjs
@@ -56,300 +38,87 @@ cd chainrate-hardhat
 npm install
 npx hardhat run ./ignition/deploy.js --network localhost
 ```
-
-## 使用说明
-1. **环境要求**
-   - Node.js >= 16.0.0
-   - npm >= 7.0.0
-   - MetaMask 或其他 Web3 钱包
-
-2. **本地开发**
-   - 启动本地区块链节点：`npx hardhat node`
-   - 部署智能合约：`npx hardhat run scripts/deploy.js --network localhost`
-   - 启动前端服务：`npm run dev`
-
-3. **测试**
-   - 运行合约测试：`npx hardhat test`
-   - 运行前端测试：`npm test`
-
-## 主要功能模块
-1. **用户管理**
-   - 用户注册与登录
-   - 角色权限管理
-   - 个人信息管理
-
-2. **项目管理**
-   - 项目创建与配置
-   - 项目进度跟踪
-   - 资源分配管理
-
-3. **评估系统**
-   - 多维度评估指标
-   - 实时评估记录
-   - 评估结果公示
-
-4. **数据分析**
-   - 项目绩效分析
-   - 趋势图表展示
-   - 评估报告生成
-
-## 开发计划
-### 第一阶段（基础功能）
-- [x] 项目基础架构搭建
-- [x] 智能合约开发
-- [ ] 用户认证系统
-- [ ] 基础项目管理功能
-
-### 第二阶段（核心功能）
-- [ ] 评估系统实现
-- [ ] 数据可视化
-- [ ] 报告生成系统
-- [ ] 权限管理系统
-
-### 第三阶段（优化升级）
-- [ ] 性能优化
-- [ ] UI/UX改进
-- [ ] 多链支持
-- [ ] 移动端适配
-
-## 贡献指南
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
-
 ## 许可证
 本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 联系方式
-- 项目负责人：[联系方式]
-- 项目邮箱：[邮箱地址]
-- 项目网站：[网站地址]
-
-## 致谢
-感谢所有为本项目做出贡献的开发者们！ 
-
 
 ## Git指南
 - git reflog
 - git reset --hard "HEAD@{1}"
 
-# ChainRate-PMP 链评系统
 
-ChainRate是一个基于区块链的课程评价系统，支持学生对课程和教师进行多维度评价，让教学评价更透明、更公正。
-
-## 项目概述
-
-本项目由两个主要智能合约组成：
-- **ChainRate.sol**: 提供用户管理、课程管理和课程评价功能
-- **ChainRate02.sol**: 提供教师多维度评价功能
-
-## 功能列表
-
-### ChainRate.sol 核心功能
-1. **用户管理**
-   - 用户注册：学生、教师、管理员角色
-   - 用户登录：密码验证
-   - 用户信息查询
-
-2. **课程管理**
-   - 课程创建：教师可创建课程
-   - 课程更新：修改课程信息
-   - 课程查询：获取课程列表和详情
-
-3. **课程选修**
-   - 学生加入课程
-   - 学生退出课程
-   - 课程学生管理
-
-4. **课程评价**
-   - 提交课程评价：内容、评分等
-   - 查看评价：按课程、按学生查询
-   - 评价统计：平均评分、分布等
-
-### ChainRate02.sol 教师评价功能
-1. **教师多维度评价**
-   - 学生可以对教师进行多维度评价（仅限选修过该教师课程的学生）
-   - 评价维度包括：
-     - 教学能力：讲课清晰度、知识掌握程度等
-     - 教学态度：认真负责、关注学生
-     - 教学方法：教学手段多样性、互动性
-     - 学术水平：学术研究能力、前沿知识掌握
-     - 指导能力：指导学生解决问题的能力
-
-2. **教师评价查询**
-   - 查看单个教师的评价详情
-   - 获取评价统计数据
-   - 生成教师评价报告
-
-3. **评价权限管理**
-   - 验证学生是否有权限评价特定教师
-   - 防止重复评价
-
-## 如何使用
-
-### 评价教师
-1. 学生必须先选修该教师的至少一门课程
-2. 使用`submitTeacherEvaluation`函数提交评价，包括:
-   - 教师地址
-   - 评价内容
-   - 每个维度的评分(1-5分)
-   - 是否匿名
-
-### 查看教师评价
-1. 使用`getTeacherEvaluations`查看指定教师收到的所有评价
-2. 使用`getTeacherAverageRatings`查看教师各维度的平均评分
-3. 使用`generateTeacherReport`生成教师评价报告
-
-## 合约关联
-
-两个合约之间通过以下方式关联：
-1. ChainRate02合约通过`setMainContract`函数设置ChainRate主合约地址
-2. ChainRate02合约可以调用ChainRate合约的函数，如获取用户信息、验证用户角色等
-3. 教师评价时，会验证学生是否选修过该教师的课程
-
-## 数据结构
-
-### TeacherEvaluation 教师评价数据结构
+## 项目结构
 ```
-struct TeacherEvaluation {
-    uint256 id;                      // 评价唯一标识符
-    address student;                 // 学生地址
-    address teacher;                 // 教师地址
-    uint256 timestamp;               // 评价时间戳
-    string contentHash;              // 评价内容哈希值
-    string[] imageHashes;            // 评价图片哈希数组
-    bool isAnonymous;                // 是否匿名评价
-    uint8 overallRating;             // 总体评分(1-5)
-    uint8 teachingAbilityRating;     // 教学能力评分(1-5)
-    uint8 teachingAttitudeRating;    // 教学态度评分(1-5)
-    uint8 teachingMethodRating;      // 教学方法评分(1-5)
-    uint8 academicLevelRating;       // 学术水平评分(1-5)
-    uint8 guidanceAbilityRating;     // 指导能力评分(1-5)
-    bool isActive;                   // 评价是否有效
-}
-```
-
-## 系统部署
-
-1. 先部署ChainRate.sol合约
-2. 部署ChainRate02.sol合约
-3. 调用ChainRate02合约的`setMainContract`函数，设置ChainRate合约地址
-4. 系统即可完整运行
-
-## 前端页面现代化改造示例：学生课程列表
-
-在 `chainrate-nextjs/src/app/studentViewCourses/page.js` 页面中，原先的卡片式课程列表已被改造为现代化的表格视图，以提供更清晰、更易于管理的信息展示。
-
-### 表格视图特性
-- **清晰的列布局**：课程信息被组织在以下列中：
-  - `课程名称`: 显示课程的名称，点击可查看课程详情。
-  - `教师`: 显示授课教师的姓名。
-  - `课程状态`: 显示课程当前状态（如：即将开始、评价中、已结束），并以不同颜色的标签区分。
-  - `开始时间`: 课程的开始日期和时间。
-  - `结束时间`: 课程的结束日期和时间。
-  - `学生人数`: 已选修该课程的学生数量。
-  - `平均评分`: 学生对该课程的平均评分，以星级展示。
-  - `操作`: 提供"查看详情"和"加入课程"/"已加入"等操作按钮。
-- **交互功能**：
-  - **排序**: 用户可以点击大部分列标题对课程进行升序或降序排序。
-  - **筛选**: "课程状态"列提供了筛选功能，用户可以根据状态筛选课程。
-  - **分页**: 当课程数量较多时，表格会自动进行分页显示。
-  - **搜索与全局筛选**: 页面保留了顶部的搜索框（可按课程名或教师名搜索）和状态/时间筛选器，这些会与表格内容联动。
-- **技术实现**：
-  - 该表格视图使用了 **Ant Design** 的 `Table` 组件，充分利用了其内置的排序、筛选、分页和加载状态管理功能。
-  - 样式与项目整体 Ant Design 风格保持一致，确保了用户体验的统一性。
-
-这种表格化的改造不仅提升了信息的可读性，也使得学生能更高效地浏览和管理可选课程。
-
-### 学生提交反馈页面的课程选择表格
-
-同样地，在 `chainrate-nextjs/src/app/studentSubmitFeedback/page.js` 页面中，当学生需要选择一个课程以提交反馈时，原先的卡片式课程列表也已被更新为现代化的 Ant Design 表格视图。
-
-- **清晰的列布局**：学生已加入的、可供反馈的课程信息被组织在以下列中：
-  - `课程名称`: 显示课程的名称。
-  - `授课教师`: 显示该课程的教师姓名。
-  - `教师院系`: 显示教师所在的院系。
-  - `课程状态`: 指示课程当前是否适合提交反馈（如：进行中可反馈、已结束可反馈、未开始等）。
-  - `选课人数`: 该课程的选课学生总数。
-  - `操作`: 提供"提交反馈"按钮，点击后进入该课程的详细反馈表单页面。
-- **用户体验**:
-  - 如果学生没有已加入的可反馈课程，页面会显示友好的提示信息，并引导学生前往课程列表页面。
-  - 表格视图使得课程选择更加直观和高效。
-- **技术实现**：
-  - 该选择表格同样利用了 **Ant Design** 的 `Table` 组件。
-
-这一改进统一了项目中课程列表的展示风格，提升了学生在选择课程进行反馈时的操作便利性。
-
-### 学生查看反馈页面的现代化表格改造
-
-学生查看自己已提交反馈的页面 (`chainrate-nextjs/src/app/studentViewFeedback/page.js`) 也已从原先的列表展示方式升级为现代化的 Ant Design 表格视图，显著提升了信息的可读性和整体美感。
-
-- **保留核心功能**: 页面顶部的反馈统计数据卡片、状态筛选、排序方式选择、内容搜索以及新建反馈按钮等核心功能均得以保留。
-- **全新的表格展示**: 
-  - **列信息**: 反馈数据被清晰地组织在以下列中：
-    - `课程名称`: 显示反馈所属的课程。
-    - `教师`: 显示课程的授课教师。
-    - `反馈摘要`: 简要展示反馈内容，鼠标悬浮可查看完整内容。
-    - `提交时间`: 反馈的提交日期和时间。
-    - `状态`: 反馈的当前状态（如：未修改、已回复、已修改、已删除），以带图标的标签显示。
-    - `教师回复`: 明确标示教师是否已回复。
-    - `附件`: 用图标指示该反馈是否包含图片或文档附件。
-    - `操作`: 提供"查看详情"和"编辑反馈"按钮。编辑功能在反馈已有回复或已删除时不可用。
-  - **交互性**: 表格支持按课程名称、教师、提交时间、状态等进行排序。部分列（如状态、回复状态）还提供了快捷筛选功能。
-- **用户体验提升**:
-  - 表格视图使得大量反馈信息更易于浏览和管理。
-  - 统一的 Ant Design 风格带来了更佳的视觉一致性。
-  - 查看详情和编辑反馈的操作依然便捷。
-- **技术实现**：
-  - 使用 **Ant Design** 的 `Table` 组件替换了原先的 `List` 组件。
-  - 保留了原有的数据获取、处理、筛选和排序逻辑。
-
-通过这些改进，学生可以更直观、高效地追踪和管理自己的反馈历史。
-
-### 学生端页面头部视觉统一
-
-为了提升学生端界面的整体性和品牌一致性，对部分页面的头部进行了视觉统一改造。
-
-- **`studentViewFeedback/page.js` 头部改造**：
-  - **目标**：使其头部视觉风格与 `studentIndex/page.js`（学生个人中心首页）的头部保持一致。
-  - **实现**：
-    - 在 `studentViewFeedback` 页面的 `Header` 左侧加入了与 `studentIndex` 页面相同的系统Logo (`/images/logo1.png`) 和系统标题"链评系统"。
-    - 原有的面包屑导航（首页 > 我的反馈）保留，并放置于Logo和系统标题之后。
-    - 页面右侧的用户头像和相关下拉菜单保持不变。
-  - **效果**：通过在不同学生端页面使用统一的Logo和系统标题元素，增强了用户对系统品牌的感知，并提供了更一致的导航体验。面包屑导航依然清晰指示当前页面路径。
-
-- **`studentSubmitFeedback/page.js` 头部改造**：
-  - **目标**：与 `studentIndex/page.js` 和 `studentViewFeedback/page.js` 类似，统一其页面头部和整体布局。
-  - **实现**：
-    - 无论是课程选择模式还是反馈表单模式，页面顶部都采用了与 `studentIndex` 一致的暗色主题 `Header`（背景 `#001529`）。此 `Header` 包含系统Logo、完整的系统标题（"链评系统（ChainRate）- 学生端"）以及右侧的用户欢迎信息和头像。
-    - 整体页面布局调整为 `Header` 在上，下方是一个包含 `Sider`（内嵌 `StudentSidebar`，浅色背景）和主内容区的 `Layout`。
-    - `Breadcrumb`（面包屑导航）从旧的页内头部移至新的主内容区布局中，位于暗色 `Header` 之下、实际页面内容之上。
-    - 针对页面原有的页内小标题（如"选择要反馈的课程"或"提交课程反馈"），其相关的 CSS 类名已调整（例如，从 `.pageHeader` 改为 `.contentPageHeader`），以避免与新的主 `Header` 样式冲突并明确其作用范围。
-    - 提交成功后的提示页面也使用了 Ant Design 的 `Result` 组件，提供了更标准和清晰的用户反馈界面。
-  - **效果**：此页面现在与其他学生端核心页面共享统一的导航和视觉结构，增强了应用的整体性和用户体验的连贯性。
-
-### 教师端页面现代化改造：我的课程列表
-
-在 `chainrate-nextjs/src/app/teacherViewCourse/page.js` 页面中，教师查看和管理自己所创建课程的列表也进行了现代化改造，采用了 Ant Design 表格视图，以提升信息展示的清晰度和操作的便捷性。
-
-- **页面布局统一**：此页面的整体布局和头部导航栏已与 `teacherIndex/page.js`（教师个人中心首页）保持一致，采用暗色主题的顶部 `Header`（包含Logo、系统标题"链评系统（ChainRate）- 教师端"、用户欢迎信息与头像），以及下方 `Sider`（内嵌 `TeacherSidebar`）和主内容区的标准布局。
-- **表格视图特性**：原先的卡片式课程列表被替换为功能更丰富的表格：
-  - **清晰的列布局**：课程信息被组织在以下列中：
-    - `课程名称`: 显示课程名称，点击可跳转至课程管理页面。
-    - `课程ID`: 显示课程的唯一标识符。
-    - `当前状态`: 以彩色标签显示课程的评价阶段（如：未开始、评价中、已结束、已停用）。
-    - `是否启用`: 以彩色标签明确显示课程是否处于启用状态。
-    - `评价开始时间`: 课程评价的开始日期和时间。
-    - `评价结束时间`: 课程评价的结束日期和时间。
-    - `操作`: 提供"管理"和"查看评价"的操作按钮。
-  - **交互功能**：
-    - **排序**: 用户可以点击大部分列标题（课程名称、ID、状态、启用状态、起止时间）对课程进行升序或降序排序。
-    - **分页**: 当课程数量较多时，表格会自动进行分页显示，并提供每页显示数量的选项。
-    - **搜索与筛选**: 页面保留了顶部的课程名称搜索框和状态筛选器（所有课程、仅显示启用、仅显示停用），这些会与表格内容联动。
-- **技术实现**：
-  - 该表格视图使用了 **Ant Design** 的 `Table` 组件，充分利用了其内置的排序、筛选、分页和加载状态管理功能。
-  - 样式与项目整体 Ant Design 风格保持一致，确保了用户体验的统一性。
-
-通过这些改进，教师可以更高效地浏览、筛选和管理自己的课程，整体视觉效果也更加现代化和美观。
+ChainRate-PMP/
+├── chainrate-nextjs/          # 前端项目
+│   ├── src/                   # 源代码
+│   │   ├── app/              # Next.js 应用程序目录
+│   │   │   ├── adminGetStudentList/     # 管理员获取学生列表页面
+│   │   │   ├── adminGetTeacherList/     # 管理员获取教师列表页面
+│   │   │   ├── adminIndex/              # 管理员首页
+│   │   │   ├── api/                     # API路由
+│   │   │   ├── components/              # 共享组件
+│   │   │   │   ├── StudentSidebar.js    # 学生侧边栏
+│   │   │   │   ├── TeacherSidebar.js    # 教师侧边栏
+│   │   │   │   └── UserAvatar.js        # 用户头像组件
+│   │   │   ├── dashboard/               # 仪表板页面
+│   │   │   ├── login/                   # 登录页面
+│   │   │   ├── NotFound/                # 404页面
+│   │   │   ├── register/                # 注册页面
+│   │   │   ├── studentCourseDetail/     # 学生课程详情页面
+│   │   │   ├── studentEvaluateTeacher/  # 学生评价老师页面
+│   │   │   ├── studentIndex/            # 学生首页
+│   │   │   ├── studentMyEvaluation/     # 学生我的评价页面
+│   │   │   ├── studentSubmitEvaluation/ # 学生提交评价页面
+│   │   │   ├── studentSubmitFeedback/   # 学生提交反馈页面
+│   │   │   ├── studentViewCourses/      # 学生查看课程页面
+│   │   │   ├── studentViewEvaluateTeacher/ # 学生查看教师评价页面
+│   │   │   ├── studentViewFeedback/     # 学生查看反馈页面
+│   │   │   ├── teacheFeedbackAnalysis/  # 教师反馈分析页面
+│   │   │   ├── teacherCreateCourse/     # 教师创建课程页面
+│   │   │   ├── teacherIndex/            # 教师首页
+│   │   │   ├── teacherManageCourse/     # 教师管理课程页面
+│   │   │   ├── teacherStatisticalAnalysis/ # 教师统计分析页面
+│   │   │   ├── teacherViewCourse/       # 教师查看课程页面
+│   │   │   ├── teacherViewEvaluation/   # 教师查看评价页面
+│   │   │   ├── teacherViewEvaluateTeacher/ # 教师查看教师评价页面
+│   │   │   ├── teacherViewFeedback/     # 教师查看反馈页面
+│   │   │   ├── utils/                   # 工具函数
+│   │   │   ├── favicon.ico              # 网站图标
+│   │   │   ├── globals.css              # 全局样式
+│   │   │   ├── layout.js                # 布局组件
+│   │   │   ├── page.js                  # 主页面
+│   │   │   └── page.module.css          # 主页面样式
+│   │   ├── contracts/                  # 区块链合约相关文件
+│   │   │   ├── ChainRate.json           # 合约ABI
+│   │   │   ├── ChainRate-address.json   # 合约地址
+│   │   │   ├── ChainRate02.json         # 合约ABI (第二版)
+│   │   │   └── ChainRate02-address.json # 合约地址 (第二版)
+│   │   ├── database/                   # 数据库相关文件
+│   │   │   └── transaction_records.sql  # SQL语句
+│   │   └── utils/                      # 工具函数
+│   │       └── db.js                    # 数据库工具
+│   ├── public/               # 静态资源
+│   │   ├── images/           # 图片资源
+│   │   │   ├── logo.jpg      # 徽标图片
+│   │   │   ├── logo1.png     # 徽标图片1
+│   │   │   └── logo12.png    # 徽标图片12
+│   │   ├── ethereum.svg      # 以太坊图标
+│   │   ├── file.svg          # 文件图标
+│   │   ├── globe.svg         # 地球图标
+│   │   ├── next.svg          # Next.js图标
+│   │   ├── vercel.svg        # Vercel图标
+│   │   └── window.svg        # 窗口图标
+│   ├── .next/                # Next.js构建文件
+│   ├── node_modules/         # 依赖包
+│   ├── .gitignore            # Git忽略文件
+│   ├── jsconfig.json         # JavaScript配置
+│   ├── next.config.mjs       # Next.js配置
+│   ├── package.json          # 项目依赖
+│   ├── package-lock.json     # 依赖锁定文件
+│   └── postcss.config.mjs    # PostCSS配置
+│
+└── chainrate-hardhat/        # 智能合约项目
+    ├── contracts/            # 智能合约代码
+    ├── scripts/             # 部署脚本
+    ├── test/                # 测试文件
+    └── package.json         # 项目依赖
