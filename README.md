@@ -119,6 +119,20 @@ ChainRate-PMP/
 │
 └── chainrate-hardhat/        # 智能合约项目
     ├── contracts/            # 智能合约代码
-    ├── scripts/             # 部署脚本
-    ├── test/                # 测试文件
-    └── package.json         # 项目依赖
+    │   ├── ChainRate.sol      # 主要智能合约
+    │   └── ChainRate02.sol    # 智能合约升级版本
+    ├── ignition/             # Hardhat Ignition部署框架
+    │   ├── modules/          # 模块目录
+    │   │   └── Lock.js        # 锁定模块
+    │   └── deploy.js          # 部署脚本
+    ├── test/                 # 测试文件
+    │   └── ChainRate.test.js  # 合约测试脚本
+    ├── artifacts/            # 编译后的合约文件
+    ├── cache/                # Hardhat缓存
+    ├── node_modules/         # 依赖包
+    ├── ChainRate-Contract-Documentation.md # 合约文档
+    ├── hardhat.config.js     # Hardhat配置文件
+    ├── package.json          # 项目依赖
+    ├── package-lock.json     # 依赖锁定文件
+    ├── README.md             # 项目说明文件
+    └── .gitignore            # Git忽略文件
