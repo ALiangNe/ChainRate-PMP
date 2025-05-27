@@ -14,6 +14,11 @@ import { jsPDF } from 'jspdf';
 // 修改导入方式，确保autoTable作为函数正确加载
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+// 导入图表组件，将Tooltip重命名为TooltipChart以避免冲突
+import {
+  BarChart, Bar, PieChart, Pie, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip as TooltipChart, Legend, ResponsiveContainer, Cell
+} from 'recharts';
 import { 
   UserOutlined, 
   BookOutlined, 
@@ -36,7 +41,10 @@ import {
   FileOutlined,
   FileExcelOutlined,
   FilePdfOutlined,
-  DownOutlined
+  DownOutlined,
+  PieChartOutlined,
+  BarChartOutlined,
+  LineChartOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -157,6 +165,14 @@ export default function TeacherViewFeedbackPage() {
   
   // XLSX导出状态
   const [exportingXLSX, setExportingXLSX] = useState(false);
+  
+  // 添加图表数据状态
+  const [chartData, setChartData] = useState({
+    statusDistribution: [],
+    monthlyTrend: [],
+    collegeDistribution: [],
+    versionDistribution: []
+  });
   
   // 初始化检查用户登录状态和加载数据
   useEffect(() => {
@@ -432,6 +448,15 @@ export default function TeacherViewFeedbackPage() {
           replied: 0,
           avgRating: 0
         });
+        
+        // 重置图表数据
+        setChartData({
+          statusDistribution: [],
+          monthlyTrend: [],
+          collegeDistribution: [],
+          versionDistribution: []
+        });
+        
         setLoading(false);
         return;
       }
@@ -441,6 +466,12 @@ export default function TeacherViewFeedbackPage() {
       let totalRating = 0;
       let pendingCount = 0;
       let repliedCount = 0;
+      
+      // 图表数据统计变量
+      const statusCount = { pending: 0, replied: 0 };
+      const monthlyData = {};
+      const collegeData = {};
+      const versionData = { 1: 0, 2: 0, 3: 0, '4+': 0 };
       
       for (let i = 0; i < feedbackIds.length; i++) {
         try {
@@ -601,6 +632,36 @@ export default function TeacherViewFeedbackPage() {
             pendingCount++;
           }
           
+          // 处理反馈状态统计
+          if (Number(feedback.status) === 1) { // FeedbackStatus.Replied = 1
+            statusCount.replied++;
+          } else {
+            statusCount.pending++;
+          }
+          
+          // 处理月度趋势数据
+          const feedbackDate = new Date(Number(feedback.timestamp) * 1000);
+          const monthYear = `${feedbackDate.getFullYear()}-${feedbackDate.getMonth() + 1}`;
+          if (!monthlyData[monthYear]) {
+            monthlyData[monthYear] = { month: monthYear, count: 0 };
+          }
+          monthlyData[monthYear].count++;
+          
+          // 处理学院分布数据
+          if (student && student.college) {
+            if (!collegeData[student.college]) {
+              collegeData[student.college] = { name: student.college, value: 0 };
+            }
+            collegeData[student.college].value++;
+          }
+          
+          // 处理版本分布数据
+          const versions = Number(feedback.versions);
+          if (versions === 1) versionData[1]++;
+          else if (versions === 2) versionData[2]++;
+          else if (versions === 3) versionData[3]++;
+          else versionData['4+']++;
+          
         } catch (error) {
           console.error(`获取反馈详情失败 ${feedbackIds[i]}:`, error);
         }
@@ -638,6 +699,39 @@ export default function TeacherViewFeedbackPage() {
       setSearchText('');
       setSortBy('newest');
       setCollegeFilter('all');
+      
+      // 处理图表数据
+      // 1. 状态分布
+      const statusChartData = [
+        { name: '待回复', value: statusCount.pending },
+        { name: '已回复', value: statusCount.replied }
+      ];
+      
+      // 2. 月度趋势 - 按时间排序
+      const sortedMonthlyData = Object.values(monthlyData).sort((a, b) => {
+        const [yearA, monthA] = a.month.split('-').map(Number);
+        const [yearB, monthB] = b.month.split('-').map(Number);
+        return yearA !== yearB ? yearA - yearB : monthA - monthB;
+      });
+      
+      // 3. 学院分布
+      const collegeChartData = Object.values(collegeData);
+      
+      // 5. 版本分布
+      const versionChartData = [
+        { name: '1个版本', value: versionData[1] },
+        { name: '2个版本', value: versionData[2] },
+        { name: '3个版本', value: versionData[3] },
+        { name: '4个及以上', value: versionData['4+'] }
+      ];
+      
+      // 更新图表数据状态
+      setChartData({
+        statusDistribution: statusChartData,
+        monthlyTrend: sortedMonthlyData,
+        collegeDistribution: collegeChartData,
+        versionDistribution: versionChartData
+      });
       
       setLoading(false);
     } catch (err) {
@@ -2036,6 +2130,10 @@ export default function TeacherViewFeedbackPage() {
     }
   };
   
+  // 图表颜色配置
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const STATUS_COLORS = ['#ff4d4f', '#52c41a']; // 红色表示待回复，绿色表示已回复
+  
   return (
     <ConfigProvider
       theme={{
@@ -2173,6 +2271,171 @@ export default function TeacherViewFeedbackPage() {
                         </Row>
                       </Col>
                     </Row>
+                  </Card>
+                  
+                  {/* 数据分析图表区域 */}
+                  <Card 
+                    className={styles.chartsCard} 
+                    bordered={false}
+                    style={{ 
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      borderRadius: '8px',
+                      marginTop: '16px'
+                    }}
+                    title={
+                      <div className={styles.cardTitle}>
+                        <PieChartOutlined className={styles.cardTitleIcon} style={{ color: '#1a73e8' }} />
+                        <span style={{ fontSize: '16px', fontWeight: '600' }}>反馈数据分析</span>
+                      </div>
+                    }
+                    headStyle={{ 
+                      background: 'linear-gradient(to right, #f0f5ff, #ffffff)',
+                      borderBottom: '1px solid #eaeaea',
+                      padding: '12px 20px'
+                    }}
+                    bodyStyle={{ padding: '24px 20px' }}
+                  >
+                    <Tabs defaultActiveKey="1" type="card">
+                      <TabPane 
+                        tab={
+                          <span>
+                            <PieChartOutlined />
+                            反馈状态分布
+                          </span>
+                        } 
+                        key="1"
+                      >
+                        <div style={{ height: '400px', marginTop: '20px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={chartData.statusDistribution}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={120}
+                                fill="#8884d8"
+                                dataKey="value"
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {chartData.statusDistribution.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </TabPane>
+                      
+                      <TabPane 
+                        tab={
+                          <span>
+                            <LineChartOutlined />
+                            月度反馈趋势
+                          </span>
+                        } 
+                        key="2"
+                      >
+                        <div style={{ height: '400px', marginTop: '20px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={chartData.monthlyTrend}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="month" />
+                              <YAxis />
+                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                              <Legend />
+                              <Line 
+                                type="monotone" 
+                                dataKey="count" 
+                                name="反馈数量" 
+                                stroke="#1a73e8" 
+                                activeDot={{ r: 8 }} 
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </TabPane>
+                      
+                      <TabPane 
+                        tab={
+                          <span>
+                            <BarChartOutlined />
+                            学院分布
+                          </span>
+                        } 
+                        key="3"
+                      >
+                        <div style={{ height: '400px', marginTop: '20px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={chartData.collegeDistribution}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
+                              layout="vertical"
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" />
+                              <YAxis dataKey="name" type="category" width={150} />
+                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                              <Legend />
+                              <Bar 
+                                dataKey="value" 
+                                name="反馈数量" 
+                                fill="#1a73e8" 
+                                background={{ fill: '#eee' }} 
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </TabPane>
+                      
+                      <TabPane 
+                        tab={
+                          <span>
+                            <HistoryOutlined />
+                            版本分布
+                          </span>
+                        } 
+                        key="4"
+                      >
+                        <div style={{ height: '400px', marginTop: '20px' }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={chartData.versionDistribution}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={120}
+                                fill="#8884d8"
+                                dataKey="value"
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {chartData.versionDistribution.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </TabPane>
+                    </Tabs>
                   </Card>
                   
                   {/* 筛选和搜索 */}

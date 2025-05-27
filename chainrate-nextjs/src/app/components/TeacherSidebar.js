@@ -85,12 +85,12 @@ export default function TeacherSidebar({ defaultSelectedKey = '1', defaultOpenKe
           key: '7',
           label: '学生反馈',
           onClick: () => router.push('/teacherViewFeedback')
-        },
-        {
-          key: '8',
-          label: '反馈分析',
-          onClick: () => router.push('/teacheFeedbackAnalysis')
         }
+        // {
+        //   key: '8',
+        //   label: '反馈分析',
+        //   onClick: () => router.push('/teacheFeedbackAnalysis')
+        // }
       ],
     }
   ];
