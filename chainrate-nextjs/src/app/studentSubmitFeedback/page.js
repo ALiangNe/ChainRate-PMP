@@ -44,7 +44,9 @@ import {
   CheckCircleOutlined,
   FileTextOutlined,
   ArrowLeftOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import StudentSidebar from '../components/StudentSidebar';
 import UserAvatar from '../components/UserAvatar';
@@ -55,6 +57,42 @@ const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
+
+// 创建课程反馈提示内容组件
+const FeedbackNoticeContent = () => (
+  <div className={styles.noticeContent}>
+    <div className={styles.infoItem}>
+      <InfoCircleOutlined className={styles.infoItemIcon} />
+      <Typography.Text>请选择要提交反馈的课程</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <InfoCircleOutlined className={styles.infoItemIcon} />
+      <Typography.Text>您需要先选择一个已加入的课程，然后才能提交反馈</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <InfoCircleOutlined className={styles.infoItemIcon} />
+      <Typography.Text>课程反馈将发送给该课程的授课教师</Typography.Text>
+    </div>
+  </div>
+);
+
+// 创建表单页面反馈说明组件
+const FeedbackFormNoticeContent = () => (
+  <div className={styles.noticeContent}>
+    <div className={styles.infoItem}>
+      <FileTextOutlined className={styles.infoItemIcon} />
+      <Typography.Text>您可以在这里提交对课程内容的反馈意见，包括文字描述、相关文档和图片</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <FileTextOutlined className={styles.infoItemIcon} />
+      <Typography.Text>所有反馈将存储在区块链上，确保透明性和不可篡改性</Typography.Text>
+    </div>
+    <div className={styles.infoItem}>
+      <FileTextOutlined className={styles.infoItemIcon} />
+      <Typography.Text>教师会在查看反馈后尽快回复</Typography.Text>
+    </div>
+  </div>
+);
 
 // 上传文件到IPFS的函数
 const uploadToIPFS = async (file) => {
@@ -128,6 +166,62 @@ export default function StudentSubmitFeedbackPage() {
   // 提交结果
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [feedbackId, setFeedbackId] = useState(null);
+  
+  // 提示框状态
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeFading, setNoticeFading] = useState(false);
+  
+  // 表单页面提示框状态
+  const [formNoticeVisible, setFormNoticeVisible] = useState(false);
+  const [formNoticeFading, setFormNoticeFading] = useState(false);
+  
+  // 显示提示框
+  useEffect(() => {
+    if (courseSelectMode) {
+      // 延迟显示提示框，以便页面加载完成后再显示
+      const timer = setTimeout(() => {
+        setNoticeVisible(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [courseSelectMode]);
+  
+  // 表单页面提示框显示
+  useEffect(() => {
+    if (!courseSelectMode && selectedCourse) {
+      // 延迟显示提示框，以便页面加载完成后再显示
+      const timer = setTimeout(() => {
+        setFormNoticeVisible(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [courseSelectMode, selectedCourse]);
+  
+  // 关闭提示框
+  const closeNotice = () => {
+    // 先应用淡出动画
+    setNoticeFading(true);
+    
+    // 动画结束后隐藏提示框
+    setTimeout(() => {
+      setNoticeVisible(false);
+      setNoticeFading(false);
+    }, 300); // 300ms 与动画时长匹配
+  };
+  
+  // 关闭表单页面提示框
+  const closeFormNotice = () => {
+    // 先应用淡出动画
+    setFormNoticeFading(true);
+    
+    // 动画结束后隐藏提示框
+    setTimeout(() => {
+      setFormNoticeVisible(false);
+      setFormNoticeFading(false);
+    }, 300); // 300ms 与动画时长匹配
+  };
   
   useEffect(() => {
     // 确保代码仅在客户端执行
@@ -698,13 +792,22 @@ export default function StudentSubmitFeedbackPage() {
                 <Title level={2} className={styles.pageTitle}>选择要反馈的课程</Title>
               </div>
               
-              <Alert
-                message="请选择要提交反馈的课程"
-                description="您需要先选择一个已加入的课程，然后才能提交反馈。课程反馈将发送给该课程的授课教师。"
-                type="info"
-                showIcon
-                className={styles.alertInfo}
-              />
+              {noticeVisible && (
+                <div className={`${styles.noticePopup} ${noticeFading ? styles.noticeFadeOut : ''}`}>
+                  <div className={styles.noticeHeader}>
+                    <div className={styles.noticeTitle}>
+                      <InfoCircleOutlined className={styles.noticeIcon} />
+                      <span>课程反馈须知</span>
+                    </div>
+                    <div className={styles.noticeClose} onClick={closeNotice}>
+                      <CloseOutlined />
+                    </div>
+                  </div>
+                  <div className={styles.noticeContent}>
+                    <FeedbackNoticeContent />
+                  </div>
+                </div>
+              )}
               
                   {studentCourses.length > 0 ? (
                   <Table
@@ -849,14 +952,22 @@ export default function StudentSubmitFeedbackPage() {
                 </Card>
               )}
               
-              <Alert
-                message="课程反馈说明"
-                description="您可以在这里提交对课程内容的反馈意见，包括文字描述、相关文档和图片。所有反馈将存储在区块链上，确保透明性和不可篡改性。教师会在查看反馈后尽快回复。"
-                type="info"
-                showIcon
-                icon={<FileTextOutlined />}
-                className={styles.alertInfo}
-              />
+              {formNoticeVisible && (
+                <div className={`${styles.noticePopup} ${formNoticeFading ? styles.noticeFadeOut : ''}`}>
+                  <div className={styles.noticeHeader}>
+                    <div className={styles.noticeTitle}>
+                      <FileTextOutlined className={styles.noticeIcon} />
+                      <span>课程反馈说明</span>
+                    </div>
+                    <div className={styles.noticeClose} onClick={closeFormNotice}>
+                      <CloseOutlined />
+                    </div>
+                  </div>
+                  <div className={styles.noticeContent}>
+                    <FeedbackFormNoticeContent />
+                  </div>
+                </div>
+              )}
               
               <Card className={styles.feedbackCard} title="课程反馈表单">
                 <Form
