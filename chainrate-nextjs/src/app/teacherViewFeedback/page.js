@@ -44,7 +44,8 @@ import {
   DownOutlined,
   PieChartOutlined,
   BarChartOutlined,
-  LineChartOutlined
+  LineChartOutlined,
+  RightOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -121,6 +122,9 @@ export default function TeacherViewFeedbackPage() {
   const [contract, setContract] = useState(null);
   const [contract02, setContract02] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState(null);
+  
+  // 添加控制图表展开/收起的状态
+  const [chartsVisible, setChartsVisible] = useState(false);
   
   // 课程和反馈状态
   const [courses, setCourses] = useState([]);
@@ -2283,159 +2287,191 @@ export default function TeacherViewFeedbackPage() {
                       marginTop: '16px'
                     }}
                     title={
-                      <div className={styles.cardTitle}>
-                        <PieChartOutlined className={styles.cardTitleIcon} style={{ color: '#1a73e8' }} />
-                        <span style={{ fontSize: '16px', fontWeight: '600' }}>反馈数据分析</span>
+                      <div 
+                        className={styles.cardTitle}
+                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                        onClick={() => setChartsVisible(!chartsVisible)}
+                      >
+                        <div>
+                          <PieChartOutlined className={styles.cardTitleIcon} style={{ color: '#1a73e8', marginRight: '8px' }} />
+                          <span style={{ fontSize: '16px', fontWeight: '600' }}>反馈数据分析</span>
+                        </div>
+                        {chartsVisible ? (
+                          <DownOutlined style={{ fontSize: '14px' }} />
+                        ) : (
+                          <RightOutlined style={{ fontSize: '14px' }} />
+                        )}
                       </div>
                     }
                     headStyle={{ 
                       background: 'linear-gradient(to right, #f0f5ff, #ffffff)',
-                      borderBottom: '1px solid #eaeaea',
+                      borderBottom: chartsVisible ? '1px solid #eaeaea' : 'none',
                       padding: '12px 20px'
                     }}
-                    bodyStyle={{ padding: '24px 20px' }}
+                    bodyStyle={{ 
+                      padding: chartsVisible ? '24px 20px' : '0', 
+                      height: chartsVisible ? 'auto' : '0',
+                      overflow: 'hidden',
+                      transition: 'all 0.3s ease'
+                    }}
                   >
-                    <Tabs defaultActiveKey="1" type="card">
-                      <TabPane 
-                        tab={
-                          <span>
-                            <PieChartOutlined />
-                            反馈状态分布
-                          </span>
-                        } 
-                        key="1"
-                      >
-                        <div style={{ height: '400px', marginTop: '20px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={chartData.statusDistribution}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={120}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    {chartsVisible && (
+                      <Tabs defaultActiveKey="pie" type="card">
+                        <TabPane 
+                          tab={
+                            <span>
+                              <PieChartOutlined />
+                              扇形分析
+                            </span>
+                          } 
+                          key="pie"
+                        >
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                              <Card 
+                                title="反馈状态分布" 
+                                bordered={false}
+                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
                               >
-                                {chartData.statusDistribution.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </TabPane>
-                      
-                      <TabPane 
-                        tab={
-                          <span>
-                            <LineChartOutlined />
-                            月度反馈趋势
-                          </span>
-                        } 
-                        key="2"
-                      >
-                        <div style={{ height: '400px', marginTop: '20px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                              data={chartData.monthlyTrend}
-                              margin={{
-                                top: 5,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
-                              }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="month" />
-                              <YAxis />
-                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
-                              <Legend />
-                              <Line 
-                                type="monotone" 
-                                dataKey="count" 
-                                name="反馈数量" 
-                                stroke="#1a73e8" 
-                                activeDot={{ r: 8 }} 
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </TabPane>
-                      
-                      <TabPane 
-                        tab={
-                          <span>
-                            <BarChartOutlined />
-                            学院分布
-                          </span>
-                        } 
-                        key="3"
-                      >
-                        <div style={{ height: '400px', marginTop: '20px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                              data={chartData.collegeDistribution}
-                              margin={{
-                                top: 5,
-                                right: 30,
-                                left: 20,
-                                bottom: 5,
-                              }}
-                              layout="vertical"
-                            >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis type="number" />
-                              <YAxis dataKey="name" type="category" width={150} />
-                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
-                              <Legend />
-                              <Bar 
-                                dataKey="value" 
-                                name="反馈数量" 
-                                fill="#1a73e8" 
-                                background={{ fill: '#eee' }} 
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </TabPane>
-                      
-                      <TabPane 
-                        tab={
-                          <span>
-                            <HistoryOutlined />
-                            版本分布
-                          </span>
-                        } 
-                        key="4"
-                      >
-                        <div style={{ height: '400px', marginTop: '20px' }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={chartData.versionDistribution}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={120}
-                                fill="#8884d8"
-                                dataKey="value"
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                <div style={{ height: '350px' }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                      <Pie
+                                        data={chartData.statusDistribution}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        outerRadius={120}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                      >
+                                        {chartData.statusDistribution.map((entry, index) => (
+                                          <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                                        ))}
+                                      </Pie>
+                                      <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                                      <Legend />
+                                    </PieChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </Card>
+                            </Col>
+                            <Col xs={24} md={12}>
+                              <Card 
+                                title="版本分布" 
+                                bordered={false}
+                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
                               >
-                                {chartData.versionDistribution.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </TabPane>
-                    </Tabs>
+                                <div style={{ height: '350px' }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                      <Pie
+                                        data={chartData.versionDistribution}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        outerRadius={120}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                      >
+                                        {chartData.versionDistribution.map((entry, index) => (
+                                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                      </Pie>
+                                      <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                                      <Legend />
+                                    </PieChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </Card>
+                            </Col>
+                          </Row>
+                        </TabPane>
+                        
+                        <TabPane 
+                          tab={
+                            <span>
+                              <BarChartOutlined />
+                              条形分析
+                            </span>
+                          } 
+                          key="bar"
+                        >
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} md={12}>
+                              <Card 
+                                title="月度反馈趋势" 
+                                bordered={false}
+                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
+                              >
+                                <div style={{ height: '350px' }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart
+                                      data={chartData.monthlyTrend}
+                                      margin={{
+                                        top: 5,
+                                        right: 30,
+                                        left: 20,
+                                        bottom: 5,
+                                      }}
+                                    >
+                                      <CartesianGrid strokeDasharray="3 3" />
+                                      <XAxis dataKey="month" />
+                                      <YAxis />
+                                      <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                                      <Legend />
+                                      <Line 
+                                        type="monotone" 
+                                        dataKey="count" 
+                                        name="反馈数量" 
+                                        stroke="#1a73e8" 
+                                        activeDot={{ r: 8 }} 
+                                      />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </Card>
+                            </Col>
+                            <Col xs={24} md={12}>
+                              <Card 
+                                title="学院分布" 
+                                bordered={false}
+                                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}
+                              >
+                                <div style={{ height: '350px' }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                      data={chartData.collegeDistribution}
+                                      margin={{
+                                        top: 5,
+                                        right: 30,
+                                        left: 20,
+                                        bottom: 5,
+                                      }}
+                                      layout="vertical"
+                                    >
+                                      <CartesianGrid strokeDasharray="3 3" />
+                                      <XAxis type="number" />
+                                      <YAxis dataKey="name" type="category" width={150} />
+                                      <TooltipChart formatter={(value) => [`${value}条反馈`, '数量']} />
+                                      <Legend />
+                                      <Bar 
+                                        dataKey="value" 
+                                        name="反馈数量" 
+                                        fill="#1a73e8" 
+                                        background={{ fill: '#eee' }} 
+                                      />
+                                    </BarChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              </Card>
+                            </Col>
+                          </Row>
+                        </TabPane>
+                      </Tabs>
+                    )}
                   </Card>
                   
                   {/* 筛选和搜索 */}
