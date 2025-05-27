@@ -881,7 +881,7 @@ export default function StudentViewFeedbackPage() {
       title: '操作',
       key: 'action',
       align: 'center',
-      width: 150,
+      width: 200,
       render: (text, record) => (
         <Space>
           <Tooltip title="查看详情">
@@ -889,7 +889,9 @@ export default function StudentViewFeedbackPage() {
               size="small"
               icon={<EyeOutlined />} 
               onClick={() => handleViewFeedback(record)} 
-            />
+            >
+              详情
+            </Button>
           </Tooltip>
           <Tooltip title="编辑反馈">
             <Button 
@@ -897,7 +899,9 @@ export default function StudentViewFeedbackPage() {
               icon={<EditOutlined />} 
               onClick={() => handleEditFeedback(record)} 
               disabled={record.status === 3 || record.hasReply} // 已删除或已回复的不可编辑
-            />
+            >
+              编辑
+            </Button>
           </Tooltip>
         </Space>
       ),
@@ -961,7 +965,7 @@ export default function StudentViewFeedbackPage() {
               <>
                 {/* 数据统计卡片 */}
                 <Row gutter={16} style={{ marginBottom: 24 }}>
-                  <Col span={6}>
+                  <Col span={8}>
                     <Card className={styles.statCard}>
                       <Statistic 
                         title="总反馈数" 
@@ -971,7 +975,7 @@ export default function StudentViewFeedbackPage() {
                       />
                     </Card>
                   </Col>
-                  <Col span={6}>
+                  <Col span={8}>
                     <Card className={styles.statCard}>
                       <Statistic 
                         title="已回复" 
@@ -981,7 +985,7 @@ export default function StudentViewFeedbackPage() {
                       />
                     </Card>
                   </Col>
-                  <Col span={6}>
+                  <Col span={8}>
                     <Card className={styles.statCard}>
                       <Statistic 
                         title="未回复" 
@@ -991,7 +995,7 @@ export default function StudentViewFeedbackPage() {
                       />
                     </Card>
                   </Col>
-                  <Col span={6}>
+                  {/* <Col span={6}>
                     <Card className={styles.statCard}>
                       <Statistic 
                         title="已删除" 
@@ -1000,7 +1004,7 @@ export default function StudentViewFeedbackPage() {
                         valueStyle={{ color: '#ff4d4f' }}
                       />
                     </Card>
-                  </Col>
+                  </Col> */}
                 </Row>
                 
                 {/* 筛选和搜索栏 */}
