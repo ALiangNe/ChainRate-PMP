@@ -313,12 +313,8 @@ export default function AdminIndexPage() {
         {
           key: '1',
           label: '管理员主页',
-        },
-        {
-          key: '2',
-          label: '系统设置',
-          onClick: () => router.push('/adminSettings')
         }
+        
       ],
     },
     {
@@ -337,53 +333,8 @@ export default function AdminIndexPage() {
           onClick: () => router.push('/adminGetStudentList')
         }
       ],
-    },
-    {
-      key: 'sub3',
-      icon: <BookOutlined />,
-      label: '课程管理',
-      children: [
-        {
-          key: '5',
-          label: '所有课程',
-          onClick: () => router.push('/adminCourseManagement')
-        }
-      ],
-    },
-    {
-      key: 'sub4',
-      icon: <CommentOutlined />,
-      label: '评价管理',
-      children: [
-        {
-          key: '6',
-          label: '评价审核',
-          onClick: () => router.push('/adminEvaluationReview')
-        },
-        {
-          key: '7',
-          label: '评价统计',
-          onClick: () => router.push('/adminEvaluationStats')
-        }
-      ],
-    },
-    {
-      key: 'sub5',
-      icon: <BarChartOutlined />,
-      label: '数据分析',
-      children: [
-        {
-          key: '8',
-          label: '系统概览',
-          onClick: () => router.push('/adminDashboard')
-        },
-        {
-          key: '9',
-          label: '详细分析',
-          onClick: () => router.push('/adminAnalytics')
-        }
-      ],
     }
+    
   ];
 
   if (loading) {

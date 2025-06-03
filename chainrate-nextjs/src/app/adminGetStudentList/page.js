@@ -530,11 +530,6 @@ export default function AdminGetStudentListPage() {
           key: '1',
           label: '管理员主页',
           onClick: () => router.push('/adminIndex')
-        },
-        {
-          key: '2',
-          label: '系统设置',
-          onClick: () => router.push('/adminSettings')
         }
       ],
     },
@@ -552,35 +547,6 @@ export default function AdminGetStudentListPage() {
           key: '4',
           label: '学生管理',
           onClick: () => router.push('/adminGetStudentList')
-        }
-      ],
-    },
-    {
-      key: 'sub3',
-      icon: <BookOutlined />,
-      label: '课程管理',
-      children: [
-        {
-          key: '5',
-          label: '所有课程',
-          onClick: () => router.push('/adminCourseManagement')
-        }
-      ],
-    },
-    {
-      key: 'sub4',
-      icon: <CommentOutlined />,
-      label: '评价管理',
-      children: [
-        {
-          key: '6',
-          label: '评价审核',
-          onClick: () => router.push('/adminEvaluationReview')
-        },
-        {
-          key: '7',
-          label: '评价统计',
-          onClick: () => router.push('/adminEvaluationStats')
         }
       ],
     }
