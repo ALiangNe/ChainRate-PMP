@@ -1,0 +1,183 @@
+/* 基本布局样式 */
+.logo {
+  margin-right: 16px;
+}
+
+/* AI助手页面样式 */
+.aiAssistantHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.assistantTitle {
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistantControls {
+  display: flex;
+  gap: 12px;
+}
+
+/* 设置卡片样式 */
+.settingsCard {
+  margin-bottom: 16px;
+  background-color: #f7f9fc;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.settingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 消息容器样式 */
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  background-color: #f7f9fc;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 消息样式 */
+.messageWrapper {
+  display: flex;
+  gap: 12px;
+  max-width: 85%;
+}
+
+.userMessage {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.assistantMessage {
+  align-self: flex-start;
+}
+
+.messageAvatar {
+  flex-shrink: 0;
+}
+
+.messageContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.messageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.messageTime {
+  font-size: 12px;
+}
+
+.messageText {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.userMessage .messageText {
+  background-color: #e6f4ff;
+  border-bottom-right-radius: 0;
+}
+
+.assistantMessage .messageText {
+  background-color: white;
+  border-bottom-left-radius: 0;
+}
+
+.errorMessage {
+  background-color: #fff2f0 !important;
+  border: 1px solid #ffccc7;
+  color: #f5222d;
+}
+
+.streamingIndicator {
+  margin-left: 8px;
+  color: #1a73e8;
+}
+
+/* 加载指示器样式 */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.loadingText {
+  color: #888;
+}
+
+/* 错误容器样式 */
+.errorContainer {
+  padding: 12px;
+  background-color: #fff2f0;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* 输入区域样式 */
+.inputContainer {
+  padding: 16px;
+  background-color: #f7f9fc;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.inputActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.inputTip {
+  font-size: 12px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .messageWrapper {
+    max-width: 95%;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.messageWrapper {
+  animation: fadeIn 0.3s ease-in-out;
+} 

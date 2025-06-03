@@ -352,7 +352,7 @@
 
 .paginationWrapper :global(.ant-pagination-options-quick-jumper) {
   margin-left: 16px;
-}
+} 
 
 /* 词云样式 */
 .wordCloudContainer {

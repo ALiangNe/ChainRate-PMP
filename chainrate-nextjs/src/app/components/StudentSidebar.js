@@ -7,7 +7,8 @@ import {
   UserOutlined, 
   BookOutlined, 
   CommentOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -85,8 +86,29 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
           onClick: () => router.push('/studentViewFeedback')
         }
       ],
+    },
+    {
+      key: 'sub5',
+      icon: React.createElement(RobotOutlined),
+      label: '学习助手',
+      children: [
+        {
+          key: '9',
+          label: 'AI学习助手',
+          onClick: () => router.push('/studentLearningAssistant')
+        }
+      ],
     }
   ];
+
+  const handleClick = (e) => {
+    console.log('click ', e);
+    switch (e.key) {
+      case '9':
+        router.push('/studentLearningAssistant');
+        break;
+    }
+  };
 
   return (
     <Sider width={200} style={{ background: colorBgContainer }}>
@@ -96,6 +118,7 @@ export default function StudentSidebar({ selectedKey = '1', defaultOpenKey = 'su
         defaultOpenKeys={[defaultOpenKey]}
         style={{ height: '100%', borderRight: 0 }}
         items={siderItems}
+        onClick={handleClick}
       />
     </Sider>
   );
