@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+      { "source": "/(.*)", "destination": "/chainrate-nextjs/$1" }
+    ],
+    "buildCommand": "cd chainrate-nextjs && npm run build",
+    "outputDirectory": "chainrate-nextjs/.next",
+    "installCommand": "cd chainrate-nextjs && npm install"
+  }
