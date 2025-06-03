@@ -1,5 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ThemeToggle from "./components/ThemeToggle";
+// import TestThemeToggle from "./components/TestThemeToggle";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,12 +15,37 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function() {
+              // 在客户端渲染前检查本地存储并设置初始主题
+              function setInitialTheme() {
+                if (localStorage.getItem('theme') === 'dark' || 
+                    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              }
+              try {
+                setInitialTheme();
+              } catch (err) {
+                console.error(err);
+              }
+            })();
+          `,
+          }}
+        />
+      </head>
       <body
         className={`${inter.className} antialiased`}
         suppressHydrationWarning={true}
       >
         {children}
+        <ThemeToggle />
       </body>
     </html>
   );

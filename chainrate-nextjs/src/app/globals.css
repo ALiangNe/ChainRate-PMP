@@ -1,26 +1,118 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* 基础样式 */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: 255, 255, 255;
+  --foreground: 0, 0, 0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: 15, 23, 42; /* 暗色背景 */
+  --foreground: 255, 255, 255; /* 暗色文本 */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* 暗色模式下的常用元素样式 */
+.dark .card {
+  background-color: #1f2937;
+  color: white;
+  border-color: #374151;
+}
+
+.dark .btn-primary {
+  background-color: #2563eb;
+}
+.dark .btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.dark input, 
+.dark textarea, 
+.dark select {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: white;
+}
+
+.dark table {
+  background-color: #1f2937;
+  color: #d1d5db;
+}
+
+.dark th, 
+.dark td {
+  border-color: #374151;
+}
+
+/* 增强的暗黑模式样式 */
+/* 侧边栏 */
+.dark aside,
+.dark [class*="sidebar"],
+.dark nav {
+  background-color: #1f2937 !important;
+  color: white !important;
+  border-color: #374151 !important;
+}
+
+/* 卡片和容器 */
+.dark div:not(.exclude-dark),
+.dark section,
+.dark article {
+  background-color: #1f2937 !important;
+  color: white !important;
+  border-color: #374151 !important;
+}
+
+/* 头部区域 */
+.dark header,
+.dark [class*="header"] {
+  background-color: #111827 !important;
+  color: white !important;
+}
+
+/* 列表项和链接 */
+.dark li,
+.dark a {
+  color: #e5e7eb !important;
+}
+
+.dark a:hover {
+  color: #60a5fa !important;
+}
+
+/* 特殊修复 - 白色背景图标和SVG */
+.dark svg {
+  color: white !important;
+  fill: currentColor !important;
+}
+
+/* 修正按钮和特殊组件 */
+.dark button:not(.theme-toggle) {
+  background-color: #374151 !important;
+  color: white !important;
+}
+
+.dark button.primary {
+  background-color: #2563eb !important;
+}
+
+/* 修正可能的白色文本在白色背景上的问题 */
+.dark [class*="bg-white"] {
+  background-color: #1f2937 !important;
+}
+
+.dark [class*="text-black"] {
+  color: white !important;
+}
+
+/* 修正边框 */
+.dark [class*="border"] {
+  border-color: #374151 !important;
 }
