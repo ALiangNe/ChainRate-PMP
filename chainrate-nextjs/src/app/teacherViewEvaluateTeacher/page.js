@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { default as NextImage } from 'next/image';
 import { ethers } from 'ethers';
 import ChainRateABI from '../../contracts/ChainRate.json';
 import ChainRateAddress from '../../contracts/ChainRate-address.json';
@@ -28,7 +28,8 @@ import {
   LoadingOutlined,
   EyeOutlined,
   ClockCircleOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  CloudOutlined
 } from '@ant-design/icons';
 import { 
   Breadcrumb, 
@@ -59,15 +60,22 @@ import {
   Modal,
   Pagination,
   DatePicker,
-  message
+  message,
+  Dropdown,
+  Menu
 } from 'antd';
 import UserAvatar from '../components/UserAvatar';
 import TeacherSidebar from '../components/TeacherSidebar';
+import * as d3 from 'd3';
+import cloud from 'd3-cloud';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { Search } = Input;
+
+// 确保我们引用了正确的AntImage
+const AntImageComponent = AntImage;
 
 // 评分项目标签
 const ratingLabels = {
@@ -100,6 +108,80 @@ const RatingDisplay = ({ title, value, color, icon }) => (
     </div>
   </div>
 );
+
+// 词云组件
+const WordCloud = ({ words, width = 600, height = 400, svgRef }) => {
+  const localSvgRef = useRef(null);
+  
+  // 使用传入的ref或本地ref
+  const actualSvgRef = svgRef || localSvgRef;
+
+  // 计算词云布局
+  const layout = useCallback(() => {
+    if (!actualSvgRef.current || !words || words.length === 0) return;
+    
+    console.log("准备渲染词云，单词数量:", words.length);
+    
+    // 清除现有内容
+    d3.select(actualSvgRef.current).selectAll("*").remove();
+
+    // 配置词云布局
+    const fontScale = d3.scaleLinear()
+      .domain([
+        d3.min(words, d => d.value),
+        d3.max(words, d => d.value)
+      ])
+      .range([14, 60]);
+
+    // 生成颜色比例尺
+    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+    // 配置布局
+    cloud()
+      .size([width, height])
+      .words(words.map(d => ({
+        text: d.text,
+        size: fontScale(d.value)
+      })))
+      .padding(5)
+      .rotate(() => (~~(Math.random() * 2) - 1) * 30)
+      .font("Impact")
+      .fontSize(d => d.size)
+      .on("end", draw)
+      .start();
+
+    // 绘制词云
+    function draw(words) {
+      d3.select(actualSvgRef.current)
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width / 2},${height / 2})`)
+        .selectAll("text")
+        .data(words)
+        .enter()
+        .append("text")
+        .style("font-family", "Impact")
+        .style("font-size", d => `${d.size}px`)
+        .style("fill", (d, i) => colorScale(i))
+        .attr("text-anchor", "middle")
+        .attr("transform", d => `translate(${d.x},${d.y}) rotate(${d.rotate})`)
+        .text(d => d.text);
+    }
+  }, [words, width, height, actualSvgRef]);
+
+  // 当组件挂载或数据变化时，重新计算布局
+  useEffect(() => {
+    console.log("词云组件挂载或数据变化，开始布局");
+    layout();
+  }, [layout]);
+
+  return (
+    <div className={styles.wordCloudContainer}>
+      <svg ref={actualSvgRef} className={styles.wordCloudSvg} width={width} height={height}></svg>
+    </div>
+  );
+};
 
 export default function TeacherViewEvaluateTeacherPage() {
   const router = useRouter();
@@ -142,6 +224,16 @@ export default function TeacherViewEvaluateTeacherPage() {
   // 图片预览状态
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
+  
+  // 词云相关状态
+  const [wordCloudModalVisible, setWordCloudModalVisible] = useState(false);
+  const [wordCloudData, setWordCloudData] = useState([]);
+  const [wordCloudLoading, setWordCloudLoading] = useState(false);
+  const [wordCloudError, setWordCloudError] = useState('');
+  
+  // 词云图片保存参考
+  const wordCloudRef = useRef(null);
+  const svgRef = useRef(null); // 直接引用SVG元素
   
   // 统计数据
   const [evaluationStats, setEvaluationStats] = useState({
@@ -732,6 +824,222 @@ export default function TeacherViewEvaluateTeacherPage() {
       setError('导出数据失败: ' + (error.message || error));
     }
   };
+  
+  // 保存词云图片 - 简化实现
+  const handleSaveWordCloud = () => {
+    console.log("开始保存词云图片");
+    
+    try {
+      // 获取SVG元素
+      if (!svgRef.current) {
+        console.error("SVG引用不存在");
+        message.error('无法获取词云图片，请重试');
+        return;
+      }
+      
+      const svg = svgRef.current;
+      console.log("获取到SVG元素:", svg);
+      
+      // 创建SVG数据URL
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBase64 = btoa(unescape(encodeURIComponent(svgData)));
+      const dataURL = `data:image/svg+xml;base64,${svgBase64}`;
+      
+      // 创建临时链接
+      const link = document.createElement('a');
+      link.download = `教师评价词云_${new Date().toLocaleDateString().replace(/\//g, '-')}.svg`;
+      link.href = dataURL;
+      link.click();
+      
+      message.success('词云已保存为SVG格式');
+    } catch (error) {
+      console.error('保存词云图片失败:', error);
+      message.error('保存图片失败: ' + (error.message || '未知错误'));
+    }
+  };
+  
+  // 尝试保存为PNG格式
+  const handleSaveAsPNG = () => {
+    try {
+      if (!svgRef.current) {
+        message.error('无法获取词云图片，请重试');
+        return;
+      }
+      
+      // 显示处理提示
+      message.loading('正在处理图片...');
+      
+      // 创建图片元素来渲染SVG
+      const svg = svgRef.current;
+      const svgData = new XMLSerializer().serializeToString(svg);
+      
+      // 获取SVG的尺寸
+      const width = svg.width.baseVal.value || 850;
+      const height = svg.height.baseVal.value || 500;
+      
+      // 创建Canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      // 设置白色背景
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      
+      // 创建SVG的Image URL
+      const blob = new Blob([svgData], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+      
+      // 创建图片元素
+      const img = new window.Image();
+      img.onload = function() {
+        // 在Canvas上绘制SVG
+        ctx.drawImage(img, 0, 0);
+        
+        try {
+          // 从Canvas获取数据URL
+          const pngUrl = canvas.toDataURL('image/png');
+          
+          // 创建下载链接
+          const link = document.createElement('a');
+          link.download = `教师评价词云_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+          link.href = pngUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // 关闭加载提示
+          message.destroy();
+          message.success('词云已保存为PNG格式');
+        } catch (e) {
+          console.error('Canvas转换失败:', e);
+          message.error('PNG格式保存失败，请尝试SVG格式');
+        }
+        
+        // 清理URL
+        URL.revokeObjectURL(url);
+      };
+      
+      img.onerror = function(e) {
+        console.error('图片加载失败:', e);
+        message.error('图片处理失败，请尝试SVG格式');
+        URL.revokeObjectURL(url);
+      };
+      
+      // 加载SVG
+      img.src = url;
+    } catch (error) {
+      console.error('PNG保存失败:', error);
+      message.error('PNG格式保存失败: ' + error.message);
+    }
+  };
+  
+  // 组合的保存菜单项
+  const menuItems = [
+    {
+      key: 'svg',
+      label: '保存为SVG格式',
+      onClick: handleSaveWordCloud
+    },
+    {
+      key: 'png',
+      label: '保存为PNG格式',
+      onClick: handleSaveAsPNG
+    }
+  ];
+  
+  // 从评价内容中提取文本，生成词频数据
+  const processWordCloudData = async () => {
+    try {
+      setWordCloudLoading(true);
+      
+      // 如果没有评价，返回空数组
+      if (!evaluations || evaluations.length === 0) {
+        message.warning('暂无评价数据，无法生成词云');
+        setWordCloudData([]);
+        setWordCloudLoading(false);
+        return;
+      }
+      
+      // 收集所有评价内容
+      const contentTexts = [];
+      
+      // 获取前 50 条评价的内容（避免请求过多）
+      const limit = Math.min(evaluations.length, 50);
+      message.info(`正在处理 ${limit} 条评价内容，请稍候...`);
+      
+      for (let i = 0; i < limit; i++) {
+        try {
+          const evaluation = evaluations[i];
+          const response = await fetch(`https://gateway.pinata.cloud/ipfs/${evaluation.contentHash}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.content) {
+              contentTexts.push(data.content);
+            }
+          }
+        } catch (error) {
+          console.error("获取评价内容失败:", error);
+        }
+      }
+      
+      // 合并所有文本并分词
+      const allText = contentTexts.join(' ');
+      
+      // 简单的中文分词处理（按空格和标点符号分割）
+      const words = allText.split(/[\s,.，。！？、：；''""【】《》()（）\-]/g)
+        .filter(word => word.length > 1) // 过滤掉单字符词
+        .map(word => word.toLowerCase()); // 转小写
+      
+      // 停用词列表（可以根据需要扩展）
+      const stopWords = ['的', '了', '是', '我', '你', '他', '她', '它', '这', '那',
+                         '们', '在', '有', '和', '与', '或', '就', '也', '要', '不',
+                         '为', '为了', '所以', '因为', '但是', '可以', '所有', '一个',
+                         '以及', '而且', '而', '等', '等等', '老师', '教师', '学生'];
+                         
+      // 计算词频
+      const wordFrequency = {};
+      words.forEach(word => {
+        if (!stopWords.includes(word) && word.trim() !== '') {
+          if (!wordFrequency[word]) {
+            wordFrequency[word] = 0;
+          }
+          wordFrequency[word] += 1;
+        }
+      });
+      
+      // 转换为词云数据格式，并取频率最高的前50个词
+      const cloudData = Object.keys(wordFrequency)
+        .map(text => ({ text, value: wordFrequency[text] }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 50);
+      
+      if (cloudData.length === 0) {
+        message.warning('未能提取到足够的关键词，请尝试增加评价样本');
+      }
+      
+      setWordCloudData(cloudData);
+      setWordCloudModalVisible(true);
+    } catch (error) {
+      console.error("处理词云数据失败:", error);
+      setWordCloudError('生成词云数据失败: ' + (error.message || error));
+      message.error('生成词云失败，请稍后重试');
+    } finally {
+      setWordCloudLoading(false);
+    }
+  };
+  
+  // 生成词云处理函数
+  const handleGenerateWordCloud = () => {
+    processWordCloudData();
+  };
+  
+  // 关闭词云模态框
+  const handleCloseWordCloudModal = () => {
+    setWordCloudModalVisible(false);
+  };
 
   return (
     <ConfigProvider
@@ -745,7 +1053,7 @@ export default function TeacherViewEvaluateTeacherPage() {
         <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <div className={styles.logo}>
-              <Image 
+              <NextImage 
                 src="/images/logo1.png" 
                 alt="链评系统Logo" 
                 width={40} 
@@ -980,6 +1288,17 @@ export default function TeacherViewEvaluateTeacherPage() {
                           导出Excel
                         </Button>
                       </Col>
+                      <Col xs={24} sm={8} md={4} lg={3}>
+                        <Button
+                          type="primary"
+                          icon={<CloudOutlined />}
+                          onClick={handleGenerateWordCloud}
+                          disabled={filteredEvaluations.length === 0 || wordCloudLoading}
+                          style={{ width: '100%', backgroundColor: '#722ed1', borderColor: '#722ed1' }}
+                        >
+                          生成词云
+                        </Button>
+                      </Col>
                     </Row>
                     {dateError && (
                       <Row>
@@ -1153,6 +1472,92 @@ export default function TeacherViewEvaluateTeacherPage() {
                 </>
               )}
               
+              {/* 词云模态框 */}
+              <Modal
+                title="评价关键词云"
+                open={wordCloudModalVisible}
+                onCancel={handleCloseWordCloudModal}
+                width={900}
+                footer={[
+                  <Button key="close" onClick={handleCloseWordCloudModal}>
+                    关闭
+                  </Button>,
+                  <Dropdown 
+                    key="save" 
+                    menu={{ items: menuItems }}
+                    placement="topCenter"
+                    disabled={wordCloudLoading || wordCloudData.length === 0}
+                  >
+                    <Button 
+                      type="primary"
+                      icon={<DownloadOutlined />}
+                    >
+                      保存图片
+                    </Button>
+                  </Dropdown>
+                ]}
+                centered
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Alert
+                    message="词云分析说明"
+                    description={`此词云展示了学生评价中出现频率最高的关键词，字体大小代表词汇出现的频率，可以帮助您快速了解学生反馈的焦点和整体教学评价风向。您可以点击"保存图片"按钮将词云保存为PNG图片。`}
+                    type="info"
+                    showIcon
+                  />
+                </div>
+                {wordCloudLoading ? (
+                  <div className={styles.loadingContainer} style={{ height: 400 }}>
+                    <Spin size="large" />
+                    <div className={styles.loadingText}>生成词云中...</div>
+                  </div>
+                ) : wordCloudError ? (
+                  <Alert
+                    message="词云生成失败"
+                    description={wordCloudError}
+                    type="error"
+                    showIcon
+                  />
+                ) : wordCloudData.length === 0 ? (
+                  <Empty description="暂无足够数据生成词云" />
+                ) : (
+                  <div className={styles.wordCloudWrapper} ref={wordCloudRef}>
+                    <WordCloud 
+                      words={wordCloudData} 
+                      width={850}
+                      height={500}
+                      svgRef={svgRef}
+                    />
+                    {wordCloudData.length > 0 && (
+                      <div style={{ marginTop: 15, textAlign: 'center' }}>
+                        <div style={{ color: '#666', marginBottom: 10 }}>
+                          共分析了{wordCloudData.length}个关键词
+                        </div>
+                        <Space>
+                          <Button 
+                            type="default" 
+                            icon={<DownloadOutlined />}
+                            onClick={handleSaveWordCloud}
+                          >
+                            下载SVG格式
+                          </Button>
+                          <Button 
+                            type="default" 
+                            icon={<DownloadOutlined />}
+                            onClick={handleSaveAsPNG}
+                          >
+                            下载PNG格式
+                          </Button>
+                        </Space>
+                        <div style={{ color: '#999', fontSize: '12px', marginTop: '10px' }}>
+                          如果下拉菜单保存不起作用，请尝试直接点击上方按钮
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Modal>
+
               {/* 评价详情抽屉 */}
               {selectedEvaluation && (
                 <Drawer
