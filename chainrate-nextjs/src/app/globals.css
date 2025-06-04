@@ -52,12 +52,23 @@ body {
 }
 
 /* 增强的暗黑模式样式 */
-/* 侧边栏 */
+/* 侧边栏及其子菜单 */
 .dark aside,
 .dark [class*="sidebar"],
-.dark nav {
+.dark nav,
+.dark [role="navigation"] {
   background-color: #1f2937 !important;
   color: white !important;
+  border-color: #374151 !important;
+}
+
+/* 确保侧边栏内所有元素正确显示 */
+.dark aside *,
+.dark [class*="sidebar"] *,
+.dark nav *,
+.dark [role="navigation"] * {
+  background-color: #1f2937 !important;
+  color: #e5e7eb !important;
   border-color: #374151 !important;
 }
 
@@ -68,6 +79,24 @@ body {
   background-color: #1f2937 !important;
   color: white !important;
   border-color: #374151 !important;
+}
+
+/* 确保所有文本元素变为白色 */
+.dark p,
+.dark span,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark label,
+.dark strong,
+.dark em,
+.dark small,
+.dark blockquote,
+.dark div:not(.exclude-dark) > * {
+  color: #e5e7eb !important;
 }
 
 /* 头部区域 */
@@ -81,6 +110,7 @@ body {
 .dark li,
 .dark a {
   color: #e5e7eb !important;
+  background-color: transparent !important;
 }
 
 .dark a:hover {
@@ -94,7 +124,7 @@ body {
 }
 
 /* 修正按钮和特殊组件 */
-.dark button:not(.theme-toggle) {
+.dark button:not(.theme-toggle):not(.exclude-dark) {
   background-color: #374151 !important;
   color: white !important;
 }
@@ -108,11 +138,47 @@ body {
   background-color: #1f2937 !important;
 }
 
-.dark [class*="text-black"] {
+.dark [class*="text-black"],
+.dark [class*="text-gray-"] {
   color: white !important;
 }
 
 /* 修正边框 */
 .dark [class*="border"] {
   border-color: #374151 !important;
+}
+
+/* 修正下拉菜单 */
+.dark [role="menu"],
+.dark [class*="dropdown"],
+.dark [class*="menu"] {
+  background-color: #1f2937 !important;
+  color: white !important;
+  border-color: #374151 !important;
+}
+
+.dark [role="menu"] *,
+.dark [class*="dropdown"] *,
+.dark [class*="menu"] * {
+  background-color: #1f2937 !important;
+  color: white !important;
+}
+
+/* 强制处理任何嵌套结构 */
+.dark * > * > * > * {
+  background-color: inherit;
+  color: inherit;
+}
+
+/* 处理悬停状态 */
+.dark *:hover:not(.theme-toggle):not(a):not(button) {
+  background-color: #374151 !important;
+}
+
+/* 针对特定组件的修复 */
+.dark [class*="card"],
+.dark [class*="panel"],
+.dark [class*="box"] {
+  background-color: #1f2937 !important;
+  color: white !important;
 }
