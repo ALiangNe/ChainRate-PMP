@@ -42,7 +42,7 @@ import { checkSession, setupSessionCheck, clearSession } from '../utils/authChec
 
 const { Title, Text, Paragraph } = Typography;
 
-// 格式化剩余锁定时 间
+// 格式化剩余锁定时 间-
 const formatRemainingTime = (expiryDate) => {
   if (!expiryDate) return '';
   
