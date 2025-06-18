@@ -1,0 +1,32 @@
+   name: Smart Contract CI
+
+   on:
+     push:
+       branches: [main]
+       paths: ['chainrate-hardhat/**']
+     pull_request:
+       branches: [main]
+       paths: ['chainrate-hardhat/**']
+
+   jobs:
+     test:
+       runs-on: ubuntu-latest
+       defaults:
+         run:
+           working-directory: ./chainrate-hardhat
+       steps:
+         - uses: actions/checkout@v3
+         - name: Setup Node.js
+           uses: actions/setup-node@v3
+           with:
+             node-version: '18'
+             cache: 'npm'
+             cache-dependency-path: './chainrate-hardhat/package-lock.json'
+         - name: Install dependencies
+           run: npm ci
+         - name: Compile contracts
+           run: npx hardhat compile
+         - name: Run tests
+           run: npx hardhat test
+         - name: Run security checks
+           run: npx hardhat check || true

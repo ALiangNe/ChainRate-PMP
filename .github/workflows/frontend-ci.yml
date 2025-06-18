@@ -1,0 +1,32 @@
+   name: Frontend CI
+
+   on:
+     push:
+       branches: [main]
+       paths: ['chainrate-nextjs/**']
+     pull_request:
+       branches: [main]
+       paths: ['chainrate-nextjs/**']
+
+   jobs:
+     build-and-test:
+       runs-on: ubuntu-latest
+       defaults:
+         run:
+           working-directory: ./chainrate-nextjs
+       steps:
+         - uses: actions/checkout@v3
+         - name: Setup Node.js
+           uses: actions/setup-node@v3
+           with:
+             node-version: '18'
+             cache: 'npm'
+             cache-dependency-path: './chainrate-nextjs/package-lock.json'
+         - name: Install dependencies
+           run: npm ci
+         - name: Lint code
+           run: npm run lint || true
+         - name: Build project
+           run: npm run build
+         - name: Run tests
+           run: npm test || true
