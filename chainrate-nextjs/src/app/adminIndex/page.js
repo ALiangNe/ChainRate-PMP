@@ -303,7 +303,7 @@ export default function AdminIndexPage() {
     }
   };
 
-  // 侧边栏菜单项
+  // 侧边栏菜单 项
   const siderItems = [
     {
       key: 'sub1',
