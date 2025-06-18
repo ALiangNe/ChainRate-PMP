@@ -1196,7 +1196,7 @@ contract ChainRate {
             }
         }
         
-        // 统计提交的评价总数
+        // 统计提交的评价总 数
         totalEvaluations = studentEvaluations[studentAddress].length;
         
         return (totalJoinedCourses, evalCourseCount, totalEvaluations);
