@@ -1,4 +1,4 @@
-'use client'; // 指示该组件在客户端渲染
+'use client'; 
 
 // 导入所需的库和组件
 import { useState, useEffect } from 'react'; // 导入 React 的状态和效果钩子
