@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 // 获取所有公告
 export async function GET(request) {
   try {
-    // 解析URL查询参数
+    // 解析URL查询参数。
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit');
     
