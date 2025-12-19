@@ -24,7 +24,7 @@ export async function GET(request) {
       data: announcements 
     });
   } catch (error) {
-    console.error('获取公告失败:', error);
+    console.error(error);
     
     // 返回错误响应
     return NextResponse.json(
